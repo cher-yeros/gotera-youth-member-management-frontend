@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/theme-toggle";
-import { Bell, Search, User } from "lucide-react";
+import UserProfileDropdown from "@/components/UserProfileDropdown";
+import { Bell, Search } from "lucide-react";
 
 const Header = () => {
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="flex items-center justify-between h-16 px-6">
-        {/* Search */}
-        <div className="flex-1 max-w-lg">
+        {/* Search - Hidden on mobile */}
+        <div className="flex-1 max-w-lg hidden md:block">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
@@ -17,6 +18,9 @@ const Header = () => {
             />
           </div>
         </div>
+
+        {/* Spacer for mobile - pushes right side icons to the right */}
+        <div className="flex-1 md:hidden"></div>
 
         {/* Right side */}
         <div className="flex items-center space-x-4">
@@ -29,17 +33,9 @@ const Header = () => {
           {/* Theme Toggle */}
           <ThemeToggle variant="icon" />
 
-          {/* User Menu */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="flex items-center space-x-2"
-          >
-            <div className="h-8 w-8 bg-brand-gradient rounded-full flex items-center justify-center">
-              <User className="h-4 w-4 text-white" />
-            </div>
-            <span className="hidden md:block text-sm font-medium">Admin</span>
-          </Button>
+          {/* User Profile Dropdown */}
+
+          <UserProfileDropdown />
         </div>
       </div>
     </header>

@@ -16,9 +16,12 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import { Eye, EyeOff, Phone, Lock, ArrowRight } from "lucide-react";
 import { useLogin } from "@/hooks/useGraphQL";
 import { useAuth } from "@/redux/useAuth";
+import { useAppDispatch } from "@/redux/hooks";
+import { setCredentials } from "@/redux/slices/authSlice";
 
 const Login = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { login, loading: isLoginLoading } = useLogin();
   const { error: authError } = useAuth();
 
@@ -86,8 +89,29 @@ const Login = () => {
       });
 
       if (result?.token && result?.user) {
-        // Navigate to dashboard
-        navigate("/dashboard");
+        // Store user information in Redux
+        dispatch(
+          setCredentials({
+            token: result.token,
+            user: result.user,
+          })
+        );
+
+        // Navigate based on user role
+        const userRole = result.user.role?.toLowerCase();
+        if (userRole === "fl") {
+          navigate("/families/my-family");
+        } else {
+          navigate("/dashboard");
+        }
+      } else {
+        // Handle unsuccessful login
+        const errorMessage =
+          result?.message ||
+          "Invalid phone number or password. Please try again.";
+        setErrors({
+          general: errorMessage,
+        });
       }
     } catch (error) {
       console.error(error);

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import RoleTestComponent from "@/components/test/RoleTestComponent";
 import {
   Briefcase,
   MapPin,
@@ -156,6 +157,9 @@ const Dashboard = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Role Test Component */}
+        <RoleTestComponent />
+
         {/* Quick Actions */}
         <Card className="shadow-brand">
           <CardHeader className="pb-4">
@@ -173,11 +177,13 @@ const Dashboard = () => {
                   <Users className="mr-3 h-5 w-5" />
                   <div className="text-left">
                     <div className="font-semibold">Manage Members</div>
-                    <div className="text-xs opacity-90">Add, edit, and view members</div>
+                    <div className="text-xs opacity-90">
+                      Add, edit, and view members
+                    </div>
                   </div>
                 </Button>
               </Link>
-              
+
               <Link to="/families">
                 <Button
                   variant="outline"
@@ -186,11 +192,13 @@ const Dashboard = () => {
                   <UserCheck className="mr-3 h-5 w-5" />
                   <div className="text-left">
                     <div className="font-semibold">Manage Families</div>
-                    <div className="text-xs opacity-70">Organize family registrations</div>
+                    <div className="text-xs opacity-70">
+                      Organize family registrations
+                    </div>
                   </div>
                 </Button>
               </Link>
-              
+
               <Link to="/professions">
                 <Button
                   variant="outline"
@@ -199,11 +207,13 @@ const Dashboard = () => {
                   <Briefcase className="mr-3 h-5 w-5" />
                   <div className="text-left">
                     <div className="font-semibold">Manage Professions</div>
-                    <div className="text-xs opacity-70">Define profession categories</div>
+                    <div className="text-xs opacity-70">
+                      Define profession categories
+                    </div>
                   </div>
                 </Button>
               </Link>
-              
+
               <Link to="/locations">
                 <Button
                   variant="outline"
@@ -212,12 +222,14 @@ const Dashboard = () => {
                   <MapPin className="mr-3 h-5 w-5" />
                   <div className="text-left">
                     <div className="font-semibold">Manage Locations</div>
-                    <div className="text-xs opacity-70">Set regional coverage areas</div>
+                    <div className="text-xs opacity-70">
+                      Set regional coverage areas
+                    </div>
                   </div>
                 </Button>
               </Link>
             </div>
-            
+
             <div className="pt-2 border-t border-border">
               <Link to="/overview">
                 <Button

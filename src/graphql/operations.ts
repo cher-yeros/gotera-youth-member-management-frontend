@@ -492,7 +492,24 @@ export const LOGIN = gql`
         id
         phone
         role
-        createdAt
+        member {
+          id
+          contact_no
+          full_name
+          family {
+            id
+            name
+          }
+          role {
+            id
+            name
+            description
+          }
+          status {
+            id
+            name
+          }
+        }
       }
     }
   }

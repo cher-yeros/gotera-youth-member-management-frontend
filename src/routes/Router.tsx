@@ -1,5 +1,6 @@
 import { lazy } from "react";
 import { Navigate } from "react-router";
+import ProtectedRoute from "@/components/shared/ProtectedRoute";
 
 // Layouts
 const FullLayout = lazy(() => import("../layouts/full/FullLayout"));
@@ -21,17 +22,85 @@ const ComboBoxTest = lazy(() => import("../components/test/ComboBoxTest"));
 const Router = [
   {
     path: "/",
-    element: <FullLayout />,
+    element: (
+      <ProtectedRoute>
+        <FullLayout />
+      </ProtectedRoute>
+    ),
     children: [
       { path: "/", element: <Navigate to="/dashboard" /> },
-      { path: "/dashboard", element: <Dashboard /> },
-      { path: "/members", element: <Members /> },
-      { path: "/overview", element: <OverviewPage /> },
-      { path: "/families", element: <FamiliesPage /> },
-      { path: "/families/:familyId/members", element: <FamilyMembers /> },
-      { path: "/professions", element: <ProfessionsPage /> },
-      { path: "/locations", element: <LocationsPage /> },
-      { path: "/test-combobox", element: <ComboBoxTest /> },
+      {
+        path: "/dashboard",
+        element: (
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/members",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <Members />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/overview",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <OverviewPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/families",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <FamiliesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/families/:familyId/members",
+        element: (
+          <ProtectedRoute>
+            <FamilyMembers />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/families/my-family",
+        element: (
+          <ProtectedRoute requiredRole="fl">
+            <FamilyMembers />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/professions",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <ProfessionsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/locations",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <LocationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/test-combobox",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <ComboBoxTest />
+          </ProtectedRoute>
+        ),
+      },
       { path: "*", element: <Navigate to="/auth/404" /> },
     ],
   },

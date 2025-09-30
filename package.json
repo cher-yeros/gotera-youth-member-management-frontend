@@ -81,7 +81,7 @@
     "@graphql-codegen/typescript-operations": "^5.0.0",
     "@graphql-codegen/typescript-react-apollo": "^4.3.3",
     "@types/lodash": "^4.17.17",
-    "@types/node": "^22.15.30",
+    "@types/node": "^22.18.7",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
     "@types/react-helmet": "^6.1.11",

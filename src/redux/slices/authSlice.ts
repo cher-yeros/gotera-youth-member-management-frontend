@@ -9,7 +9,24 @@ export interface User {
   id: number;
   phone: string;
   role: string;
-  createdAt: string;
+  member?: {
+    id: number;
+    contact_no?: string;
+    full_name: string;
+    family?: {
+      id: number;
+      name: string;
+    };
+    role?: {
+      id: number;
+      name: string;
+      description: string;
+    };
+    status?: {
+      id: number;
+      name: string;
+    };
+  };
 }
 
 export interface AuthState {
@@ -83,6 +100,10 @@ const authSlice = createSlice({
       state.user = user;
       state.isAuthenticated = true;
       state.error = null;
+
+      // Store in localStorage for persistence
+      localStorage.setItem("authToken", token);
+      localStorage.setItem("user", JSON.stringify(user));
     },
 
     clearCredentials: (state) => {
@@ -90,6 +111,10 @@ const authSlice = createSlice({
       state.user = null;
       state.isAuthenticated = false;
       state.error = null;
+
+      // Clear localStorage
+      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
     },
 
     setLoading: (state, action: PayloadAction<boolean>) => {

@@ -23,11 +23,14 @@ import {
 import { useState, useCallback, useEffect } from "react";
 import type { MemberFilterInput } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/redux/useAuth";
 
 const FamilyMembers = () => {
   const { familyId } = useParams<{ familyId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
@@ -39,19 +42,27 @@ const FamilyMembers = () => {
     name: string;
   } | null>(null);
 
+  // Determine if this is a family leader accessing their own family
+  const isFamilyLeaderView = location.pathname === "/families/my-family";
+  const effectiveFamilyId = isFamilyLeaderView
+    ? user?.member?.family?.id
+    : familyId
+    ? parseInt(familyId)
+    : 0;
+
   // Fetch family data
   const { data: familyData, loading: familyLoading } = useGetFamily(
-    familyId ? parseInt(familyId) : 0
+    effectiveFamilyId || 0
   );
 
   // Initialize filters with family filter
   useEffect(() => {
-    if (familyId) {
+    if (effectiveFamilyId) {
       setSearchFilters({
-        family_id: parseInt(familyId),
+        family_id: effectiveFamilyId,
       });
     }
-  }, [familyId]);
+  }, [effectiveFamilyId]);
 
   // Fetch members with pagination and filters
   const { data, loading, error, refetch } = useGetMembers(searchFilters, {
@@ -70,19 +81,19 @@ const FamilyMembers = () => {
     (filters: MemberFilterInput) => {
       setSearchFilters({
         ...filters,
-        family_id: familyId ? parseInt(familyId) : undefined,
+        family_id: effectiveFamilyId || undefined,
       });
       setCurrentPage(1); // Reset to first page when searching
     },
-    [familyId]
+    [effectiveFamilyId]
   );
 
   const handleClearSearch = useCallback(() => {
     setSearchFilters({
-      family_id: familyId ? parseInt(familyId) : undefined,
+      family_id: effectiveFamilyId || undefined,
     });
     setCurrentPage(1);
-  }, [familyId]);
+  }, [effectiveFamilyId]);
 
   const handleDeleteMember = (member: { id: number; full_name: string }) => {
     setMemberToDelete({ id: member.id, name: member.full_name });
@@ -136,7 +147,11 @@ const FamilyMembers = () => {
   };
 
   const handleBackToFamilies = () => {
-    navigate("/families");
+    if (isFamilyLeaderView) {
+      navigate("/dashboard");
+    } else {
+      navigate("/families");
+    }
   };
 
   if (familyLoading) {
@@ -169,7 +184,7 @@ const FamilyMembers = () => {
             onClick={handleBackToFamilies}
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
           >
-            Back to Families
+            {isFamilyLeaderView ? "Back to Dashboard" : "Back to Families"}
           </Button>
         </div>
       </div>
@@ -220,10 +235,14 @@ const FamilyMembers = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">
-            {family.name} Family Members
+            {isFamilyLeaderView
+              ? `${family.name} Family Members`
+              : `${family.name} Family Members`}
           </h1>
           <p className="text-muted-foreground">
-            Members of the {family.name} family ({total} total)
+            {isFamilyLeaderView
+              ? `Members of your family (${total} total)`
+              : `Members of the ${family.name} family (${total} total)`}
           </p>
           <div className="mt-2">
             <Button
@@ -232,7 +251,7 @@ const FamilyMembers = () => {
               onClick={handleBackToFamilies}
               className="text-sm"
             >
-              ← Back to Families
+              ← {isFamilyLeaderView ? "Back to Dashboard" : "Back to Families"}
             </Button>
           </div>
         </div>
@@ -274,7 +293,9 @@ const FamilyMembers = () => {
                 No members found in this family
               </h3>
               <p className="text-muted-foreground mb-4">
-                Add the first member to the {family.name} family to get started.
+                Add the first member to the{" "}
+                {isFamilyLeaderView ? "your" : family.name} family to get
+                started.
               </p>
               <Button
                 onClick={() => setIsNewMemberModalOpen(true)}
@@ -492,7 +513,7 @@ const FamilyMembers = () => {
           onSuccess={handleNewMemberSuccess}
           onCancel={handleNewMemberCancel}
           mode="create"
-          defaultFamilyId={familyId ? parseInt(familyId) : undefined}
+          defaultFamilyId={effectiveFamilyId || undefined}
         />
       </FullscreenModal>
 

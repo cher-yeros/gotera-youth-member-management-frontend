@@ -12,8 +12,10 @@ import {
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/redux/useAuth";
 
-const navigation = [
+// Define navigation items with role restrictions
+const adminNavigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Overview", href: "/overview", icon: Home },
   { name: "Members", href: "/members", icon: Users },
@@ -22,14 +24,29 @@ const navigation = [
   { name: "Locations", href: "/locations", icon: MapPin },
 ];
 
+const flNavigation = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "My Family", href: "/families/my-family", icon: UserCheck },
+];
+
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const { user } = useAuth();
+
+  // Determine which navigation items to show based on user role
+  const navigation =
+    user?.role?.toLowerCase() === "admin" ? adminNavigation : flNavigation;
 
   return (
     <>
       {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
+      <div
+        className={cn(
+          "lg:hidden fixed top-4 z-50 transition-all duration-300 ease-in-out",
+          isOpen ? "left-72" : "left-4"
+        )}
+      >
         <Button
           variant="outline"
           size="sm"

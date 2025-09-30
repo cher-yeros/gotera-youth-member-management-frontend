@@ -41,7 +41,7 @@ const ComboBoxTest = () => {
               <ComboBox
                 options={statusOptions}
                 value={selectedStatus}
-                onValueChange={setSelectedStatus}
+                onValueChange={(value) => setSelectedStatus(value as number)}
                 placeholder="Select status..."
                 searchPlaceholder="Search statuses..."
                 emptyText="No status found."
@@ -62,7 +62,7 @@ const ComboBoxTest = () => {
               <ComboBox
                 options={familyOptions}
                 value={selectedFamily}
-                onValueChange={setSelectedFamily}
+                onValueChange={(value) => setSelectedFamily(value as number)}
                 placeholder="Select family..."
                 searchPlaceholder="Search families..."
                 emptyText="No family found."

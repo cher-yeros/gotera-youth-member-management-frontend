@@ -702,20 +702,27 @@ export const useLogin = () => {
   const dispatch = useAppDispatch();
   const [login, { loading }] = useMutation<any>(LOGIN, {
     onCompleted: (data) => {
-      if (data?.login?.token) {
+      const loginResponse = data?.login;
+
+      if (loginResponse?.token && loginResponse?.user) {
         // Store token in localStorage
-        localStorage.setItem("authToken", data.login.token);
-        localStorage.setItem("user", JSON.stringify(data.login.user));
+        localStorage.setItem("authToken", loginResponse.token);
+        localStorage.setItem("user", JSON.stringify(loginResponse.user));
 
         // Dispatch to Redux store
         dispatch(
           setCredentials({
-            token: data.login.token,
-            user: data.login.user,
+            token: loginResponse.token,
+            user: loginResponse.user,
           })
         );
 
         toast.success("Login successful!");
+      } else {
+        // Handle unsuccessful login
+        const errorMessage = loginResponse?.message || "Login failed";
+        dispatch(setError(errorMessage));
+        toast.error(errorMessage);
       }
     },
     onError: (error) => {
