@@ -1,20 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import RoleTestComponent from "@/components/test/RoleTestComponent";
-import {
-  Briefcase,
-  MapPin,
-  Users,
-  UserCheck,
-  Home,
-  TrendingUp,
-  Activity,
-  Clock,
-} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import LoadingCard from "@/components/ui/loading-card";
+import ThemeToggle from "@/components/ui/theme-toggle";
+import type { Member } from "@/generated/graphql";
 import { useGetOverviewStats, useGetRecentMembers } from "@/hooks/useGraphQL";
+import {
+  Activity,
+  Briefcase,
+  Clock,
+  Home,
+  MapPin,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   // Fetch dashboard data
@@ -48,6 +50,7 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">
@@ -59,16 +62,52 @@ const Dashboard = () => {
           </div>
           <ThemeToggle variant="icon" />
         </div>
-        <Card className="shadow-brand">
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">
-                Loading dashboard data...
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+
+        {/* Statistics Cards Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <LoadingCard
+              key={index}
+              variant="minimal"
+              className="hover-brand-glow transition-all duration-300"
+            />
+          ))}
+        </div>
+
+        {/* Main Content Grid Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Role Test Component Skeleton */}
+          <LoadingCard
+            title="Role Management"
+            subtitle="Testing role-based access"
+            variant="detailed"
+            skeletonLines={4}
+          />
+
+          {/* Quick Actions Skeleton */}
+          <LoadingCard
+            title="Quick Actions"
+            subtitle="Navigate to different sections"
+            variant="detailed"
+            skeletonLines={5}
+          />
+
+          {/* System Status Skeleton */}
+          <LoadingCard
+            title="System Status"
+            subtitle="Current system information"
+            variant="detailed"
+            skeletonLines={5}
+          />
+        </div>
+
+        {/* Recent Activity Skeleton */}
+        <LoadingCard
+          title="Recent Activity"
+          subtitle="Latest system updates"
+          variant="detailed"
+          skeletonLines={4}
+        />
       </div>
     );
   }
@@ -317,7 +356,7 @@ const Dashboard = () => {
                   </Link>
                 </div>
               ) : (
-                recentMembers.map((member: any) => (
+                recentMembers.map((member: Member) => (
                   <div key={member.id} className="flex items-center space-x-3">
                     <div className="h-8 w-8 bg-brand-gradient rounded-full flex items-center justify-center text-white font-semibold text-xs">
                       {getInitials(member.full_name)}

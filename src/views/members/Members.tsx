@@ -4,6 +4,8 @@ import { Select } from "@/components/ui/select";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
+import PromoteMemberModal from "@/components/forms/PromoteMemberModal";
+import PasswordDisplayModal from "@/components/forms/PasswordDisplayModal";
 import MemberSearch from "@/components/shared/MemberSearch";
 import {
   AlertDialog,
@@ -30,6 +32,18 @@ const Members = () => {
   const [memberToDelete, setMemberToDelete] = useState<{
     id: number;
     name: string;
+  } | null>(null);
+  const [memberToPromote, setMemberToPromote] = useState<{
+    id: number;
+    full_name: string;
+    contact_no: string;
+  } | null>(null);
+  const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [promotedMemberData, setPromotedMemberData] = useState<{
+    name: string;
+    password: string;
+    role: string;
   } | null>(null);
 
   // Fetch members with pagination and filters
@@ -103,6 +117,44 @@ const Members = () => {
   const handleUpdateMemberCancel = () => {
     setIsUpdateMemberModalOpen(false);
     setSelectedMemberId(null);
+  };
+
+  const handlePromoteMember = (member: {
+    id: number;
+    full_name: string;
+    contact_no?: string | null | undefined;
+  }) => {
+    if (!member.contact_no) {
+      return; // This shouldn't happen since the button is disabled when contact_no is null/undefined
+    }
+    setMemberToPromote({
+      id: member.id,
+      full_name: member.full_name,
+      contact_no: member.contact_no,
+    });
+    setIsPromoteModalOpen(true);
+  };
+
+  const handlePromoteSuccess = (password: string, role: string) => {
+    if (memberToPromote) {
+      setPromotedMemberData({
+        name: memberToPromote.full_name,
+        password: password,
+        role: role,
+      });
+      setIsPasswordModalOpen(true);
+      setMemberToPromote(null);
+    }
+  };
+
+  const handlePromoteCancel = () => {
+    setIsPromoteModalOpen(false);
+    setMemberToPromote(null);
+  };
+
+  const handlePasswordModalClose = () => {
+    setIsPasswordModalOpen(false);
+    setPromotedMemberData(null);
   };
 
   if (error) {
@@ -304,6 +356,15 @@ const Members = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="text-green-600 hover:bg-green-50"
+                              onClick={() => handlePromoteMember(member)}
+                              disabled={!member.contact_no}
+                            >
+                              Promote
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="text-red-600 hover:bg-red-50"
                               onClick={() => handleDeleteMember(member)}
                             >
@@ -324,8 +385,8 @@ const Members = () => {
                   <span className="text-sm text-muted-foreground">Show:</span>
                   <Select
                     value={pageSize.toString()}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
+                    onValueChange={(value) => {
+                      setPageSize(Number(value));
                       setCurrentPage(1); // Reset to first page when changing page size
                     }}
                   >
@@ -482,6 +543,23 @@ const Members = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Promote Member Modal */}
+      <PromoteMemberModal
+        member={memberToPromote || { id: 0, full_name: "", contact_no: "" }}
+        isOpen={isPromoteModalOpen}
+        onClose={handlePromoteCancel}
+        onSuccess={handlePromoteSuccess}
+      />
+
+      {/* Password Display Modal */}
+      <PasswordDisplayModal
+        isOpen={isPasswordModalOpen}
+        onClose={handlePasswordModalClose}
+        memberName={promotedMemberData?.name || ""}
+        password={promotedMemberData?.password || ""}
+        role={promotedMemberData?.role || ""}
+      />
     </div>
   );
 };

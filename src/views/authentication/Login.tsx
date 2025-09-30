@@ -38,10 +38,30 @@ const Login = () => {
   }>({});
 
   const handleInputChange = (field: string, value: string | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    if (field === "phone" && typeof value === "string") {
+      // Remove any non-numeric characters
+      let cleanValue = value.replace(/[^\d]/g, "");
+
+      // Only allow digits starting with 9 and limit to 9 digits total
+      if (cleanValue && !cleanValue.startsWith("9")) {
+        return; // Don't update if it doesn't start with 9
+      }
+
+      // Limit to 9 digits (9xxxxxxxx)
+      if (cleanValue.length > 9) {
+        cleanValue = cleanValue.substring(0, 9);
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        [field]: cleanValue,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: value,
+      }));
+    }
 
     // Clear error when user starts typing
     if (errors[field as keyof typeof errors]) {
@@ -57,10 +77,9 @@ const Login = () => {
 
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone number is required";
-    } else if (
-      !/^[+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ""))
-    ) {
-      newErrors.phone = "Please enter a valid phone number";
+    } else if (!/^9\d{8}$/.test(formData.phone)) {
+      newErrors.phone =
+        "Please enter a valid Ethiopian phone number (9xxxxxxxx)";
     }
 
     if (!formData.password.trim()) {
@@ -84,7 +103,7 @@ const Login = () => {
 
     try {
       const result = await login({
-        phone: formData.phone.trim(),
+        phone: "+251" + formData.phone.trim(),
         password: formData.password,
       });
 
@@ -183,17 +202,26 @@ const Login = () => {
                 </Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="Enter your phone number"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={`pl-10 ${
-                      errors.phone ? "border-red-500 focus:border-red-500" : ""
-                    }`}
-                    disabled={isLoginLoading}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-10 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium pointer-events-none z-10">
+                      +251
+                    </span>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      placeholder="9xxxxxxxx"
+                      value={formData.phone}
+                      onChange={(e) =>
+                        handleInputChange("phone", e.target.value)
+                      }
+                      className={`pl-20 ${
+                        errors.phone
+                          ? "border-red-500 focus:border-red-500"
+                          : ""
+                      }`}
+                      disabled={isLoginLoading}
+                    />
+                  </div>
                 </div>
                 {errors.phone && (
                   <p className="text-sm text-red-500">{errors.phone}</p>

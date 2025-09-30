@@ -5,12 +5,18 @@ import { ThemeProvider } from "./theme/ThemeProvider";
 import Router from "./routes/Router";
 import { store, persistor } from "./redux/store";
 import { initializeAuth } from "./redux/slices/authSlice";
+import LoadingPage from "./components/ui/loading-page";
 
 function App() {
   return (
     <Provider store={store}>
       <PersistGate
-        loading={<div>Loading...</div>}
+        loading={
+          <LoadingPage
+            title="Gotera Youth"
+            subtitle="Initializing Member Management System"
+          />
+        }
         persistor={persistor}
         onBeforeLift={() => {
           // Initialize auth state from localStorage when app starts

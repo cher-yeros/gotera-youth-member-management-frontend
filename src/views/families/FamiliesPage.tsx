@@ -275,8 +275,8 @@ const FamiliesPage = () => {
                   <span className="text-sm text-muted-foreground">Show:</span>
                   <Select
                     value={pageSize.toString()}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
+                    onValueChange={(value) => {
+                      setPageSize(Number(value));
                       setCurrentPage(1); // Reset to first page when changing page size
                     }}
                   >

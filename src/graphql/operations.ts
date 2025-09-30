@@ -368,6 +368,40 @@ export const DELETE_MEMBER = gql`
   }
 `;
 
+export const PROMOTE_MEMBER = gql`
+  mutation PromoteMember($input: PromoteMemberInput!) {
+    promoteMember(input: $input) {
+      success
+      message
+      password
+      user {
+        id
+        phone
+        role
+        createdAt
+        member {
+          id
+          contact_no
+          full_name
+          role {
+            id
+            name
+            description
+          }
+          status {
+            id
+            name
+          }
+          family {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
 // FAMILY MUTATIONS
 export const CREATE_FAMILY = gql`
   mutation CreateFamily($input: CreateFamilyInput!) {

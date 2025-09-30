@@ -36,6 +36,7 @@ import {
   GET_LOCATION_SUMMARIES,
   LOGIN,
   LOGOUT,
+  PROMOTE_MEMBER,
   UPDATE_FAMILY,
   UPDATE_LOCATION,
   UPDATE_MEMBER,
@@ -196,6 +197,36 @@ export const useDeleteMember = () => {
   };
 
   return { deleteMember: handleDeleteMember, loading };
+};
+
+export const usePromoteMember = () => {
+  const [promoteMember, { loading }] = useMutation<any>(PROMOTE_MEMBER, {
+    onCompleted: (data) => {
+      const response = data?.promoteMember;
+      if (response?.success) {
+        toast.success(response.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to promote member: ${error.message}`);
+    },
+    refetchQueries: ["GetMembers"],
+  });
+
+  const handlePromoteMember = async (input: {
+    member_id: number;
+    role: string;
+  }) => {
+    try {
+      const result = await promoteMember({ variables: { input } });
+      return result.data?.promoteMember;
+    } catch (error) {
+      console.error("Error promoting member:", error);
+      throw error;
+    }
+  };
+
+  return { promoteMember: handlePromoteMember, loading };
 };
 
 // FAMILY HOOKS
