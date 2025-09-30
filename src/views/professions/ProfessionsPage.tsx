@@ -204,13 +204,21 @@ const ProfessionsPage = () => {
                     <CardContent className="p-4">
                       <div className="space-y-3">
                         {/* Header with profession name */}
-                        <div className="font-semibold text-lg">{profession.name}</div>
+                        <div className="font-semibold text-lg">
+                          {profession.name}
+                        </div>
 
                         {/* Profession details */}
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Created:</span>
-                            <span>{new Date(profession.createdAt).toLocaleDateString()}</span>
+                            <span className="text-muted-foreground">
+                              Created:
+                            </span>
+                            <span>
+                              {new Date(
+                                profession.createdAt
+                              ).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
 
@@ -220,7 +228,9 @@ const ProfessionsPage = () => {
                             variant="outline"
                             size="sm"
                             className="flex-1 text-blue-600 hover:bg-blue-50"
-                            onClick={() => handleUpdateProfession(profession.id)}
+                            onClick={() =>
+                              handleUpdateProfession(profession.id)
+                            }
                           >
                             Edit
                           </Button>

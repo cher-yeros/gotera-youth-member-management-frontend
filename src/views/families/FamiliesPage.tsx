@@ -202,7 +202,9 @@ const FamiliesPage = () => {
                       <div className="space-y-3">
                         {/* Header with family name */}
                         <div className="flex items-center justify-between">
-                          <div className="font-semibold text-lg">{family.name}</div>
+                          <div className="font-semibold text-lg">
+                            {family.name}
+                          </div>
                           <Badge className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-900">
                             {family.members?.length || 0} members
                           </Badge>
@@ -211,8 +213,12 @@ const FamiliesPage = () => {
                         {/* Family details */}
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Created:</span>
-                            <span>{new Date(family.createdAt).toLocaleDateString()}</span>
+                            <span className="text-muted-foreground">
+                              Created:
+                            </span>
+                            <span>
+                              {new Date(family.createdAt).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
 

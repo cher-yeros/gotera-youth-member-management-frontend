@@ -200,7 +200,9 @@ const LocationsPage = () => {
                       <div className="space-y-3">
                         {/* Header with location name */}
                         <div className="flex items-center justify-between">
-                          <div className="font-semibold text-lg">{location.name}</div>
+                          <div className="font-semibold text-lg">
+                            {location.name}
+                          </div>
                           <Badge className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-900">
                             {location.members?.length || 0} members
                           </Badge>
@@ -209,8 +211,14 @@ const LocationsPage = () => {
                         {/* Location details */}
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Created:</span>
-                            <span>{new Date(location.createdAt).toLocaleDateString()}</span>
+                            <span className="text-muted-foreground">
+                              Created:
+                            </span>
+                            <span>
+                              {new Date(
+                                location.createdAt
+                              ).toLocaleDateString()}
+                            </span>
                           </div>
                         </div>
 
