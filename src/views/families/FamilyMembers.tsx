@@ -387,14 +387,14 @@ const FamilyMembers = () => {
                             >
                               Edit
                             </Button>
-                            <Button
+                            {/* <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:bg-red-50"
                               onClick={() => handleDeleteMember(member)}
                             >
                               Delete
-                            </Button>
+                            </Button> */}
                           </div>
                         </td>
                       </tr>

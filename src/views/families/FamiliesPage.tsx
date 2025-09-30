@@ -252,14 +252,14 @@ const FamiliesPage = () => {
                             >
                               Edit
                             </Button>
-                            <Button
+                            {/* <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:bg-red-50"
                               onClick={() => handleDeleteFamily(family)}
                             >
                               Delete
-                            </Button>
+                            </Button> */}
                           </div>
                         </td>
                       </tr>

@@ -266,8 +266,113 @@ const Members = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Members Table */}
-              <div className="overflow-x-auto">
+              {/* Mobile Card View - Hidden on desktop */}
+              <div className="block md:hidden space-y-3">
+                {data?.members?.members?.map((member) => (
+                  <Card key={member.id} className="shadow-sm border">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {/* Header with name and role */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-2">
+                            <Badge
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                member.role?.name === "FL"
+                                  ? "bg-green-100 text-green-900"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {member.role?.name || "N/A"}
+                            </Badge>
+                            <div className="font-semibold text-lg">
+                              {member.full_name}
+                            </div>
+                          </div>
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs ${
+                              member.status?.name === "Active"
+                                ? "bg-green-100 text-green-800"
+                                : member.status?.name === "Inactive"
+                                ? "bg-gray-100 text-gray-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {member.status?.name || "N/A"}
+                          </span>
+                        </div>
+
+                        {/* Member details */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Contact:
+                            </span>
+                            <span>{member.contact_no || "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Family:
+                            </span>
+                            <span>{member.family?.name || "N/A"}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Profession:
+                            </span>
+                            <span>
+                              {member.profession?.name ||
+                                member.profession_name ||
+                                "N/A"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              Location:
+                            </span>
+                            <span>
+                              {member.location?.name ||
+                                member.location_name ||
+                                "N/A"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex space-x-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-blue-600 hover:bg-blue-50"
+                            onClick={() => handleUpdateMember(member.id)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-green-600 hover:bg-green-50"
+                            onClick={() => handlePromoteMember(member)}
+                            disabled={!member.contact_no}
+                          >
+                            Promote
+                          </Button>
+                          {/* <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteMember(member)}
+                          >
+                            Delete
+                          </Button> */}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Table View - Hidden on mobile */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
@@ -362,14 +467,14 @@ const Members = () => {
                             >
                               Promote
                             </Button>
-                            <Button
+                            {/* <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:bg-red-50"
                               onClick={() => handleDeleteMember(member)}
                             >
                               Delete
-                            </Button>
+                            </Button> */}
                           </div>
                         </td>
                       </tr>
