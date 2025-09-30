@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeleteLocation, useGetLocations } from "@/hooks/useGraphQL";
 import { useState, useCallback } from "react";
+import { Badge } from "@/components/ui/badge";
 
 const LocationsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -191,8 +192,55 @@ const LocationsPage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Locations Table */}
-              <div className="overflow-x-auto">
+              {/* Mobile Card View - Hidden on desktop */}
+              <div className="block md:hidden space-y-3">
+                {paginatedLocations.map((location) => (
+                  <Card key={location.id} className="shadow-sm border">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {/* Header with location name */}
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-lg">{location.name}</div>
+                          <Badge className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-900">
+                            {location.members?.length || 0} members
+                          </Badge>
+                        </div>
+
+                        {/* Location details */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Created:</span>
+                            <span>{new Date(location.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex space-x-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-blue-600 hover:bg-blue-50"
+                            onClick={() => handleUpdateLocation(location.id)}
+                          >
+                            Edit
+                          </Button>
+                          {/* <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteLocation(location)}
+                          >
+                            Delete
+                          </Button> */}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Table View - Hidden on mobile */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">

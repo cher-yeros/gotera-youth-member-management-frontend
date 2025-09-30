@@ -194,8 +194,63 @@ const FamiliesPage = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Families Table */}
-              <div className="overflow-x-auto">
+              {/* Mobile Card View - Hidden on desktop */}
+              <div className="block md:hidden space-y-3">
+                {paginatedFamilies.map((family) => (
+                  <Card key={family.id} className="shadow-sm border">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        {/* Header with family name */}
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold text-lg">{family.name}</div>
+                          <Badge className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-900">
+                            {family.members?.length || 0} members
+                          </Badge>
+                        </div>
+
+                        {/* Family details */}
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Created:</span>
+                            <span>{new Date(family.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+
+                        {/* Action buttons */}
+                        <div className="flex space-x-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-green-600 hover:bg-green-50"
+                            onClick={() => handleViewMembers(family.id)}
+                          >
+                            View Members
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-blue-600 hover:bg-blue-50"
+                            onClick={() => handleUpdateFamily(family.id)}
+                          >
+                            Edit
+                          </Button>
+                          {/* <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteFamily(family)}
+                          >
+                            Delete
+                          </Button> */}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Table View - Hidden on mobile */}
+              <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
