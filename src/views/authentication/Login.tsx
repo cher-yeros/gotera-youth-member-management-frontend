@@ -1,7 +1,4 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -9,15 +6,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import ThemeToggle from "@/components/ui/theme-toggle";
-import { Eye, EyeOff, Phone, Lock, ArrowRight } from "lucide-react";
 import { useLogin } from "@/hooks/useGraphQL";
-import { useAuth } from "@/redux/useAuth";
 import { useAppDispatch } from "@/redux/hooks";
 import { setCredentials } from "@/redux/slices/authSlice";
+import { useAuth } from "@/redux/useAuth";
+import { ArrowRight, Eye, EyeOff, Lock, Phone } from "lucide-react";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -319,17 +318,17 @@ const Login = () => {
             </form>
 
             {/* Divider */}
-            <div className="relative">
+            {/* <div className="relative">
               <Separator className="my-6" />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="bg-white dark:bg-gray-800 px-4 text-sm text-gray-500 dark:text-gray-400">
                   or
                 </span>
               </div>
-            </div>
+            </div> */}
 
             {/* Additional Options */}
-            <div className="space-y-3">
+            {/* <div className="space-y-3">
               <Button
                 variant="outline"
                 className="w-full border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
@@ -339,7 +338,7 @@ const Login = () => {
                   <span>Continue as Guest</span>
                 </div>
               </Button>
-            </div>
+            </div> */}
 
             {/* Footer */}
             <div className="text-center pt-4">
@@ -360,7 +359,7 @@ const Login = () => {
         {/* Footer */}
         <div className="text-center mt-8">
           <p className="text-xs text-gray-500 dark:text-gray-400">
-            © 2024 Gotera Youth. All rights reserved.
+            © 2025 Gotera Youth. All rights reserved.
           </p>
         </div>
       </div>
