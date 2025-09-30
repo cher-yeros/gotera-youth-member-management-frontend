@@ -95,9 +95,9 @@ const FamilyMembers = () => {
     setCurrentPage(1);
   }, [effectiveFamilyId]);
 
-  const handleDeleteMember = (member: { id: number; full_name: string }) => {
-    setMemberToDelete({ id: member.id, name: member.full_name });
-  };
+  // const handleDeleteMember = (member: { id: number; full_name: string }) => {
+  //   setMemberToDelete({ id: member.id, name: member.full_name });
+  // };
 
   const confirmDeleteMember = async () => {
     if (!memberToDelete) return;

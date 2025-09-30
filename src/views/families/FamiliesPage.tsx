@@ -73,9 +73,9 @@ const FamiliesPage = () => {
     }
   };
 
-  const handleDeleteFamily = (family: { id: number; name: string }) => {
-    setFamilyToDelete({ id: family.id, name: family.name });
-  };
+  // const handleDeleteFamily = (family: { id: number; name: string }) => {
+  //   setFamilyToDelete({ id: family.id, name: family.name });
+  // };
 
   const confirmDeleteFamily = async () => {
     if (!familyToDelete) return;

@@ -73,9 +73,9 @@ const LocationsPage = () => {
     }
   };
 
-  const handleDeleteLocation = (location: { id: number; name: string }) => {
-    setLocationToDelete({ id: location.id, name: location.name });
-  };
+  // const handleDeleteLocation = (location: { id: number; name: string }) => {
+  //   setLocationToDelete({ id: location.id, name: location.name });
+  // };
 
   const confirmDeleteLocation = async () => {
     if (!locationToDelete) return;

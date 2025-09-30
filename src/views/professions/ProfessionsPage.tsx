@@ -74,9 +74,9 @@ const ProfessionsPage = () => {
     }
   };
 
-  const handleDeleteProfession = (profession: { id: number; name: string }) => {
-    setProfessionToDelete({ id: profession.id, name: profession.name });
-  };
+  // const handleDeleteProfession = (profession: { id: number; name: string }) => {
+  //   setProfessionToDelete({ id: profession.id, name: profession.name });
+  // };
 
   const confirmDeleteProfession = async () => {
     if (!professionToDelete) return;
