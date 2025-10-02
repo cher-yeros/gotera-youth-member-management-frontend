@@ -10,6 +10,8 @@ import {
   UserCheck,
   Menu,
   X,
+  Network,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/redux/useAuth";
@@ -20,8 +22,10 @@ const adminNavigation = [
   { name: "Overview", href: "/overview", icon: Home },
   { name: "Members", href: "/members", icon: Users },
   { name: "Families", href: "/families", icon: UserCheck },
+  { name: "Family Member Mapping", href: "/family-mapping", icon: Network },
   { name: "Professions", href: "/professions", icon: Briefcase },
   { name: "Locations", href: "/locations", icon: MapPin },
+  { name: "Activity Logs", href: "/activity-logs", icon: Activity },
 ];
 
 const flNavigation = [

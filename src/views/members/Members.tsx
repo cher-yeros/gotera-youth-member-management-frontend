@@ -1,6 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
@@ -19,8 +25,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeleteMember, useGetMembers } from "@/hooks/useGraphQL";
 import { useState, useCallback } from "react";
-import type { MemberFilterInput } from "@/generated/graphql";
+import type { MemberFilterInput, GetMembersQuery } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { toast } from "react-toastify";
 
 const Members = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,18 +53,21 @@ const Members = () => {
     password: string;
     role: string;
   } | null>(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   // Fetch members with pagination and filters
   const { data, loading, error, refetch } = useGetMembers(searchFilters, {
     page: currentPage,
-    limit: pageSize,
+    limit: pageSize, // Backend now handles 10000 as "all" option
   });
 
   const { deleteMember } = useDeleteMember();
 
   const members = data?.members?.members || [];
-  const totalPages = data?.members?.totalPages || 0;
   const total = data?.members?.total || 0;
+  // Calculate totalPages on frontend to handle "All" option properly
+  const totalPages = pageSize === 10000 ? 1 : Math.ceil(total / pageSize);
 
   const handleSearch = useCallback((filters: MemberFilterInput) => {
     setSearchFilters(filters);
@@ -157,6 +168,104 @@ const Members = () => {
     setPromotedMemberData(null);
   };
 
+  // Export utility functions
+  const convertToCSV = (data: GetMembersQuery["members"]["members"]) => {
+    if (!data || data.length === 0) return "";
+
+    const headers = [
+      "ID",
+      "Full Name",
+      "Contact Number",
+      "Family",
+      "Role",
+      "Status",
+      "Profession",
+      "Location",
+      "Created At",
+      "Updated At",
+    ];
+
+    const rows = data.map((member) => [
+      member.id,
+      member.full_name || "",
+      member.contact_no || "",
+      member.family?.name || "",
+      member.role?.name || "",
+      member.status?.name || "",
+      member.profession?.name || member.profession_name || "",
+      member.location?.name || member.location_name || "",
+      member.createdAt ? new Date(member.createdAt).toLocaleDateString() : "",
+      member.updatedAt ? new Date(member.updatedAt).toLocaleDateString() : "",
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map((field) => `"${field}"`).join(","))
+      .join("\n");
+
+    return csvContent;
+  };
+
+  const downloadCSV = (csvContent: string, filename: string) => {
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const downloadExcel = (
+    data: GetMembersQuery["members"]["members"],
+    filename: string
+  ) => {
+    // For Excel export, we'll use a simple CSV format that Excel can open
+    // In a real application, you might want to use a library like xlsx
+    const csvContent = convertToCSV(data);
+    const excelFilename = filename.replace(".csv", ".xlsx");
+    downloadCSV(csvContent, excelFilename);
+  };
+
+  const handleExport = async (format: "csv" | "excel") => {
+    setIsExporting(true);
+    try {
+      // Use current members data for export
+      const allMembers = members;
+
+      if (allMembers.length === 0) {
+        toast.warning(
+          "No members found to export. Please ensure there are members in the current view."
+        );
+        return;
+      }
+
+      const timestamp = new Date().toISOString().split("T")[0];
+      const filename = `gotera-youth-members-${timestamp}`;
+
+      if (format === "csv") {
+        const csvContent = convertToCSV(allMembers);
+        downloadCSV(csvContent, `${filename}.csv`);
+        toast.success(`Exported ${allMembers.length} members to CSV`);
+      } else {
+        downloadExcel(allMembers, `${filename}.xlsx`);
+        toast.success(`Exported ${allMembers.length} members to Excel`);
+      }
+
+      setIsExportModalOpen(false);
+    } catch (error) {
+      console.error("Error exporting members:", error);
+      toast.error("Failed to export members. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportModalClose = () => {
+    setIsExportModalOpen(false);
+  };
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -205,6 +314,15 @@ const Members = () => {
         </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle variant="icon" />
+          <Button
+            variant="outline"
+            className="border-primary hover:bg-primary hover:text-primary-foreground"
+            onClick={() => setIsExportModalOpen(true)}
+            disabled={isExporting}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {isExporting ? "Exporting..." : "Export"}
+          </Button>
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMemberModalOpen(true)}
@@ -275,6 +393,20 @@ const Members = () => {
                         {/* Header with name and role */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
+                            <div
+                              className={`h-2 w-2 rounded-full ${
+                                member.role?.name === "FL"
+                                  ? "bg-green-600"
+                                  : member.status?.name === "Not Active"
+                                  ? "bg-red-500"
+                                  : "bg-blue-500"
+                              }`}
+                            ></div>
+                            <div className="font-semibold text-lg">
+                              {member.full_name}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
                             <Badge
                               className={`px-2 py-1 rounded-full text-xs ${
                                 member.role?.name === "FL"
@@ -284,21 +416,18 @@ const Members = () => {
                             >
                               {member.role?.name || "N/A"}
                             </Badge>
-                            <div className="font-semibold text-lg">
-                              {member.full_name}
-                            </div>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                member.status?.name === "Active"
+                                  ? "bg-green-100 text-green-800"
+                                  : member.status?.name === "Not Active"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {member.status?.name || "N/A"}
+                            </span>
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              member.status?.name === "Active"
-                                ? "bg-green-100 text-green-800"
-                                : member.status?.name === "Inactive"
-                                ? "bg-gray-100 text-gray-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {member.status?.name || "N/A"}
-                          </span>
                         </div>
 
                         {/* Member details */}
@@ -307,7 +436,18 @@ const Members = () => {
                             <span className="text-muted-foreground">
                               Contact:
                             </span>
-                            <span>{member.contact_no || "N/A"}</span>
+                            <span>
+                              {member.contact_no ? (
+                                <a
+                                  href={`tel:${member.contact_no}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {member.contact_no}
+                                </a>
+                              ) : (
+                                "N/A"
+                              )}
+                            </span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">
@@ -395,6 +535,15 @@ const Members = () => {
                         className="border-b hover:bg-muted/50"
                       >
                         <td className="p-3 flex items-center space-x-2">
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              member.role?.name === "FL"
+                                ? "bg-green-600"
+                                : member.status?.name === "Not Active"
+                                ? "bg-red-500"
+                                : "bg-blue-500"
+                            }`}
+                          ></div>
                           <Badge
                             className={`px-2 py-1 rounded-full text-xs ${
                               member.role?.name === "FL"
@@ -408,7 +557,16 @@ const Members = () => {
                         </td>
                         <td className="p-3">
                           <div className="text-sm text-muted-foreground">
-                            {member.contact_no || "N/A"}
+                            {member.contact_no ? (
+                              <a
+                                href={`tel:${member.contact_no}`}
+                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                {member.contact_no}
+                              </a>
+                            ) : (
+                              "N/A"
+                            )}
                           </div>
                         </td>
                         <td className="p-3">
@@ -426,8 +584,8 @@ const Members = () => {
                             className={`px-2 py-1 rounded-full text-xs ${
                               member.status?.name === "Active"
                                 ? "bg-green-100 text-green-800"
-                                : member.status?.name === "Inactive"
-                                ? "bg-gray-100 text-gray-800"
+                                : member.status?.name === "Not Active"
+                                ? "bg-red-100 text-red-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
@@ -489,16 +647,26 @@ const Members = () => {
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-muted-foreground">Show:</span>
                   <Select
-                    value={pageSize.toString()}
+                    value={pageSize === 10000 ? "all" : pageSize.toString()}
                     onValueChange={(value) => {
-                      setPageSize(Number(value));
+                      if (value === "all") {
+                        setPageSize(10000); // Large number to show all
+                      } else {
+                        setPageSize(Number(value));
+                      }
                       setCurrentPage(1); // Reset to first page when changing page size
                     }}
                   >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
+                    <SelectTrigger className="w-[80px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                      <SelectItem value="20">20</SelectItem>
+                      <SelectItem value="50">50</SelectItem>
+                      <SelectItem value="all">All</SelectItem>
+                    </SelectContent>
                   </Select>
                   <span className="text-sm text-muted-foreground">
                     per page
@@ -507,7 +675,15 @@ const Members = () => {
 
                 {/* Pagination info */}
                 <div className="text-sm text-muted-foreground">
-                  {Object.keys(searchFilters).length > 0 ? (
+                  {pageSize === 10000 ? (
+                    // Show all members
+                    Object.keys(searchFilters).length > 0 ? (
+                      <>Showing all {total} filtered members</>
+                    ) : (
+                      <>Showing all {total} members</>
+                    )
+                  ) : // Show paginated info
+                  Object.keys(searchFilters).length > 0 ? (
                     <>
                       Showing {(currentPage - 1) * pageSize + 1} to{" "}
                       {Math.min(currentPage * pageSize, total)} of {total}{" "}
@@ -534,7 +710,7 @@ const Members = () => {
                       Previous
                     </Button>
 
-                    <div className="flex space-x-1">
+                    <div className="flex space-x-2">
                       {(() => {
                         const maxVisiblePages = 5;
                         const halfVisible = Math.floor(maxVisiblePages / 2);
@@ -566,11 +742,11 @@ const Members = () => {
                             }
                             size="sm"
                             onClick={() => handlePageChange(page)}
-                            className={
+                            className={`min-w-[40px] ${
                               currentPage === page
                                 ? "bg-brand-gradient text-white"
                                 : ""
-                            }
+                            }`}
                           >
                             {page}
                           </Button>
@@ -665,6 +841,51 @@ const Members = () => {
         password={promotedMemberData?.password || ""}
         role={promotedMemberData?.role || ""}
       />
+
+      {/* Export Modal */}
+      <AlertDialog
+        open={isExportModalOpen}
+        onOpenChange={handleExportModalClose}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export Members</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose the format to export members data. This will export all
+              members
+              {Object.keys(searchFilters).length > 0
+                ? " matching your current search filters"
+                : ""}
+              .
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-3">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleExport("csv")}
+              disabled={isExporting}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Export as CSV
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => handleExport("excel")}
+              disabled={isExporting}
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Export as Excel
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleExportModalClose}>
+              Cancel
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

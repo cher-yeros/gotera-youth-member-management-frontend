@@ -16,6 +16,10 @@ const ProfessionsPage = lazy(
   () => import("../views/professions/ProfessionsPage")
 );
 const LocationsPage = lazy(() => import("../views/locations/LocationsPage"));
+const FamilyMemberMapping = lazy(
+  () => import("../views/family-mapping/FamilyMemberMapping")
+);
+const ActivityLogs = lazy(() => import("../views/activity-logs/ActivityLogs"));
 const Login = lazy(() => import("../views/authentication/Login"));
 const ComboBoxTest = lazy(() => import("../components/test/ComboBoxTest"));
 
@@ -90,6 +94,22 @@ const Router = [
         element: (
           <ProtectedRoute requiredRole="admin">
             <LocationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/family-mapping",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <FamilyMemberMapping />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/activity-logs",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <ActivityLogs />
           </ProtectedRoute>
         ),
       },

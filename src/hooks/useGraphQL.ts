@@ -113,7 +113,7 @@ export const useGetMembers = (
 };
 
 export const useLazyGetMembers = () => {
-  return useLazyQuery(GET_MEMBERS, {
+  return useLazyQuery<GetMembersQuery>(GET_MEMBERS, {
     errorPolicy: "all",
   });
 };

@@ -2,12 +2,12 @@ import { ApolloClient, HttpLink, InMemoryCache, from } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 import { store } from "@/redux/store";
 
-// const DEV_BASE_URL = "http://localhost:4000/graphql";
-const PROD_BASE_URL = "https://gyapi.finaloopai.com/graphql";
+const DEV_BASE_URL = "http://localhost:4000/graphql";
+// const PROD_BASE_URL = "https://gyapi.finaloopai.com/graphql";
 
 // HTTP Link
 const httpLink = new HttpLink({
-  uri: PROD_BASE_URL,
+  uri: DEV_BASE_URL,
   //  import.meta.env.PROD ? PROD_BASE_URL : DEV_BASE_URL,
 });
 

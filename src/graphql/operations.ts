@@ -50,6 +50,15 @@ export const FAMILY_FRAGMENT = gql`
       id
       full_name
       contact_no
+      role {
+        id
+        name
+        description
+      }
+      status {
+        id
+        name
+      }
     }
   }
 `;
@@ -177,6 +186,65 @@ export const LOCATION_SUMMARY_FRAGMENT = gql`
     familyCount
     createdAt
   }
+`;
+
+// ACTIVITY FRAGMENTS
+export const ACTIVITY_FRAGMENT = gql`
+  fragment ActivityFragment on Activity {
+    id
+    user_id
+    member_id
+    action
+    entity_type
+    entity_id
+    description
+    metadata
+    ip_address
+    user_agent
+    createdAt
+    updatedAt
+    user {
+      id
+      phone
+      role
+      member {
+        id
+        full_name
+      }
+    }
+    member {
+      id
+      full_name
+    }
+  }
+`;
+
+// ACTIVITY QUERIES
+export const GET_ACTIVITIES = gql`
+  query GetActivities(
+    $filter: ActivityFilterInput
+    $pagination: ActivityPaginationInput
+  ) {
+    activities(filter: $filter, pagination: $pagination) {
+      activities {
+        ...ActivityFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${ACTIVITY_FRAGMENT}
+`;
+
+export const GET_RECENT_ACTIVITIES = gql`
+  query GetRecentActivities($limit: Int) {
+    recentActivities(limit: $limit) {
+      ...ActivityFragment
+    }
+  }
+  ${ACTIVITY_FRAGMENT}
 `;
 
 // MEMBER QUERIES

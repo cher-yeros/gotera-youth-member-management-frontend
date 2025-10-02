@@ -1,4 +1,5 @@
 import RoleTestComponent from "@/components/test/RoleTestComponent";
+import RecentActivitiesWidget from "@/components/widgets/RecentActivitiesWidget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -396,63 +397,7 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Activity */}
-      <Card className="shadow-brand">
-        <CardHeader>
-          <CardTitle className="text-brand-gradient">Recent Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="h-2 w-2 bg-primary rounded-full"></div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">
-                  Dashboard loaded successfully
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Real-time data connected and ready
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground">Just now</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="h-2 w-2 bg-secondary rounded-full"></div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">
-                  {stats?.totalMembers || 0} members registered
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {stats?.activeMembers || 0} active members
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground">Live</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="h-2 w-2 bg-accent rounded-full"></div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">
-                  {stats?.totalFamilies || 0} families registered
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Across {stats?.totalLocations || 0} locations
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground">Live</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-              <div className="flex-1 space-y-1">
-                <p className="text-sm font-medium">
-                  System performance optimal
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  All services running smoothly
-                </p>
-              </div>
-              <span className="text-xs text-muted-foreground">Live</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <RecentActivitiesWidget limit={5} />
     </div>
   );
 };

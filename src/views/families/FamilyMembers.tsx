@@ -315,6 +315,20 @@ const FamilyMembers = () => {
                         {/* Header with name and role */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
+                            <div
+                              className={`h-2 w-2 rounded-full ${
+                                member.role?.name === "FL"
+                                  ? "bg-green-600"
+                                  : member.status?.name === "Not Active"
+                                  ? "bg-red-500"
+                                  : "bg-blue-500"
+                              }`}
+                            ></div>
+                            <div className="font-semibold text-lg">
+                              {member.full_name}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
                             <Badge
                               className={`px-2 py-1 rounded-full text-xs ${
                                 member.role?.name === "FL"
@@ -324,34 +338,58 @@ const FamilyMembers = () => {
                             >
                               {member.role?.name || "N/A"}
                             </Badge>
-                            <div className="font-semibold text-lg">{member.full_name}</div>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                member.status?.name === "Active"
+                                  ? "bg-green-100 text-green-800"
+                                  : member.status?.name === "Not Active"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {member.status?.name || "N/A"}
+                            </span>
                           </div>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              member.status?.name === "Active"
-                                ? "bg-green-100 text-green-800"
-                                : member.status?.name === "Inactive"
-                                ? "bg-gray-100 text-gray-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {member.status?.name || "N/A"}
-                          </span>
                         </div>
 
                         {/* Member details */}
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Contact:</span>
-                            <span>{member.contact_no || "N/A"}</span>
+                            <span className="text-muted-foreground">
+                              Contact:
+                            </span>
+                            <span>
+                              {member.contact_no ? (
+                                <a
+                                  href={`tel:${member.contact_no}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {member.contact_no}
+                                </a>
+                              ) : (
+                                "N/A"
+                              )}
+                            </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Profession:</span>
-                            <span>{member.profession?.name || member.profession_name || "N/A"}</span>
+                            <span className="text-muted-foreground">
+                              Profession:
+                            </span>
+                            <span>
+                              {member.profession?.name ||
+                                member.profession_name ||
+                                "N/A"}
+                            </span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-muted-foreground">Location:</span>
-                            <span>{member.location?.name || member.location_name || "N/A"}</span>
+                            <span className="text-muted-foreground">
+                              Location:
+                            </span>
+                            <span>
+                              {member.location?.name ||
+                                member.location_name ||
+                                "N/A"}
+                            </span>
                           </div>
                         </div>
 
@@ -403,6 +441,15 @@ const FamilyMembers = () => {
                         className="border-b hover:bg-muted/50"
                       >
                         <td className="p-3 flex items-center space-x-2">
+                          <div
+                            className={`h-2 w-2 rounded-full ${
+                              member.role?.name === "FL"
+                                ? "bg-green-600"
+                                : member.status?.name === "Not Active"
+                                ? "bg-red-500"
+                                : "bg-blue-500"
+                            }`}
+                          ></div>
                           <Badge
                             className={`px-2 py-1 rounded-full text-xs ${
                               member.role?.name === "FL"
@@ -416,7 +463,16 @@ const FamilyMembers = () => {
                         </td>
                         <td className="p-3">
                           <div className="text-sm text-muted-foreground">
-                            {member.contact_no || "N/A"}
+                            {member.contact_no ? (
+                              <a
+                                href={`tel:${member.contact_no}`}
+                                className="text-blue-600 hover:text-blue-800 hover:underline"
+                              >
+                                {member.contact_no}
+                              </a>
+                            ) : (
+                              "N/A"
+                            )}
                           </div>
                         </td>
                         <td className="p-3">
@@ -429,8 +485,8 @@ const FamilyMembers = () => {
                             className={`px-2 py-1 rounded-full text-xs ${
                               member.status?.name === "Active"
                                 ? "bg-green-100 text-green-800"
-                                : member.status?.name === "Inactive"
-                                ? "bg-gray-100 text-gray-800"
+                                : member.status?.name === "Not Active"
+                                ? "bg-red-100 text-red-800"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
