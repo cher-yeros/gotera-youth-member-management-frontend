@@ -470,6 +470,60 @@ export const PROMOTE_MEMBER = gql`
   }
 `;
 
+export const RESET_PASSWORD = gql`
+  mutation ResetPassword($input: ResetPasswordInput!) {
+    resetPassword(input: $input) {
+      success
+      message
+      password
+      user {
+        id
+        phone
+        role
+        createdAt
+        member {
+          id
+          contact_no
+          full_name
+          role {
+            id
+            name
+          }
+          status {
+            id
+            name
+          }
+          family {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const TRANSFER_MEMBER = gql`
+  mutation TransferMember($input: TransferMemberInput!) {
+    transferMember(input: $input) {
+      success
+      message
+      member {
+        ...MemberFragment
+      }
+      oldFamily {
+        id
+        name
+      }
+      newFamily {
+        id
+        name
+      }
+    }
+  }
+  ${MEMBER_FRAGMENT}
+`;
+
 // FAMILY MUTATIONS
 export const CREATE_FAMILY = gql`
   mutation CreateFamily($input: CreateFamilyInput!) {
@@ -620,5 +674,66 @@ export const LOGIN = gql`
 export const LOGOUT = gql`
   mutation Logout {
     logout
+  }
+`;
+
+// FAMILY LEADER SPECIFIC QUERIES
+export const GET_FAMILY_MEMBERS = gql`
+  query GetFamilyMembers($familyId: Int!) {
+    family(id: $familyId) {
+      id
+      name
+      members {
+        id
+        full_name
+        contact_no
+        role {
+          id
+          name
+          description
+        }
+        status {
+          id
+          name
+        }
+        profession {
+          id
+          name
+        }
+        location {
+          id
+          name
+        }
+        createdAt
+      }
+    }
+  }
+`;
+
+export const GET_FAMILY_STATS = gql`
+  query GetFamilyStats($familyId: Int!) {
+    family(id: $familyId) {
+      id
+      name
+      members {
+        id
+        status {
+          id
+          name
+        }
+        role {
+          id
+          name
+        }
+        profession {
+          id
+          name
+        }
+        location {
+          id
+          name
+        }
+      }
+    }
   }
 `;

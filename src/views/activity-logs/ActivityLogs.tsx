@@ -327,7 +327,11 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
                     <div className="flex items-center space-x-4 text-sm text-gray-600">
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-1" />
-                        <span>{activity.user?.phone || "Unknown User"}</span>
+                        <span>
+                          {activity.user?.member?.full_name ||
+                            activity.user?.phone ||
+                            "Unknown User"}
+                        </span>
                       </div>
 
                       {activity.member && (

@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { Navigate } from "react-router";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import RoleBasedDashboard from "@/components/shared/RoleBasedDashboard";
 
 // Layouts
 const FullLayout = lazy(() => import("../layouts/full/FullLayout"));
@@ -8,6 +9,9 @@ const BlankLayout = lazy(() => import("../layouts/blank/BlankLayout"));
 
 // Pages
 const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
+const FamilyLeaderDashboard = lazy(
+  () => import("../views/dashboard/FamilyLeaderDashboard")
+);
 const Members = lazy(() => import("../views/members/Members"));
 const OverviewPage = lazy(() => import("../views/overview/OverviewPage"));
 const FamiliesPage = lazy(() => import("../views/families/FamiliesPage"));
@@ -32,12 +36,27 @@ const Router = [
       </ProtectedRoute>
     ),
     children: [
-      { path: "/", element: <Navigate to="/dashboard" /> },
+      {
+        path: "/",
+        element: (
+          <ProtectedRoute>
+            <RoleBasedDashboard />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: "/dashboard",
         element: (
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="admin">
             <Dashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/family-dashboard",
+        element: (
+          <ProtectedRoute requiredRole="fl">
+            <FamilyLeaderDashboard />
           </ProtectedRoute>
         ),
       },

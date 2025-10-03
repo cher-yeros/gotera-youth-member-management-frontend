@@ -11,7 +11,9 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import PromoteMemberModal from "@/components/forms/PromoteMemberModal";
+import ResetPasswordModal from "@/components/forms/ResetPasswordModal";
 import PasswordDisplayModal from "@/components/forms/PasswordDisplayModal";
+import TransferMemberModal from "@/components/forms/TransferMemberModal";
 import MemberSearch from "@/components/shared/MemberSearch";
 import {
   AlertDialog,
@@ -47,12 +49,28 @@ const Members = () => {
     contact_no: string;
   } | null>(null);
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
+  const [memberToResetPassword, setMemberToResetPassword] = useState<{
+    id: number;
+    full_name: string;
+    contact_no: string;
+  } | null>(null);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] =
+    useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [promotedMemberData, setPromotedMemberData] = useState<{
     name: string;
     password: string;
     role: string;
   } | null>(null);
+  const [memberToTransfer, setMemberToTransfer] = useState<{
+    id: number;
+    full_name: string;
+    family?: {
+      id: number;
+      name: string;
+    } | null;
+  } | null>(null);
+  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
@@ -163,9 +181,69 @@ const Members = () => {
     setMemberToPromote(null);
   };
 
+  const handleResetPassword = (member: {
+    id: number;
+    full_name: string;
+    contact_no?: string | null | undefined;
+  }) => {
+    if (!member.contact_no) {
+      return; // This shouldn't happen since the button is disabled when contact_no is null/undefined
+    }
+    setMemberToResetPassword({
+      id: member.id,
+      full_name: member.full_name,
+      contact_no: member.contact_no,
+    });
+    setIsResetPasswordModalOpen(true);
+  };
+
+  const handleResetPasswordSuccess = (password: string) => {
+    if (memberToResetPassword) {
+      setPromotedMemberData({
+        name: memberToResetPassword.full_name,
+        password: password,
+        role: "Password Reset",
+      });
+      setIsPasswordModalOpen(true);
+      setMemberToResetPassword(null);
+    }
+  };
+
+  const handleResetPasswordCancel = () => {
+    setIsResetPasswordModalOpen(false);
+    setMemberToResetPassword(null);
+  };
+
   const handlePasswordModalClose = () => {
     setIsPasswordModalOpen(false);
     setPromotedMemberData(null);
+  };
+
+  const handleTransferMember = (member: {
+    id: number;
+    full_name: string;
+    family?: {
+      id: number;
+      name: string;
+    } | null;
+  }) => {
+    setMemberToTransfer({
+      id: member.id,
+      full_name: member.full_name,
+      family: member.family,
+    });
+    setIsTransferModalOpen(true);
+  };
+
+  const handleTransferSuccess = () => {
+    setIsTransferModalOpen(false);
+    setMemberToTransfer(null);
+    refetch(); // Refresh the members list
+  };
+
+  const handleTransferCancel = () => {
+    setIsTransferModalOpen(false);
+    setMemberToTransfer(null);
   };
 
   // Export utility functions
@@ -478,11 +556,11 @@ const Members = () => {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="flex space-x-2 pt-2">
+                        <div className="flex flex-wrap gap-2 pt-2">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 text-blue-600 hover:bg-blue-50"
+                            className="flex-1 text-blue-600 hover:bg-blue-50 min-w-[80px]"
                             onClick={() => handleUpdateMember(member.id)}
                           >
                             Edit
@@ -490,11 +568,28 @@ const Members = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="flex-1 text-green-600 hover:bg-green-50"
+                            className="flex-1 text-green-600 hover:bg-green-50 min-w-[80px]"
                             onClick={() => handlePromoteMember(member)}
                             disabled={!member.contact_no}
                           >
                             Promote
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-orange-600 hover:bg-orange-50 min-w-[80px]"
+                            onClick={() => handleResetPassword(member)}
+                            disabled={!member.contact_no}
+                          >
+                            Reset PW
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-purple-600 hover:bg-purple-50 min-w-[80px]"
+                            onClick={() => handleTransferMember(member)}
+                          >
+                            Transfer
                           </Button>
                           {/* <Button
                             variant="outline"
@@ -624,6 +719,23 @@ const Members = () => {
                               disabled={!member.contact_no}
                             >
                               Promote
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-orange-600 hover:bg-orange-50"
+                              onClick={() => handleResetPassword(member)}
+                              disabled={!member.contact_no}
+                            >
+                              Reset PW
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-purple-600 hover:bg-purple-50"
+                              onClick={() => handleTransferMember(member)}
+                            >
+                              Transfer
                             </Button>
                             {/* <Button
                               variant="outline"
@@ -833,6 +945,16 @@ const Members = () => {
         onSuccess={handlePromoteSuccess}
       />
 
+      {/* Reset Password Modal */}
+      <ResetPasswordModal
+        member={
+          memberToResetPassword || { id: 0, full_name: "", contact_no: "" }
+        }
+        isOpen={isResetPasswordModalOpen}
+        onClose={handleResetPasswordCancel}
+        onSuccess={handleResetPasswordSuccess}
+      />
+
       {/* Password Display Modal */}
       <PasswordDisplayModal
         isOpen={isPasswordModalOpen}
@@ -840,6 +962,14 @@ const Members = () => {
         memberName={promotedMemberData?.name || ""}
         password={promotedMemberData?.password || ""}
         role={promotedMemberData?.role || ""}
+      />
+
+      {/* Transfer Member Modal */}
+      <TransferMemberModal
+        member={memberToTransfer || { id: 0, full_name: "", family: null }}
+        isOpen={isTransferModalOpen}
+        onClose={handleTransferCancel}
+        onSuccess={handleTransferSuccess}
       />
 
       {/* Export Modal */}

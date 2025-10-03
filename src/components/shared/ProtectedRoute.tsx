@@ -7,10 +7,10 @@ interface ProtectedRouteProps {
   allowedRoles?: ("admin" | "fl")[];
 }
 
-const ProtectedRoute = ({ 
-  children, 
-  requiredRole, 
-  allowedRoles 
+const ProtectedRoute = ({
+  children,
+  requiredRole,
+  allowedRoles,
 }: ProtectedRouteProps) => {
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
@@ -22,11 +22,11 @@ const ProtectedRoute = ({
 
   // Check role-based access
   const userRole = user.role?.toLowerCase();
-  
+
   if (requiredRole && userRole !== requiredRole) {
     // If user doesn't have the required role, redirect based on their actual role
     if (userRole === "fl") {
-      return <Navigate to="/families/my-family" replace />;
+      return <Navigate to="/family-dashboard" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }
@@ -35,7 +35,7 @@ const ProtectedRoute = ({
   if (allowedRoles && !allowedRoles.includes(userRole as "admin" | "fl")) {
     // If user doesn't have any of the allowed roles, redirect based on their actual role
     if (userRole === "fl") {
-      return <Navigate to="/families/my-family" replace />;
+      return <Navigate to="/family-dashboard" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }

@@ -29,7 +29,7 @@ const adminNavigation = [
 ];
 
 const flNavigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Dashboard", href: "/family-dashboard", icon: LayoutDashboard },
   { name: "My Family", href: "/families/my-family", icon: UserCheck },
 ];
 

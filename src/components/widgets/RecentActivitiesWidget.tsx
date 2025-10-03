@@ -135,7 +135,11 @@ const RecentActivitiesWidget: React.FC<RecentActivitiesWidgetProps> = ({
                   <div className="flex items-center space-x-3 text-xs text-gray-500 mt-1">
                     <div className="flex items-center">
                       <User className="h-3 w-3 mr-1" />
-                      <span>{activity.user?.phone || "Unknown"}</span>
+                      <span>
+                        {activity.user?.member?.full_name ||
+                          activity.user?.phone ||
+                          "Unknown"}
+                      </span>
                     </div>
 
                     <div className="flex items-center">

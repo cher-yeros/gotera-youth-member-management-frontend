@@ -207,6 +207,8 @@ export type Mutation = {
   login: LoginResponse;
   logout: Scalars['Boolean']['output'];
   promoteMember: PromoteMemberResponse;
+  resetPassword: ResetPasswordResponse;
+  transferMember: TransferMemberResponse;
   updateFamily: Family;
   updateLocation: Location;
   updateMember: Member;
@@ -283,6 +285,16 @@ export type MutationLoginArgs = {
 
 export type MutationPromoteMemberArgs = {
   input: PromoteMemberInput;
+};
+
+
+export type MutationResetPasswordArgs = {
+  input: ResetPasswordInput;
+};
+
+
+export type MutationTransferMemberArgs = {
+  input: TransferMemberInput;
 };
 
 
@@ -479,6 +491,18 @@ export type RecentMember = {
   status?: Maybe<Status>;
 };
 
+export type ResetPasswordInput = {
+  member_id: Scalars['Int']['input'];
+};
+
+export type ResetPasswordResponse = {
+  __typename?: 'ResetPasswordResponse';
+  message: Scalars['String']['output'];
+  password?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<UserInfo>;
+};
+
 export type Role = {
   __typename?: 'Role';
   createdAt: Scalars['String']['output'];
@@ -496,6 +520,20 @@ export type Status = {
   members: Array<Member>;
   name: Scalars['String']['output'];
   updatedAt: Scalars['String']['output'];
+};
+
+export type TransferMemberInput = {
+  member_id: Scalars['Int']['input'];
+  new_family_id: Scalars['Int']['input'];
+};
+
+export type TransferMemberResponse = {
+  __typename?: 'TransferMemberResponse';
+  member: Member;
+  message: Scalars['String']['output'];
+  newFamily: Family;
+  oldFamily?: Maybe<Family>;
+  success: Scalars['Boolean']['output'];
 };
 
 export type UpdateFamilyInput = {
@@ -721,6 +759,20 @@ export type PromoteMemberMutationVariables = Exact<{
 
 export type PromoteMemberMutation = { __typename?: 'Mutation', promoteMember: { __typename?: 'PromoteMemberResponse', success: boolean, message: string, password?: string | null, user?: { __typename?: 'UserInfo', id: number, phone: string, role: string, createdAt: string, member?: { __typename?: 'MemberInfo', id: number, contact_no?: string | null, full_name: string, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, family?: { __typename?: 'Family', id: number, name: string } | null } | null } | null } };
 
+export type ResetPasswordMutationVariables = Exact<{
+  input: ResetPasswordInput;
+}>;
+
+
+export type ResetPasswordMutation = { __typename?: 'Mutation', resetPassword: { __typename?: 'ResetPasswordResponse', success: boolean, message: string, password?: string | null, user?: { __typename?: 'UserInfo', id: number, phone: string, role: string, createdAt: string, member?: { __typename?: 'MemberInfo', id: number, contact_no?: string | null, full_name: string, role?: { __typename?: 'Role', id: number, name: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, family?: { __typename?: 'Family', id: number, name: string } | null } | null } | null } };
+
+export type TransferMemberMutationVariables = Exact<{
+  input: TransferMemberInput;
+}>;
+
+
+export type TransferMemberMutation = { __typename?: 'Mutation', transferMember: { __typename?: 'TransferMemberResponse', success: boolean, message: string, member: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }, oldFamily?: { __typename?: 'Family', id: number, name: string } | null, newFamily: { __typename?: 'Family', id: number, name: string } } };
+
 export type CreateFamilyMutationVariables = Exact<{
   input: CreateFamilyInput;
 }>;
@@ -837,3 +889,17 @@ export type LogoutMutationVariables = Exact<{ [key: string]: never; }>;
 
 
 export type LogoutMutation = { __typename?: 'Mutation', logout: boolean };
+
+export type GetFamilyMembersQueryVariables = Exact<{
+  familyId: Scalars['Int']['input'];
+}>;
+
+
+export type GetFamilyMembersQuery = { __typename?: 'Query', family?: { __typename?: 'Family', id: number, name: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, createdAt: string, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> } | null };
+
+export type GetFamilyStatsQueryVariables = Exact<{
+  familyId: Scalars['Int']['input'];
+}>;
+
+
+export type GetFamilyStatsQuery = { __typename?: 'Query', family?: { __typename?: 'Family', id: number, name: string, members: Array<{ __typename?: 'Member', id: number, status?: { __typename?: 'Status', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> } | null };

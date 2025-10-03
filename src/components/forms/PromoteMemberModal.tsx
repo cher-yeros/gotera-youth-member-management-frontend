@@ -92,8 +92,8 @@ const PromoteMemberModal = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="FL">FL (Family Leader)</SelectItem>
-                <SelectItem value="FM">FM (Family Member)</SelectItem>
+                <SelectItem value="fl">FL (Family Leader)</SelectItem>
+                <SelectItem value="fm">FM (Family Member)</SelectItem>
               </SelectContent>
             </Select>
           </div>

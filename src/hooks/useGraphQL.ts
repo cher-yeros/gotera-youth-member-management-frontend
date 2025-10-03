@@ -21,6 +21,8 @@ import {
   DELETE_STATUS,
   GET_FAMILY,
   GET_FAMILIES,
+  GET_FAMILY_MEMBERS,
+  GET_FAMILY_STATS,
   GET_LOCATION,
   GET_LOCATIONS,
   GET_MEMBER,
@@ -37,6 +39,8 @@ import {
   LOGIN,
   LOGOUT,
   PROMOTE_MEMBER,
+  RESET_PASSWORD,
+  TRANSFER_MEMBER,
   UPDATE_FAMILY,
   UPDATE_LOCATION,
   UPDATE_MEMBER,
@@ -227,6 +231,63 @@ export const usePromoteMember = () => {
   };
 
   return { promoteMember: handlePromoteMember, loading };
+};
+
+export const useResetPassword = () => {
+  const [resetPassword, { loading }] = useMutation<any>(RESET_PASSWORD, {
+    onCompleted: (data) => {
+      const response = data?.resetPassword;
+      if (response?.success) {
+        toast.success(response.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to reset password: ${error.message}`);
+    },
+    refetchQueries: ["GetMembers"],
+  });
+
+  const handleResetPassword = async (input: { member_id: number }) => {
+    try {
+      const result = await resetPassword({ variables: { input } });
+      return result.data?.resetPassword;
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      throw error;
+    }
+  };
+
+  return { resetPassword: handleResetPassword, loading };
+};
+
+export const useTransferMember = () => {
+  const [transferMember, { loading }] = useMutation<any>(TRANSFER_MEMBER, {
+    onCompleted: (data) => {
+      const response = data?.transferMember;
+      if (response?.success) {
+        toast.success(response.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to transfer member: ${error.message}`);
+    },
+    refetchQueries: ["GetMembers"],
+  });
+
+  const handleTransferMember = async (input: {
+    member_id: number;
+    new_family_id: number;
+  }) => {
+    try {
+      const result = await transferMember({ variables: { input } });
+      return result.data?.transferMember;
+    } catch (error) {
+      console.error("Error transferring member:", error);
+      throw error;
+    }
+  };
+
+  return { transferMember: handleTransferMember, loading };
 };
 
 // FAMILY HOOKS
@@ -809,4 +870,21 @@ export const useLogout = () => {
   };
 
   return { logout: handleLogout, loading };
+};
+
+// FAMILY LEADER SPECIFIC HOOKS
+export const useGetFamilyMembers = (familyId: number) => {
+  return useQuery<any>(GET_FAMILY_MEMBERS, {
+    variables: { familyId },
+    skip: !familyId,
+    errorPolicy: "all",
+  });
+};
+
+export const useGetFamilyStats = (familyId: number) => {
+  return useQuery<any>(GET_FAMILY_STATS, {
+    variables: { familyId },
+    skip: !familyId,
+    errorPolicy: "all",
+  });
 };
