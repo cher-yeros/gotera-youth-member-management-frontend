@@ -8,6 +8,8 @@ const RoleBasedDashboard = () => {
   // Redirect based on user role
   if (userRole === "fl") {
     return <Navigate to="/family-dashboard" replace />;
+  } else if (userRole === "ml") {
+    return <Navigate to="/ministry-dashboard" replace />;
   } else if (userRole === "admin") {
     return <Navigate to="/dashboard" replace />;
   }

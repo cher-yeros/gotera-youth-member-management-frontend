@@ -24,7 +24,7 @@ export type Activity = {
   id: Scalars['Int']['output'];
   ip_address?: Maybe<Scalars['String']['output']>;
   member?: Maybe<ActivityMember>;
-  member_id: Scalars['Int']['output'];
+  member_id?: Maybe<Scalars['Int']['output']>;
   metadata?: Maybe<Scalars['String']['output']>;
   updatedAt: Scalars['String']['output'];
   user?: Maybe<ActivityUser>;
@@ -38,7 +38,6 @@ export type ActivityFilterInput = {
   dateTo?: InputMaybe<Scalars['String']['input']>;
   entity_id?: InputMaybe<Scalars['Int']['input']>;
   entity_type?: InputMaybe<Scalars['String']['input']>;
-  member_id?: InputMaybe<Scalars['Int']['input']>;
   user_id?: InputMaybe<Scalars['Int']['input']>;
 };
 
@@ -61,6 +60,33 @@ export type ActivityUser = {
   role: Scalars['String']['output'];
 };
 
+export type AddMemberToMinistryInput = {
+  member_id: Scalars['Int']['input'];
+  ministry_id: Scalars['Int']['input'];
+};
+
+export type AddMinistryLeaderInput = {
+  leader_id: Scalars['Int']['input'];
+  ministry_id: Scalars['Int']['input'];
+};
+
+export type AttendanceFilterInput = {
+  dateFrom?: InputMaybe<Scalars['String']['input']>;
+  dateTo?: InputMaybe<Scalars['String']['input']>;
+  is_present?: InputMaybe<Scalars['Boolean']['input']>;
+  meetup_id?: InputMaybe<Scalars['Int']['input']>;
+  member_id?: InputMaybe<Scalars['Int']['input']>;
+  recorded_by?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type AttendanceStats = {
+  __typename?: 'AttendanceStats';
+  absentMembers: Scalars['Int']['output'];
+  attendanceRate: Scalars['Float']['output'];
+  presentMembers: Scalars['Int']['output'];
+  totalMembers: Scalars['Int']['output'];
+};
+
 export type AuthUser = {
   __typename?: 'AuthUser';
   createdAt: Scalars['String']['output'];
@@ -69,8 +95,28 @@ export type AuthUser = {
   role: Scalars['String']['output'];
 };
 
+export type BulkAttendanceInput = {
+  attendances: Array<CreateAttendanceInput>;
+  meetup_id: Scalars['Int']['input'];
+};
+
+export type CreateAttendanceInput = {
+  is_present: Scalars['Boolean']['input'];
+  meetup_id: Scalars['Int']['input'];
+  member_id: Scalars['Int']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type CreateFamilyInput = {
   name: Scalars['String']['input'];
+};
+
+export type CreateFamilyMeetupInput = {
+  description: Scalars['String']['input'];
+  family_id: Scalars['Int']['input'];
+  location: Scalars['String']['input'];
+  meetup_date: Scalars['String']['input'];
+  title: Scalars['String']['input'];
 };
 
 export type CreateLocationInput = {
@@ -83,10 +129,17 @@ export type CreateMemberInput = {
   full_name: Scalars['String']['input'];
   location_id?: InputMaybe<Scalars['Int']['input']>;
   location_name?: InputMaybe<Scalars['String']['input']>;
+  ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   profession_name?: InputMaybe<Scalars['String']['input']>;
   role_id?: InputMaybe<Scalars['Int']['input']>;
   status_id?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type CreateMinistryInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  name: Scalars['String']['input'];
 };
 
 export type CreateProfessionInput = {
@@ -106,8 +159,41 @@ export type Family = {
   __typename?: 'Family';
   createdAt: Scalars['String']['output'];
   id: Scalars['Int']['output'];
+  meetups: Array<FamilyMeetup>;
   members: Array<Member>;
   name: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type FamilyMeetup = {
+  __typename?: 'FamilyMeetup';
+  attendances?: Maybe<Array<FamilyMemberAttendance>>;
+  createdAt: Scalars['String']['output'];
+  created_by: Scalars['Int']['output'];
+  creator: Member;
+  description: Scalars['String']['output'];
+  family: Family;
+  family_id: Scalars['Int']['output'];
+  id: Scalars['Int']['output'];
+  is_active: Scalars['Boolean']['output'];
+  location: Scalars['String']['output'];
+  meetup_date: Scalars['String']['output'];
+  title: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
+export type FamilyMemberAttendance = {
+  __typename?: 'FamilyMemberAttendance';
+  createdAt: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  is_present: Scalars['Boolean']['output'];
+  meetup: FamilyMeetup;
+  meetup_id: Scalars['Int']['output'];
+  member: Member;
+  member_id: Scalars['Int']['output'];
+  notes?: Maybe<Scalars['String']['output']>;
+  recorded_by: Scalars['Int']['output'];
+  recorder: Member;
   updatedAt: Scalars['String']['output'];
 };
 
@@ -151,6 +237,15 @@ export type LoginResponse = {
   user?: Maybe<UserInfo>;
 };
 
+export type MeetupFilterInput = {
+  created_by?: InputMaybe<Scalars['Int']['input']>;
+  dateFrom?: InputMaybe<Scalars['String']['input']>;
+  dateTo?: InputMaybe<Scalars['String']['input']>;
+  family_id?: InputMaybe<Scalars['Int']['input']>;
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  search?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type Member = {
   __typename?: 'Member';
   contact_no?: Maybe<Scalars['String']['output']>;
@@ -159,9 +254,11 @@ export type Member = {
   family_id?: Maybe<Scalars['Int']['output']>;
   full_name: Scalars['String']['output'];
   id: Scalars['Int']['output'];
+  ledMinistries: Array<Ministry>;
   location?: Maybe<Location>;
   location_id?: Maybe<Scalars['Int']['output']>;
   location_name?: Maybe<Scalars['String']['output']>;
+  ministries: Array<Ministry>;
   profession?: Maybe<Profession>;
   profession_id?: Maybe<Scalars['Int']['output']>;
   profession_name?: Maybe<Scalars['String']['output']>;
@@ -175,6 +272,8 @@ export type Member = {
 export type MemberFilterInput = {
   family_id?: InputMaybe<Scalars['Int']['input']>;
   location_id?: InputMaybe<Scalars['Int']['input']>;
+  ministry_id?: InputMaybe<Scalars['Int']['input']>;
+  ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   status_id?: InputMaybe<Scalars['Int']['input']>;
@@ -190,36 +289,88 @@ export type MemberInfo = {
   status?: Maybe<Status>;
 };
 
+export type Ministry = {
+  __typename?: 'Ministry';
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  id: Scalars['Int']['output'];
+  is_active: Scalars['Boolean']['output'];
+  leaders: Array<Member>;
+  members: Array<Member>;
+  name: Scalars['String']['output'];
+  updatedAt: Scalars['String']['output'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
+  addMemberToMinistry: Scalars['Boolean']['output'];
+  addMinistryLeader: Scalars['Boolean']['output'];
+  bulkCreateAttendance: Array<FamilyMemberAttendance>;
+  createAttendance: FamilyMemberAttendance;
   createFamily: Family;
+  createFamilyMeetup: FamilyMeetup;
   createLocation: Location;
   createMember: Member;
+  createMinistry: Ministry;
   createProfession: Profession;
   createRole: Role;
   createStatus: Status;
+  deleteAttendance: Scalars['Boolean']['output'];
   deleteFamily: Scalars['Boolean']['output'];
+  deleteFamilyMeetup: Scalars['Boolean']['output'];
   deleteLocation: Scalars['Boolean']['output'];
   deleteMember: Scalars['Boolean']['output'];
+  deleteMinistry: Scalars['Boolean']['output'];
   deleteProfession: Scalars['Boolean']['output'];
   deleteRole: Scalars['Boolean']['output'];
   deleteStatus: Scalars['Boolean']['output'];
   login: LoginResponse;
   logout: Scalars['Boolean']['output'];
   promoteMember: PromoteMemberResponse;
+  promoteMinistryLeader: PromoteMinistryLeaderResponse;
+  removeMemberFromMinistry: Scalars['Boolean']['output'];
+  removeMinistryLeader: Scalars['Boolean']['output'];
   resetPassword: ResetPasswordResponse;
   transferMember: TransferMemberResponse;
+  updateAttendance: FamilyMemberAttendance;
   updateFamily: Family;
+  updateFamilyMeetup: FamilyMeetup;
   updateLocation: Location;
   updateMember: Member;
+  updateMinistry: Ministry;
   updateProfession: Profession;
   updateRole: Role;
   updateStatus: Status;
 };
 
 
+export type MutationAddMemberToMinistryArgs = {
+  input: AddMemberToMinistryInput;
+};
+
+
+export type MutationAddMinistryLeaderArgs = {
+  input: AddMinistryLeaderInput;
+};
+
+
+export type MutationBulkCreateAttendanceArgs = {
+  input: BulkAttendanceInput;
+};
+
+
+export type MutationCreateAttendanceArgs = {
+  input: CreateAttendanceInput;
+};
+
+
 export type MutationCreateFamilyArgs = {
   input: CreateFamilyInput;
+};
+
+
+export type MutationCreateFamilyMeetupArgs = {
+  input: CreateFamilyMeetupInput;
 };
 
 
@@ -230,6 +381,11 @@ export type MutationCreateLocationArgs = {
 
 export type MutationCreateMemberArgs = {
   input: CreateMemberInput;
+};
+
+
+export type MutationCreateMinistryArgs = {
+  input: CreateMinistryInput;
 };
 
 
@@ -248,7 +404,17 @@ export type MutationCreateStatusArgs = {
 };
 
 
+export type MutationDeleteAttendanceArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
 export type MutationDeleteFamilyArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationDeleteFamilyMeetupArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -259,6 +425,11 @@ export type MutationDeleteLocationArgs = {
 
 
 export type MutationDeleteMemberArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type MutationDeleteMinistryArgs = {
   id: Scalars['Int']['input'];
 };
 
@@ -288,6 +459,21 @@ export type MutationPromoteMemberArgs = {
 };
 
 
+export type MutationPromoteMinistryLeaderArgs = {
+  input: PromoteMinistryLeaderInput;
+};
+
+
+export type MutationRemoveMemberFromMinistryArgs = {
+  input: RemoveMemberFromMinistryInput;
+};
+
+
+export type MutationRemoveMinistryLeaderArgs = {
+  input: RemoveMinistryLeaderInput;
+};
+
+
 export type MutationResetPasswordArgs = {
   input: ResetPasswordInput;
 };
@@ -298,8 +484,18 @@ export type MutationTransferMemberArgs = {
 };
 
 
+export type MutationUpdateAttendanceArgs = {
+  input: UpdateAttendanceInput;
+};
+
+
 export type MutationUpdateFamilyArgs = {
   input: UpdateFamilyInput;
+};
+
+
+export type MutationUpdateFamilyMeetupArgs = {
+  input: UpdateFamilyMeetupInput;
 };
 
 
@@ -310,6 +506,11 @@ export type MutationUpdateLocationArgs = {
 
 export type MutationUpdateMemberArgs = {
   input: UpdateMemberInput;
+};
+
+
+export type MutationUpdateMinistryArgs = {
+  input: UpdateMinistryInput;
 };
 
 
@@ -341,6 +542,24 @@ export type PaginatedActivities = {
   __typename?: 'PaginatedActivities';
   activities: Array<Activity>;
   limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type PaginatedAttendances = {
+  __typename?: 'PaginatedAttendances';
+  attendances: Array<FamilyMemberAttendance>;
+  limit: Scalars['Int']['output'];
+  page: Scalars['Int']['output'];
+  total: Scalars['Int']['output'];
+  totalPages: Scalars['Int']['output'];
+};
+
+export type PaginatedMeetups = {
+  __typename?: 'PaginatedMeetups';
+  limit: Scalars['Int']['output'];
+  meetups: Array<FamilyMeetup>;
   page: Scalars['Int']['output'];
   total: Scalars['Int']['output'];
   totalPages: Scalars['Int']['output'];
@@ -390,17 +609,39 @@ export type PromoteMemberResponse = {
   user?: Maybe<UserInfo>;
 };
 
+export type PromoteMinistryLeaderInput = {
+  member_id: Scalars['Int']['input'];
+  ministry_id: Scalars['Int']['input'];
+};
+
+export type PromoteMinistryLeaderResponse = {
+  __typename?: 'PromoteMinistryLeaderResponse';
+  message: Scalars['String']['output'];
+  password?: Maybe<Scalars['String']['output']>;
+  success: Scalars['Boolean']['output'];
+  user?: Maybe<UserInfo>;
+};
+
 export type Query = {
   __typename?: 'Query';
   activities: PaginatedActivities;
   families: Array<Family>;
   family?: Maybe<Family>;
+  familyMeetup?: Maybe<FamilyMeetup>;
+  familyMeetups: PaginatedMeetups;
+  familyMemberAttendance?: Maybe<FamilyMemberAttendance>;
+  familyMemberAttendances: PaginatedAttendances;
   familySummaries: Array<FamilySummary>;
   location?: Maybe<Location>;
   locationSummaries: Array<LocationSummary>;
   locations: Array<Location>;
+  meetupAttendanceStats: AttendanceStats;
   member?: Maybe<Member>;
   members: PaginatedMembers;
+  ministries: Array<Ministry>;
+  ministry?: Maybe<Ministry>;
+  ministryLeaders: Array<Member>;
+  ministryMembers: Array<Member>;
   overviewStats: OverviewStats;
   profession?: Maybe<Profession>;
   professionSummaries: Array<ProfessionSummary>;
@@ -425,6 +666,28 @@ export type QueryFamilyArgs = {
 };
 
 
+export type QueryFamilyMeetupArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryFamilyMeetupsArgs = {
+  filter?: InputMaybe<MeetupFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QueryFamilyMemberAttendanceArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryFamilyMemberAttendancesArgs = {
+  filter?: InputMaybe<AttendanceFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+};
+
+
 export type QueryFamilySummariesArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
 };
@@ -440,6 +703,11 @@ export type QueryLocationSummariesArgs = {
 };
 
 
+export type QueryMeetupAttendanceStatsArgs = {
+  meetup_id: Scalars['Int']['input'];
+};
+
+
 export type QueryMemberArgs = {
   id: Scalars['Int']['input'];
 };
@@ -448,6 +716,21 @@ export type QueryMemberArgs = {
 export type QueryMembersArgs = {
   filter?: InputMaybe<MemberFilterInput>;
   pagination?: InputMaybe<PaginationInput>;
+};
+
+
+export type QueryMinistryArgs = {
+  id: Scalars['Int']['input'];
+};
+
+
+export type QueryMinistryLeadersArgs = {
+  ministryId: Scalars['Int']['input'];
+};
+
+
+export type QueryMinistryMembersArgs = {
+  ministryId: Scalars['Int']['input'];
 };
 
 
@@ -489,6 +772,16 @@ export type RecentMember = {
   location?: Maybe<Location>;
   profession?: Maybe<Profession>;
   status?: Maybe<Status>;
+};
+
+export type RemoveMemberFromMinistryInput = {
+  member_id: Scalars['Int']['input'];
+  ministry_id: Scalars['Int']['input'];
+};
+
+export type RemoveMinistryLeaderInput = {
+  leader_id: Scalars['Int']['input'];
+  ministry_id: Scalars['Int']['input'];
 };
 
 export type ResetPasswordInput = {
@@ -536,9 +829,24 @@ export type TransferMemberResponse = {
   success: Scalars['Boolean']['output'];
 };
 
+export type UpdateAttendanceInput = {
+  id: Scalars['Int']['input'];
+  is_present: Scalars['Boolean']['input'];
+  notes?: InputMaybe<Scalars['String']['input']>;
+};
+
 export type UpdateFamilyInput = {
   id: Scalars['Int']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateFamilyMeetupInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['Int']['input'];
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  location?: InputMaybe<Scalars['String']['input']>;
+  meetup_date?: InputMaybe<Scalars['String']['input']>;
+  title?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateLocationInput = {
@@ -553,10 +861,18 @@ export type UpdateMemberInput = {
   id: Scalars['Int']['input'];
   location_id?: InputMaybe<Scalars['Int']['input']>;
   location_name?: InputMaybe<Scalars['String']['input']>;
+  ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   profession_name?: InputMaybe<Scalars['String']['input']>;
   role_id?: InputMaybe<Scalars['Int']['input']>;
   status_id?: InputMaybe<Scalars['Int']['input']>;
+};
+
+export type UpdateMinistryInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  id: Scalars['Int']['input'];
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  name?: InputMaybe<Scalars['String']['input']>;
 };
 
 export type UpdateProfessionInput = {
@@ -584,6 +900,18 @@ export type UserInfo = {
   role: Scalars['String']['output'];
 };
 
+export type MinistryFragmentFragment = { __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }>, leaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> };
+
+export type MemberBasicFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null };
+
+export type MemberWithMinistryFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean }> };
+
+export type FamilyMeetupFragmentFragment = { __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null };
+
+export type FamilyMemberAttendanceFragmentFragment = { __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } };
+
+export type AttendanceStatsFragmentFragment = { __typename?: 'AttendanceStats', totalMembers: number, presentMembers: number, absentMembers: number, attendanceRate: number };
+
 export type MemberFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null };
 
 export type FamilyFragmentFragment = { __typename?: 'Family', id: number, name: string, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> };
@@ -606,7 +934,7 @@ export type ProfessionSummaryFragmentFragment = { __typename?: 'ProfessionSummar
 
 export type LocationSummaryFragmentFragment = { __typename?: 'LocationSummary', id: number, name: string, memberCount: number, familyCount: number, createdAt: string };
 
-export type ActivityFragmentFragment = { __typename?: 'Activity', id: number, user_id: number, member_id: number, action: string, entity_type: string, entity_id?: number | null, description: string, metadata?: string | null, ip_address?: string | null, user_agent?: string | null, createdAt: string, updatedAt: string, user?: { __typename?: 'ActivityUser', id: number, phone: string, role: string, member?: { __typename?: 'Member', id: number, full_name: string } | null } | null, member?: { __typename?: 'ActivityMember', id: number, full_name: string } | null };
+export type ActivityFragmentFragment = { __typename?: 'Activity', id: number, user_id: number, member_id?: number | null, action: string, entity_type: string, entity_id?: number | null, description: string, metadata?: string | null, ip_address?: string | null, user_agent?: string | null, createdAt: string, updatedAt: string, user?: { __typename?: 'ActivityUser', id: number, phone: string, role: string, member?: { __typename?: 'Member', id: number, full_name: string } | null } | null, member?: { __typename?: 'ActivityMember', id: number, full_name: string } | null };
 
 export type GetActivitiesQueryVariables = Exact<{
   filter?: InputMaybe<ActivityFilterInput>;
@@ -614,14 +942,14 @@ export type GetActivitiesQueryVariables = Exact<{
 }>;
 
 
-export type GetActivitiesQuery = { __typename?: 'Query', activities: { __typename?: 'PaginatedActivities', total: number, page: number, limit: number, totalPages: number, activities: Array<{ __typename?: 'Activity', id: number, user_id: number, member_id: number, action: string, entity_type: string, entity_id?: number | null, description: string, metadata?: string | null, ip_address?: string | null, user_agent?: string | null, createdAt: string, updatedAt: string, user?: { __typename?: 'ActivityUser', id: number, phone: string, role: string, member?: { __typename?: 'Member', id: number, full_name: string } | null } | null, member?: { __typename?: 'ActivityMember', id: number, full_name: string } | null }> } };
+export type GetActivitiesQuery = { __typename?: 'Query', activities: { __typename?: 'PaginatedActivities', total: number, page: number, limit: number, totalPages: number, activities: Array<{ __typename?: 'Activity', id: number, user_id: number, member_id?: number | null, action: string, entity_type: string, entity_id?: number | null, description: string, metadata?: string | null, ip_address?: string | null, user_agent?: string | null, createdAt: string, updatedAt: string, user?: { __typename?: 'ActivityUser', id: number, phone: string, role: string, member?: { __typename?: 'Member', id: number, full_name: string } | null } | null, member?: { __typename?: 'ActivityMember', id: number, full_name: string } | null }> } };
 
 export type GetRecentActivitiesQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;
 }>;
 
 
-export type GetRecentActivitiesQuery = { __typename?: 'Query', recentActivities: Array<{ __typename?: 'Activity', id: number, user_id: number, member_id: number, action: string, entity_type: string, entity_id?: number | null, description: string, metadata?: string | null, ip_address?: string | null, user_agent?: string | null, createdAt: string, updatedAt: string, user?: { __typename?: 'ActivityUser', id: number, phone: string, role: string, member?: { __typename?: 'Member', id: number, full_name: string } | null } | null, member?: { __typename?: 'ActivityMember', id: number, full_name: string } | null }> };
+export type GetRecentActivitiesQuery = { __typename?: 'Query', recentActivities: Array<{ __typename?: 'Activity', id: number, user_id: number, member_id?: number | null, action: string, entity_type: string, entity_id?: number | null, description: string, metadata?: string | null, ip_address?: string | null, user_agent?: string | null, createdAt: string, updatedAt: string, user?: { __typename?: 'ActivityUser', id: number, phone: string, role: string, member?: { __typename?: 'Member', id: number, full_name: string } | null } | null, member?: { __typename?: 'ActivityMember', id: number, full_name: string } | null }> };
 
 export type GetMemberQueryVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -903,3 +1231,143 @@ export type GetFamilyStatsQueryVariables = Exact<{
 
 
 export type GetFamilyStatsQuery = { __typename?: 'Query', family?: { __typename?: 'Family', id: number, name: string, members: Array<{ __typename?: 'Member', id: number, status?: { __typename?: 'Status', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> } | null };
+
+export type GetFamilyMeetupQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetFamilyMeetupQuery = { __typename?: 'Query', familyMeetup?: { __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } | null };
+
+export type GetFamilyMeetupsQueryVariables = Exact<{
+  filter?: InputMaybe<MeetupFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type GetFamilyMeetupsQuery = { __typename?: 'Query', familyMeetups: { __typename?: 'PaginatedMeetups', total: number, page: number, limit: number, totalPages: number, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null }> } };
+
+export type GetFamilyMemberAttendanceQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetFamilyMemberAttendanceQuery = { __typename?: 'Query', familyMemberAttendance?: { __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } } | null };
+
+export type GetFamilyMemberAttendancesQueryVariables = Exact<{
+  filter?: InputMaybe<AttendanceFilterInput>;
+  pagination?: InputMaybe<PaginationInput>;
+}>;
+
+
+export type GetFamilyMemberAttendancesQuery = { __typename?: 'Query', familyMemberAttendances: { __typename?: 'PaginatedAttendances', total: number, page: number, limit: number, totalPages: number, attendances: Array<{ __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> } };
+
+export type GetMeetupAttendanceStatsQueryVariables = Exact<{
+  meetupId: Scalars['Int']['input'];
+}>;
+
+
+export type GetMeetupAttendanceStatsQuery = { __typename?: 'Query', meetupAttendanceStats: { __typename?: 'AttendanceStats', totalMembers: number, presentMembers: number, absentMembers: number, attendanceRate: number } };
+
+export type CreateFamilyMeetupMutationVariables = Exact<{
+  input: CreateFamilyMeetupInput;
+}>;
+
+
+export type CreateFamilyMeetupMutation = { __typename?: 'Mutation', createFamilyMeetup: { __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
+
+export type UpdateFamilyMeetupMutationVariables = Exact<{
+  input: UpdateFamilyMeetupInput;
+}>;
+
+
+export type UpdateFamilyMeetupMutation = { __typename?: 'Mutation', updateFamilyMeetup: { __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
+
+export type DeleteFamilyMeetupMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DeleteFamilyMeetupMutation = { __typename?: 'Mutation', deleteFamilyMeetup: boolean };
+
+export type CreateAttendanceMutationVariables = Exact<{
+  input: CreateAttendanceInput;
+}>;
+
+
+export type CreateAttendanceMutation = { __typename?: 'Mutation', createAttendance: { __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } } };
+
+export type UpdateAttendanceMutationVariables = Exact<{
+  input: UpdateAttendanceInput;
+}>;
+
+
+export type UpdateAttendanceMutation = { __typename?: 'Mutation', updateAttendance: { __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } } };
+
+export type DeleteAttendanceMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DeleteAttendanceMutation = { __typename?: 'Mutation', deleteAttendance: boolean };
+
+export type BulkCreateAttendanceMutationVariables = Exact<{
+  input: BulkAttendanceInput;
+}>;
+
+
+export type BulkCreateAttendanceMutation = { __typename?: 'Mutation', bulkCreateAttendance: Array<{ __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> };
+
+export type GetMinistryQueryVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type GetMinistryQuery = { __typename?: 'Query', ministry?: { __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }>, leaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> } | null };
+
+export type GetMinistriesQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMinistriesQuery = { __typename?: 'Query', ministries: Array<{ __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }>, leaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> }> };
+
+export type GetMinistryMembersQueryVariables = Exact<{
+  ministryId: Scalars['Int']['input'];
+}>;
+
+
+export type GetMinistryMembersQuery = { __typename?: 'Query', ministryMembers: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> };
+
+export type GetMinistryLeadersQueryVariables = Exact<{
+  ministryId: Scalars['Int']['input'];
+}>;
+
+
+export type GetMinistryLeadersQuery = { __typename?: 'Query', ministryLeaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> };
+
+export type CreateMinistryMutationVariables = Exact<{
+  input: CreateMinistryInput;
+}>;
+
+
+export type CreateMinistryMutation = { __typename?: 'Mutation', createMinistry: { __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }>, leaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> } };
+
+export type UpdateMinistryMutationVariables = Exact<{
+  input: UpdateMinistryInput;
+}>;
+
+
+export type UpdateMinistryMutation = { __typename?: 'Mutation', updateMinistry: { __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }>, leaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> } };
+
+export type DeleteMinistryMutationVariables = Exact<{
+  id: Scalars['Int']['input'];
+}>;
+
+
+export type DeleteMinistryMutation = { __typename?: 'Mutation', deleteMinistry: boolean };
+
+export type PromoteMinistryLeaderMutationVariables = Exact<{
+  input: PromoteMinistryLeaderInput;
+}>;
+
+
+export type PromoteMinistryLeaderMutation = { __typename?: 'Mutation', promoteMinistryLeader: { __typename?: 'PromoteMinistryLeaderResponse', success: boolean, message: string, password?: string | null, user?: { __typename?: 'UserInfo', id: number, phone: string, role: string, createdAt: string, member?: { __typename?: 'MemberInfo', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, family?: { __typename?: 'Family', id: number, name: string } | null } | null } | null } };

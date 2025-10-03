@@ -3,33 +3,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import ThemeToggle from "@/components/ui/theme-toggle";
-import { useGetFamilyMembers, useGetFamilyStats } from "@/hooks/useGraphQL";
+import { useGetMinistry, useGetMinistryMembers } from "@/hooks/useGraphQL";
 import { useAuth } from "@/redux/useAuth";
 import type { Member } from "@/types/graphql";
-import { Briefcase, Home, MapPin, UserCheck, Users } from "lucide-react";
+import { Briefcase, Crown, MapPin, UserCheck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 
-const FamilyLeaderDashboard = () => {
+const MinistryLeaderDashboard = () => {
   const { user } = useAuth();
-  const familyId = user?.member?.family?.id;
+  const ministryId = user?.member?.ministries?.[0]?.id;
 
-  // Fetch family-specific data
-  const { data: familyData, loading: familyLoading } = useGetFamilyMembers(
-    familyId || 0
+  // Fetch ministry-specific data
+  const { data: ministryData, loading: ministryLoading } = useGetMinistry(
+    ministryId || 0
   );
-  const { loading: statsLoading } = useGetFamilyStats(familyId || 0);
+  const { data: membersData, loading: membersLoading } = useGetMinistryMembers(
+    ministryId || 0
+  );
 
-  const family = familyData?.family;
-  const members = family?.members || [];
-  const isLoading = familyLoading || statsLoading;
+  const ministry = ministryData?.ministry;
+  const members = membersData?.ministryMembers || [];
+  const isLoading = ministryLoading || membersLoading;
 
-  // Calculate family statistics
+  // Calculate ministry statistics
   const totalMembers = members.length;
   const activeMembers = members.filter(
     (member: Member) => member.status?.name === "Active"
   ).length;
   const inactiveMembers = members.filter(
     (member: Member) => member.status?.name === "Inactive"
+  ).length;
+  const ministryLeaders = members.filter(
+    (member: Member) => member.role?.name === "TL"
   ).length;
 
   // Get unique professions and locations
@@ -65,10 +70,11 @@ const FamilyLeaderDashboard = () => {
 
   const getRoleColor = (role: string) => {
     switch (role?.toLowerCase()) {
-      case "family leader":
-        return "bg-blue-100 text-blue-800";
-      case "member":
+      case "tl":
+      case "ministry leader":
         return "bg-purple-100 text-purple-800";
+      case "member":
+        return "bg-blue-100 text-blue-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -81,10 +87,10 @@ const FamilyLeaderDashboard = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">
-              Family Dashboard
+              Ministry Dashboard
             </h1>
             <p className="text-muted-foreground">
-              Welcome to your family management dashboard
+              Welcome to your ministry management dashboard
             </p>
           </div>
           <ThemeToggle variant="icon" />
@@ -104,14 +110,14 @@ const FamilyLeaderDashboard = () => {
         {/* Main Content Grid Skeleton */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <LoadingCard
-            title="Family Members"
-            subtitle="Manage your family members"
+            title="Ministry Members"
+            subtitle="Manage your ministry members"
             variant="detailed"
             skeletonLines={6}
           />
           <LoadingCard
-            title="Family Overview"
-            subtitle="Family statistics and information"
+            title="Ministry Overview"
+            subtitle="Ministry statistics and information"
             variant="detailed"
             skeletonLines={5}
           />
@@ -120,16 +126,16 @@ const FamilyLeaderDashboard = () => {
     );
   }
 
-  if (!family) {
+  if (!ministry) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">
-              Family Dashboard
+              Ministry Dashboard
             </h1>
             <p className="text-muted-foreground">
-              Welcome to your family management dashboard
+              Welcome to your ministry management dashboard
             </p>
           </div>
           <ThemeToggle variant="icon" />
@@ -138,11 +144,11 @@ const FamilyLeaderDashboard = () => {
         <Card className="shadow-brand">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-              <Home className="text-white text-2xl" />
+              <Users className="text-white text-2xl" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No Family Found</h3>
+            <h3 className="text-lg font-semibold mb-2">No Ministry Found</h3>
             <p className="text-muted-foreground text-center mb-4">
-              You are not associated with any family yet. Please contact an
+              You are not associated with any ministry yet. Please contact an
               administrator.
             </p>
           </CardContent>
@@ -157,11 +163,17 @@ const FamilyLeaderDashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">
-            {family.name} Dashboard
+            {ministry.name} Dashboard
           </h1>
           <p className="text-muted-foreground">
-            Welcome to your family management dashboard
+            Welcome to your ministry management dashboard
           </p>
+          <div className="mt-2">
+            <Badge className="bg-purple-100 text-purple-800">
+              <Crown className="mr-1 h-3 w-3" />
+              Ministry Leader
+            </Badge>
+          </div>
         </div>
         <ThemeToggle variant="icon" />
       </div>
@@ -205,8 +217,23 @@ const FamilyLeaderDashboard = () => {
         <Card className="hover-brand-glow transition-all duration-300">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">
+                Ministry Leaders
+              </CardTitle>
+              <Crown className="h-4 w-4 text-accent" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{ministryLeaders}</div>
+            <p className="text-xs text-muted-foreground">Including yourself</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-brand-glow transition-all duration-300">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium">Professions</CardTitle>
-              <Briefcase className="h-4 w-4 text-accent" />
+              <Briefcase className="h-4 w-4 text-primary" />
             </div>
           </CardHeader>
           <CardContent className="pt-0">
@@ -216,31 +243,18 @@ const FamilyLeaderDashboard = () => {
             </p>
           </CardContent>
         </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Locations</CardTitle>
-              <MapPin className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{locations.length}</div>
-            <p className="text-xs text-muted-foreground">Covered locations</p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Family Members */}
+        {/* Ministry Members */}
         <Card className="shadow-brand">
           <CardHeader className="pb-4">
             <CardTitle className="text-brand-gradient text-lg">
-              Family Members
+              Ministry Members
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Manage your family members
+              Members of your ministry
             </p>
           </CardHeader>
           <CardContent>
@@ -251,7 +265,7 @@ const FamilyLeaderDashboard = () => {
                     <Users className="text-white text-xl" />
                   </div>
                   <p className="text-muted-foreground text-sm">
-                    No members found in your family
+                    No members found in your ministry
                   </p>
                 </div>
               ) : (
@@ -305,19 +319,19 @@ const FamilyLeaderDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Family Overview */}
+        {/* Ministry Overview */}
         <Card className="shadow-brand">
           <CardHeader>
             <CardTitle className="text-brand-gradient">
-              Family Overview
+              Ministry Overview
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Family Name</span>
+                <span className="text-sm font-medium">Ministry Name</span>
                 <span className="text-sm text-muted-foreground">
-                  {family.name}
+                  {ministry.name}
                 </span>
               </div>
 
@@ -336,6 +350,13 @@ const FamilyLeaderDashboard = () => {
               </div>
 
               <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Ministry Leaders</span>
+                <Badge className="bg-purple-100 text-purple-800">
+                  {ministryLeaders} Leaders
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Professions</span>
                 <span className="text-xs text-muted-foreground">
                   {professions.join(", ") || "None"}
@@ -350,13 +371,13 @@ const FamilyLeaderDashboard = () => {
               </div>
 
               <div className="pt-2 border-t border-border">
-                <Link to="/families/my-family">
+                <Link to={`/ministrys/${ministry.id}/members`}>
                   <Button
                     variant="outline"
                     className="w-full border-brand-gradient hover:bg-brand-gradient hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
                   >
                     <Users className="mr-2 h-4 w-4" />
-                    View All Family Members
+                    View All Ministry Members
                   </Button>
                 </Link>
               </div>
@@ -365,11 +386,11 @@ const FamilyLeaderDashboard = () => {
         </Card>
       </div>
 
-      {/* Recent Activity - Family specific */}
+      {/* Ministry Information */}
       <Card className="shadow-brand">
         <CardHeader>
           <CardTitle className="text-brand-gradient">
-            Family Information
+            Ministry Information
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -377,7 +398,7 @@ const FamilyLeaderDashboard = () => {
             <div>
               <h4 className="font-semibold mb-3 flex items-center">
                 <Briefcase className="mr-2 h-4 w-4" />
-                Family Professions
+                Ministry Professions
               </h4>
               <div className="space-y-2">
                 {professions.length > 0 ? (
@@ -407,7 +428,7 @@ const FamilyLeaderDashboard = () => {
             <div>
               <h4 className="font-semibold mb-3 flex items-center">
                 <MapPin className="mr-2 h-4 w-4" />
-                Family Locations
+                Ministry Locations
               </h4>
               <div className="space-y-2">
                 {locations.length > 0 ? (
@@ -440,4 +461,4 @@ const FamilyLeaderDashboard = () => {
   );
 };
 
-export default FamilyLeaderDashboard;
+export default MinistryLeaderDashboard;

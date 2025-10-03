@@ -6,6 +6,7 @@ import type {
   CreateMemberInput,
   GetMemberQuery,
   UpdateMemberInput,
+  Ministry,
 } from "@/generated/graphql";
 import {
   useCreateMember,
@@ -15,6 +16,7 @@ import {
   useGetProfessions,
   useGetRoles,
   useGetStatuses,
+  useGetMinistries,
   useUpdateMember,
 } from "@/hooks/useGraphQL";
 import React, { useEffect, useState } from "react";
@@ -25,6 +27,7 @@ interface NewMemberModalFormProps {
   memberId?: number; // If provided, form will be in update mode
   mode?: "create" | "update"; // Explicit mode control
   defaultFamilyId?: number; // Default family ID for new members
+  defaultMinistryId?: number; // Default ministry ID for new members
 }
 
 const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
@@ -33,6 +36,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   memberId,
   mode = "create",
   defaultFamilyId,
+  defaultMinistryId,
 }) => {
   const isUpdateMode = mode === "update" && memberId;
 
@@ -54,6 +58,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   const { data: professionsData, loading: professionsLoading } =
     useGetProfessions();
   const { data: locationsData, loading: locationsLoading } = useGetLocations();
+  const { data: ministrysData, loading: ministrysLoading } = useGetMinistries();
 
   // Form state
   const [formData, setFormData] = useState<
@@ -63,6 +68,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     contact_no: "",
     status_id: undefined,
     family_id: defaultFamilyId || undefined,
+    ministry_ids: defaultMinistryId ? [defaultMinistryId] : [],
     role_id: undefined,
     profession_id: undefined,
     location_id: undefined,
@@ -81,6 +87,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         contact_no: member.contact_no || "",
         status_id: member.status_id || undefined,
         family_id: member.family_id || undefined,
+        ministry_ids: [], // Initialize empty, will be set from form
         role_id: member.role_id || undefined,
         profession_id: member.profession_id || undefined,
         location_id: member.location_id || undefined,
@@ -107,6 +114,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
       label: family.name,
     })) || [];
 
+  const getMinistryOptions = (): ComboBoxOption[] =>
+    ministrysData?.ministries?.map((ministry: Ministry) => ({
+      value: ministry.id,
+      label: ministry.name,
+    })) || [];
+
   const getRoleOptions = (): ComboBoxOption[] =>
     rolesData?.roles?.map((role) => ({
       value: role.id,
@@ -128,7 +141,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle input changes
   const handleInputChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined
+    value: string | number | undefined | number[]
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -147,7 +160,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle ComboBox changes for foreign keys
   const handleComboBoxChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined
+    value: string | number | undefined | number[]
   ) => {
     handleInputChange(field, value);
   };
@@ -236,7 +249,8 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     rolesLoading ||
     statusesLoading ||
     professionsLoading ||
-    locationsLoading;
+    locationsLoading ||
+    ministrysLoading;
 
   return (
     <div className="space-y-6">
@@ -346,6 +360,64 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   !!memberData?.member?.family_id
                 }
               />
+            </div>
+
+            <div>
+              <label
+                htmlFor="ministry_ids"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Ministries
+              </label>
+              <ComboBox
+                options={getMinistryOptions()}
+                value={formData.ministry_ids?.[0] ?? undefined}
+                onValueChange={(value) => {
+                  if (value) {
+                    const currentIds = formData.ministry_ids || [];
+                    const numericValue =
+                      typeof value === "string" ? parseInt(value, 10) : value;
+                    if (!currentIds.includes(numericValue)) {
+                      handleComboBoxChange("ministry_ids", [
+                        ...currentIds,
+                        numericValue,
+                      ]);
+                    }
+                  }
+                }}
+                placeholder="Select ministries"
+                disabled={isLoading}
+              />
+              {formData.ministry_ids && formData.ministry_ids.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {formData.ministry_ids.map((id) => {
+                    const ministry = ministrysData?.ministries?.find(
+                      (m: Ministry) => m.id === id
+                    );
+                    return (
+                      <span
+                        key={id}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                      >
+                        {ministry?.name}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newIds =
+                              formData.ministry_ids?.filter(
+                                (mid) => mid !== id
+                              ) || [];
+                            handleComboBoxChange("ministry_ids", newIds);
+                          }}
+                          className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             <div>

@@ -13,12 +13,14 @@ import {
   CREATE_PROFESSION,
   CREATE_ROLE,
   CREATE_STATUS,
+  CREATE_MINISTRY,
   DELETE_FAMILY,
   DELETE_LOCATION,
   DELETE_MEMBER,
   DELETE_PROFESSION,
   DELETE_ROLE,
   DELETE_STATUS,
+  DELETE_MINISTRY,
   GET_FAMILY,
   GET_FAMILIES,
   GET_FAMILY_MEMBERS,
@@ -31,6 +33,11 @@ import {
   GET_PROFESSIONS,
   GET_ROLES,
   GET_STATUSES,
+  GET_MINISTRY,
+  GET_MINISTRIES,
+  GET_MINISTRY_STATS,
+  GET_MINISTRY_MEMBERS,
+  GET_MINISTRY_LEADERS,
   GET_OVERVIEW_STATS,
   GET_RECENT_MEMBERS,
   GET_FAMILY_SUMMARIES,
@@ -39,6 +46,7 @@ import {
   LOGIN,
   LOGOUT,
   PROMOTE_MEMBER,
+  PROMOTE_MINISTRY_LEADER,
   RESET_PASSWORD,
   TRANSFER_MEMBER,
   UPDATE_FAMILY,
@@ -47,6 +55,7 @@ import {
   UPDATE_PROFESSION,
   UPDATE_ROLE,
   UPDATE_STATUS,
+  UPDATE_MINISTRY,
 } from "../graphql/operations";
 import type {
   CreateFamilyInput,
@@ -887,4 +896,132 @@ export const useGetFamilyStats = (familyId: number) => {
     skip: !familyId,
     errorPolicy: "all",
   });
+};
+
+// MINISTRY HOOKS
+export const useGetMinistry = (ministryId: number) => {
+  return useQuery<any>(GET_MINISTRY, {
+    variables: { id: ministryId },
+    skip: !ministryId,
+    errorPolicy: "all",
+  });
+};
+
+export const useGetMinistries = () => {
+  return useQuery<any>(GET_MINISTRIES, {
+    errorPolicy: "all",
+  });
+};
+
+export const useGetMinistryStats = () => {
+  return useQuery<any>(GET_MINISTRY_STATS, {
+    errorPolicy: "all",
+  });
+};
+
+export const useGetMinistryMembers = (ministryId: number) => {
+  return useQuery<any>(GET_MINISTRY_MEMBERS, {
+    variables: { ministryId },
+    skip: !ministryId,
+    errorPolicy: "all",
+  });
+};
+
+export const useGetMinistryLeaders = (ministryId: number) => {
+  return useQuery<any>(GET_MINISTRY_LEADERS, {
+    variables: { ministryId },
+    skip: !ministryId,
+    errorPolicy: "all",
+  });
+};
+
+export const useCreateMinistry = () => {
+  const [createMinistry, { loading }] = useMutation<any>(CREATE_MINISTRY, {
+    onError: (error) => {
+      toast.error(`Failed to create ministry: ${error.message}`);
+    },
+  });
+
+  const handleCreateMinistry = async (input: any) => {
+    try {
+      const result = await createMinistry({
+        variables: { input },
+      });
+      return result.data?.createMinistry;
+    } catch (error) {
+      console.error("Error creating ministry:", error);
+      throw error;
+    }
+  };
+
+  return { createMinistry: handleCreateMinistry, loading };
+};
+
+export const useUpdateMinistry = () => {
+  const [updateMinistry, { loading }] = useMutation<any>(UPDATE_MINISTRY, {
+    onError: (error) => {
+      toast.error(`Failed to update ministry: ${error.message}`);
+    },
+  });
+
+  const handleUpdateMinistry = async (input: any) => {
+    try {
+      const result = await updateMinistry({
+        variables: { input },
+      });
+      return result.data?.updateMinistry;
+    } catch (error) {
+      console.error("Error updating ministry:", error);
+      throw error;
+    }
+  };
+
+  return { updateMinistry: handleUpdateMinistry, loading };
+};
+
+export const useDeleteMinistry = () => {
+  const [deleteMinistry, { loading }] = useMutation<any>(DELETE_MINISTRY, {
+    onError: (error) => {
+      toast.error(`Failed to delete ministry: ${error.message}`);
+    },
+  });
+
+  const handleDeleteMinistry = async (id: number) => {
+    try {
+      const result = await deleteMinistry({
+        variables: { id },
+      });
+      return result.data?.deleteMinistry;
+    } catch (error) {
+      console.error("Error deleting ministry:", error);
+      throw error;
+    }
+  };
+
+  return { deleteMinistry: handleDeleteMinistry, loading };
+};
+
+export const usePromoteMinistryLeader = () => {
+  const [promoteMinistryLeader, { loading }] = useMutation<any>(
+    PROMOTE_MINISTRY_LEADER,
+    {
+      onError: (error) => {
+        toast.error(`Failed to promote ministry leader: ${error.message}`);
+      },
+    }
+  );
+
+  const handlePromoteMinistryLeader = async (input: any) => {
+    try {
+      const result = await promoteMinistryLeader({
+        variables: { input },
+      });
+      return result.data?.promoteMinistryLeader;
+    } catch (error) {
+      console.error("Error promoting ministry leader:", error);
+      throw error;
+    }
+  };
+
+  return { promoteMinistryLeader: handlePromoteMinistryLeader, loading };
 };

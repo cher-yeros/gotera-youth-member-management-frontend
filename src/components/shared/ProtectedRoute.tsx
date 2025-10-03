@@ -3,8 +3,8 @@ import { useAuth } from "@/redux/useAuth";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "admin" | "fl";
-  allowedRoles?: ("admin" | "fl")[];
+  requiredRole?: "admin" | "fl" | "ml";
+  allowedRoles?: ("admin" | "fl" | "ml")[];
 }
 
 const ProtectedRoute = ({

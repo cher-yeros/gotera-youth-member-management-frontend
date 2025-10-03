@@ -334,10 +334,10 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
                         </span>
                       </div>
 
-                      {activity.member && (
+                      {activity.user?.member && (
                         <div className="flex items-center">
                           <span className="mr-1">👤</span>
-                          <span>{activity.member.full_name}</span>
+                          <span>{activity.user.member.full_name}</span>
                         </div>
                       )}
 

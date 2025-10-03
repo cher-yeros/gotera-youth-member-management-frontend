@@ -12,6 +12,9 @@ const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
 const FamilyLeaderDashboard = lazy(
   () => import("../views/dashboard/FamilyLeaderDashboard")
 );
+const MinistryLeaderDashboard = lazy(
+  () => import("../views/dashboard/MinistryLeaderDashboard")
+);
 const Members = lazy(() => import("../views/members/Members"));
 const OverviewPage = lazy(() => import("../views/overview/OverviewPage"));
 const FamiliesPage = lazy(() => import("../views/families/FamiliesPage"));
@@ -24,6 +27,15 @@ const FamilyMemberMapping = lazy(
   () => import("../views/family-mapping/FamilyMemberMapping")
 );
 const ActivityLogs = lazy(() => import("../views/activity-logs/ActivityLogs"));
+const AttendanceManagement = lazy(
+  () => import("../views/attendance/AttendanceManagement")
+);
+const MinistriesManagement = lazy(
+  () => import("../views/ministries/MinistriesManagement")
+);
+const MinistryMembers = lazy(
+  () => import("../views/ministries/MinistryMembers")
+);
 const Login = lazy(() => import("../views/authentication/Login"));
 const ComboBoxTest = lazy(() => import("../components/test/ComboBoxTest"));
 
@@ -57,6 +69,38 @@ const Router = [
         element: (
           <ProtectedRoute requiredRole="fl">
             <FamilyLeaderDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/ministry-dashboard",
+        element: (
+          <ProtectedRoute requiredRole="ml">
+            <MinistryLeaderDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/ministries",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <MinistriesManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/ministries/:ministryId/members",
+        element: (
+          <ProtectedRoute>
+            <MinistryMembers />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/ministries/my-ministry",
+        element: (
+          <ProtectedRoute requiredRole="ml">
+            <MinistryMembers />
           </ProtectedRoute>
         ),
       },
@@ -129,6 +173,14 @@ const Router = [
         element: (
           <ProtectedRoute requiredRole="admin">
             <ActivityLogs />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/attendance",
+        element: (
+          <ProtectedRoute requiredRole="fl">
+            <AttendanceManagement />
           </ProtectedRoute>
         ),
       },

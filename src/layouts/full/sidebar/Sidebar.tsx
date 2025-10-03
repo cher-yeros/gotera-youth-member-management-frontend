@@ -12,6 +12,8 @@ import {
   X,
   Network,
   Activity,
+  Calendar,
+  UserCog,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/redux/useAuth";
@@ -22,6 +24,7 @@ const adminNavigation = [
   { name: "Overview", href: "/overview", icon: Home },
   { name: "Members", href: "/members", icon: Users },
   { name: "Families", href: "/families", icon: UserCheck },
+  { name: "Ministries", href: "/ministries", icon: UserCog },
   { name: "Family Member Mapping", href: "/family-mapping", icon: Network },
   { name: "Professions", href: "/professions", icon: Briefcase },
   { name: "Locations", href: "/locations", icon: MapPin },
@@ -31,6 +34,12 @@ const adminNavigation = [
 const flNavigation = [
   { name: "Dashboard", href: "/family-dashboard", icon: LayoutDashboard },
   { name: "My Family", href: "/families/my-family", icon: UserCheck },
+  { name: "Attendance", href: "/attendance", icon: Calendar },
+];
+
+const mlNavigation = [
+  { name: "Dashboard", href: "/ministry-dashboard", icon: LayoutDashboard },
+  { name: "My Ministry", href: "/ministries/my-ministry", icon: UserCog },
 ];
 
 const Sidebar = () => {
@@ -40,7 +49,11 @@ const Sidebar = () => {
 
   // Determine which navigation items to show based on user role
   const navigation =
-    user?.role?.toLowerCase() === "admin" ? adminNavigation : flNavigation;
+    user?.role?.toLowerCase() === "admin"
+      ? adminNavigation
+      : user?.role?.toLowerCase() === "ml"
+      ? mlNavigation
+      : flNavigation;
 
   return (
     <>

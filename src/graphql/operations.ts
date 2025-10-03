@@ -1,5 +1,220 @@
 import { gql } from "@apollo/client";
 
+// Fragment for Ministry (lightweight - without members)
+export const MINISTRY_FRAGMENT = gql`
+  fragment MinistryFragment on Ministry {
+    id
+    name
+    description
+    is_active
+    createdAt
+    updatedAt
+  }
+`;
+
+// Fragment for Ministry with Members (for detailed views)
+export const MINISTRY_WITH_MEMBERS_FRAGMENT = gql`
+  fragment MinistryWithMembersFragment on Ministry {
+    id
+    name
+    description
+    is_active
+    createdAt
+    updatedAt
+    members {
+      id
+      full_name
+      contact_no
+      role {
+        id
+        name
+        description
+      }
+      status {
+        id
+        name
+      }
+    }
+    leaders {
+      id
+      full_name
+      contact_no
+      role {
+        id
+        name
+        description
+      }
+      status {
+        id
+        name
+      }
+    }
+  }
+`;
+
+// Fragment for Member without Ministry (for ministry-specific queries)
+export const MEMBER_BASIC_FRAGMENT = gql`
+  fragment MemberBasicFragment on Member {
+    id
+    full_name
+    contact_no
+    status_id
+    family_id
+    role_id
+    profession_id
+    location_id
+    profession_name
+    location_name
+    createdAt
+    updatedAt
+    family {
+      id
+      name
+    }
+    role {
+      id
+      name
+      description
+    }
+    status {
+      id
+      name
+    }
+    profession {
+      id
+      name
+    }
+    location {
+      id
+      name
+    }
+  }
+`;
+
+// Fragment for Member with Ministry
+export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
+  fragment MemberWithMinistryFragment on Member {
+    id
+    full_name
+    contact_no
+    status_id
+    family_id
+    role_id
+    profession_id
+    location_id
+    profession_name
+    location_name
+    createdAt
+    updatedAt
+    family {
+      id
+      name
+    }
+    role {
+      id
+      name
+      description
+    }
+    status {
+      id
+      name
+    }
+    profession {
+      id
+      name
+    }
+    location {
+      id
+      name
+    }
+    ministries {
+      id
+      name
+      description
+      is_active
+    }
+  }
+`;
+export const FAMILY_MEETUP_FRAGMENT = gql`
+  fragment FamilyMeetupFragment on FamilyMeetup {
+    id
+    family_id
+    title
+    description
+    meetup_date
+    location
+    created_by
+    is_active
+    createdAt
+    updatedAt
+    family {
+      id
+      name
+    }
+    creator {
+      id
+      full_name
+    }
+    attendances {
+      id
+      member_id
+      is_present
+      notes
+      recorded_by
+      createdAt
+      member {
+        id
+        full_name
+      }
+      recorder {
+        id
+        full_name
+      }
+    }
+  }
+`;
+
+// Fragment for FamilyMemberAttendance
+export const FAMILY_MEMBER_ATTENDANCE_FRAGMENT = gql`
+  fragment FamilyMemberAttendanceFragment on FamilyMemberAttendance {
+    id
+    meetup_id
+    member_id
+    is_present
+    notes
+    recorded_by
+    createdAt
+    updatedAt
+    meetup {
+      id
+      title
+      meetup_date
+      family {
+        id
+        name
+      }
+    }
+    member {
+      id
+      full_name
+    }
+    recorder {
+      id
+      full_name
+    }
+  }
+`;
+
+// Fragment for AttendanceStats
+export const ATTENDANCE_STATS_FRAGMENT = gql`
+  fragment AttendanceStatsFragment on AttendanceStats {
+    totalMembers
+    presentMembers
+    absentMembers
+    attendanceRate
+  }
+`;
+
 // Fragment for Member with all relations
 export const MEMBER_FRAGMENT = gql`
   fragment MemberFragment on Member {
@@ -665,6 +880,12 @@ export const LOGIN = gql`
             id
             name
           }
+          ministries {
+            id
+            name
+            description
+            is_active
+          }
         }
       }
     }
@@ -732,6 +953,240 @@ export const GET_FAMILY_STATS = gql`
         location {
           id
           name
+        }
+      }
+    }
+  }
+`;
+
+// ATTENDANCE QUERIES
+export const GET_FAMILY_MEETUP = gql`
+  query GetFamilyMeetup($id: Int!) {
+    familyMeetup(id: $id) {
+      ...FamilyMeetupFragment
+    }
+  }
+  ${FAMILY_MEETUP_FRAGMENT}
+`;
+
+export const GET_FAMILY_MEETUPS = gql`
+  query GetFamilyMeetups(
+    $filter: MeetupFilterInput
+    $pagination: PaginationInput
+  ) {
+    familyMeetups(filter: $filter, pagination: $pagination) {
+      meetups {
+        ...FamilyMeetupFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${FAMILY_MEETUP_FRAGMENT}
+`;
+
+export const GET_FAMILY_MEMBER_ATTENDANCE = gql`
+  query GetFamilyMemberAttendance($id: Int!) {
+    familyMemberAttendance(id: $id) {
+      ...FamilyMemberAttendanceFragment
+    }
+  }
+  ${FAMILY_MEMBER_ATTENDANCE_FRAGMENT}
+`;
+
+export const GET_FAMILY_MEMBER_ATTENDANCES = gql`
+  query GetFamilyMemberAttendances(
+    $filter: AttendanceFilterInput
+    $pagination: PaginationInput
+  ) {
+    familyMemberAttendances(filter: $filter, pagination: $pagination) {
+      attendances {
+        ...FamilyMemberAttendanceFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${FAMILY_MEMBER_ATTENDANCE_FRAGMENT}
+`;
+
+export const GET_MEETUP_ATTENDANCE_STATS = gql`
+  query GetMeetupAttendanceStats($meetupId: Int!) {
+    meetupAttendanceStats(meetup_id: $meetupId) {
+      ...AttendanceStatsFragment
+    }
+  }
+  ${ATTENDANCE_STATS_FRAGMENT}
+`;
+
+// ATTENDANCE MUTATIONS
+export const CREATE_FAMILY_MEETUP = gql`
+  mutation CreateFamilyMeetup($input: CreateFamilyMeetupInput!) {
+    createFamilyMeetup(input: $input) {
+      ...FamilyMeetupFragment
+    }
+  }
+  ${FAMILY_MEETUP_FRAGMENT}
+`;
+
+export const UPDATE_FAMILY_MEETUP = gql`
+  mutation UpdateFamilyMeetup($input: UpdateFamilyMeetupInput!) {
+    updateFamilyMeetup(input: $input) {
+      ...FamilyMeetupFragment
+    }
+  }
+  ${FAMILY_MEETUP_FRAGMENT}
+`;
+
+export const DELETE_FAMILY_MEETUP = gql`
+  mutation DeleteFamilyMeetup($id: Int!) {
+    deleteFamilyMeetup(id: $id)
+  }
+`;
+
+export const CREATE_ATTENDANCE = gql`
+  mutation CreateAttendance($input: CreateAttendanceInput!) {
+    createAttendance(input: $input) {
+      ...FamilyMemberAttendanceFragment
+    }
+  }
+  ${FAMILY_MEMBER_ATTENDANCE_FRAGMENT}
+`;
+
+export const UPDATE_ATTENDANCE = gql`
+  mutation UpdateAttendance($input: UpdateAttendanceInput!) {
+    updateAttendance(input: $input) {
+      ...FamilyMemberAttendanceFragment
+    }
+  }
+  ${FAMILY_MEMBER_ATTENDANCE_FRAGMENT}
+`;
+
+export const DELETE_ATTENDANCE = gql`
+  mutation DeleteAttendance($id: Int!) {
+    deleteAttendance(id: $id)
+  }
+`;
+
+export const BULK_CREATE_ATTENDANCE = gql`
+  mutation BulkCreateAttendance($input: BulkAttendanceInput!) {
+    bulkCreateAttendance(input: $input) {
+      ...FamilyMemberAttendanceFragment
+    }
+  }
+  ${FAMILY_MEMBER_ATTENDANCE_FRAGMENT}
+`;
+
+// Ministry Queries
+export const GET_MINISTRY = gql`
+  query GetMinistry($id: Int!) {
+    ministry(id: $id) {
+      ...MinistryWithMembersFragment
+    }
+  }
+  ${MINISTRY_WITH_MEMBERS_FRAGMENT}
+`;
+
+export const GET_MINISTRIES = gql`
+  query GetMinistries {
+    ministries {
+      ...MinistryFragment
+    }
+  }
+  ${MINISTRY_FRAGMENT}
+`;
+
+export const GET_MINISTRY_STATS = gql`
+  query GetMinistryStats {
+    ministryStats {
+      id
+      name
+      description
+      is_active
+      createdAt
+      updatedAt
+      totalMembers
+      totalLeaders
+      activeMembers
+    }
+  }
+`;
+
+export const GET_MINISTRY_MEMBERS = gql`
+  query GetMinistryMembers($ministryId: Int!) {
+    ministryMembers(ministryId: $ministryId) {
+      ...MemberBasicFragment
+    }
+  }
+  ${MEMBER_BASIC_FRAGMENT}
+`;
+
+export const GET_MINISTRY_LEADERS = gql`
+  query GetMinistryLeaders($ministryId: Int!) {
+    ministryLeaders(ministryId: $ministryId) {
+      ...MemberBasicFragment
+    }
+  }
+  ${MEMBER_BASIC_FRAGMENT}
+`;
+
+// Ministry Mutations
+export const CREATE_MINISTRY = gql`
+  mutation CreateMinistry($input: CreateMinistryInput!) {
+    createMinistry(input: $input) {
+      ...MinistryWithMembersFragment
+    }
+  }
+  ${MINISTRY_WITH_MEMBERS_FRAGMENT}
+`;
+
+export const UPDATE_MINISTRY = gql`
+  mutation UpdateMinistry($input: UpdateMinistryInput!) {
+    updateMinistry(input: $input) {
+      ...MinistryWithMembersFragment
+    }
+  }
+  ${MINISTRY_WITH_MEMBERS_FRAGMENT}
+`;
+
+export const DELETE_MINISTRY = gql`
+  mutation DeleteMinistry($id: Int!) {
+    deleteMinistry(id: $id)
+  }
+`;
+
+export const PROMOTE_MINISTRY_LEADER = gql`
+  mutation PromoteMinistryLeader($input: PromoteMinistryLeaderInput!) {
+    promoteMinistryLeader(input: $input) {
+      success
+      message
+      password
+      user {
+        id
+        phone
+        role
+        createdAt
+        member {
+          id
+          full_name
+          contact_no
+          role {
+            id
+            name
+            description
+          }
+          status {
+            id
+            name
+          }
+          family {
+            id
+            name
+          }
         }
       }
     }

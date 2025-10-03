@@ -1,8 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
-import ThemeToggle from "@/components/ui/theme-toggle";
-import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import MemberSearch from "@/components/shared/MemberSearch";
 import {
@@ -15,117 +10,90 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  useDeleteMember,
-  useGetMembers,
-  useGetFamily,
-} from "@/hooks/useGraphQL";
-import { useState, useCallback, useEffect } from "react";
-import type { MemberFilterInput } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import FullscreenModal from "@/components/ui/fullscreen-modal";
+import ThemeToggle from "@/components/ui/theme-toggle";
+import type { MemberFilterInput, Member } from "@/generated/graphql";
+import {
+  useGetMinistry,
+  useGetMinistryMembers,
+  useUpdateMember,
+} from "@/hooks/useGraphQL";
 import { useAuth } from "@/redux/useAuth";
+import { ArrowLeft, UserPlus, Users } from "lucide-react";
+import { useCallback, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-const FamilyMembers = () => {
-  const { familyId } = useParams<{ familyId: string }>();
+const MinistryMembers = () => {
+  const { ministryId } = useParams<{ ministryId: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useAuth();
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
   const [isUpdateMemberModalOpen, setIsUpdateMemberModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
-  const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
-  const [memberToDelete, setMemberToDelete] = useState<{
+  const [memberToRemove, setMemberToRemove] = useState<{
     id: number;
     name: string;
   } | null>(null);
 
-  // Determine if this is a family leader accessing their own family
-  const isFamilyLeaderView = location.pathname === "/families/my-family";
-  const effectiveFamilyId = isFamilyLeaderView
-    ? user?.member?.family?.id
-    : familyId
-    ? parseInt(familyId)
+  // Determine if this is a ministry leader accessing their own ministry
+  const isMinistryLeaderView = ministryId === "my-ministry";
+  const effectiveMinistryId = isMinistryLeaderView
+    ? user?.member?.ministries?.[0]?.id
+    : ministryId
+    ? parseInt(ministryId)
     : 0;
 
-  // Fetch family data
-  const { data: familyData, loading: familyLoading } = useGetFamily(
-    effectiveFamilyId || 0
+  // Fetch ministry data
+  const { data: ministryData, loading: ministryLoading } = useGetMinistry(
+    effectiveMinistryId || 0
   );
 
-  // console.log({ familyData });
-
-  // Initialize filters with family filter
-  useEffect(() => {
-    if (effectiveFamilyId) {
-      setSearchFilters({
-        family_id: effectiveFamilyId,
-      });
-    }
-  }, [effectiveFamilyId]);
-
-  // Fetch members with pagination and filters
-  const { data, loading, error, refetch } = useGetMembers(searchFilters, {
-    page: currentPage,
-    limit: pageSize,
-  });
-
-  const { deleteMember } = useDeleteMember();
-
-  const members = data?.members?.members || [];
-  const totalPages = data?.members?.totalPages || 0;
-  const total = data?.members?.total || 0;
-  const family = familyData?.family;
-
-  const handleSearch = useCallback(
-    (filters: MemberFilterInput) => {
-      setSearchFilters({
-        ...filters,
-        family_id: effectiveFamilyId || undefined,
-      });
-      setCurrentPage(1); // Reset to first page when searching
-    },
-    [effectiveFamilyId]
+  // Fetch ministry members
+  const { data, loading, error, refetch } = useGetMinistryMembers(
+    effectiveMinistryId || 0
   );
+  const { updateMember } = useUpdateMember();
+
+  const members = data?.ministryMembers || [];
+  const ministry = ministryData?.ministry;
+
+  console.log({ ministryData });
+
+  const handleSearch = useCallback((filters: MemberFilterInput) => {
+    // Search functionality can be implemented here if needed
+    console.log("Search filters:", filters);
+  }, []);
 
   const handleClearSearch = useCallback(() => {
-    setSearchFilters({
-      family_id: effectiveFamilyId || undefined,
-    });
-    setCurrentPage(1);
-  }, [effectiveFamilyId]);
+    // Clear search functionality can be implemented here if needed
+    console.log("Clear search");
+  }, []);
 
-  // const handleDeleteMember = (member: { id: number; full_name: string }) => {
-  //   setMemberToDelete({ id: member.id, name: member.full_name });
-  // };
-
-  const confirmDeleteMember = async () => {
-    if (!memberToDelete) return;
+  const confirmRemoveMember = async () => {
+    if (!memberToRemove) return;
 
     try {
-      await deleteMember(memberToDelete.id);
+      await updateMember({
+        id: memberToRemove.id,
+        ministry_ids: [],
+      });
       refetch();
-      setMemberToDelete(null);
+      setMemberToRemove(null);
     } catch (error) {
-      console.error("Error deleting member:", error);
+      console.error("Error removing member from ministry:", error);
     }
   };
 
-  const cancelDeleteMember = () => {
-    setMemberToDelete(null);
-  };
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+  const cancelRemoveMember = () => {
+    setMemberToRemove(null);
   };
 
   const handleNewMemberSuccess = () => {
     setIsNewMemberModalOpen(false);
-    refetch(); // Refresh the members list
+    refetch();
   };
 
   const handleNewMemberCancel = () => {
@@ -140,7 +108,7 @@ const FamilyMembers = () => {
   const handleUpdateMemberSuccess = () => {
     setIsUpdateMemberModalOpen(false);
     setSelectedMemberId(null);
-    refetch(); // Refresh the members list
+    refetch();
   };
 
   const handleUpdateMemberCancel = () => {
@@ -148,28 +116,28 @@ const FamilyMembers = () => {
     setSelectedMemberId(null);
   };
 
-  const handleBackToFamilies = () => {
-    if (isFamilyLeaderView) {
-      navigate("/dashboard");
+  const handleBackToMinistrys = () => {
+    if (isMinistryLeaderView) {
+      navigate("/ministry-dashboard");
     } else {
-      navigate("/families");
+      navigate("/ministrys");
     }
   };
 
-  if (familyLoading) {
+  if (ministryLoading) {
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">
-            Loading family information...
+            Loading ministry information...
           </p>
         </div>
       </div>
     );
   }
 
-  if (!family) {
+  if (!ministry) {
     return (
       <div className="space-y-6">
         <div className="text-center py-12">
@@ -177,16 +145,16 @@ const FamilyMembers = () => {
             <span className="text-white text-2xl">⚠️</span>
           </div>
           <h3 className="text-lg font-semibold mb-2 text-red-600">
-            Family Not Found
+            Ministry Not Found
           </h3>
           <p className="text-muted-foreground mb-4">
-            The requested family could not be found.
+            The requested ministry could not be found.
           </p>
           <Button
-            onClick={handleBackToFamilies}
+            onClick={handleBackToMinistrys}
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
           >
-            {isFamilyLeaderView ? "Back to Dashboard" : "Back to Families"}
+            Back to Ministrys
           </Button>
         </div>
       </div>
@@ -199,10 +167,10 @@ const FamilyMembers = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">
-              {family.name} Family Members
+              {ministry.name} Ministry Members
             </h1>
             <p className="text-muted-foreground">
-              Members of the {family.name} family
+              Members of the {ministry.name} ministry
             </p>
           </div>
           <ThemeToggle variant="icon" />
@@ -237,23 +205,24 @@ const FamilyMembers = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">
-            {isFamilyLeaderView
-              ? `${family.name} Family Members`
-              : `${family.name} Family Members`}
+            {isMinistryLeaderView
+              ? `${ministry.name} Ministry Members`
+              : `${ministry.name} Ministry Members`}
           </h1>
           <p className="text-muted-foreground">
-            {isFamilyLeaderView
-              ? `Members of your family (${total} total)`
-              : `Members of the ${family.name} family (${total} total)`}
+            {isMinistryLeaderView
+              ? `Members of your ministry (${members.length} total)`
+              : `Members of the ${ministry.name} ministry (${members.length} total)`}
           </p>
           <div className="mt-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={handleBackToFamilies}
+              onClick={handleBackToMinistrys}
               className="text-sm"
             >
-              ← {isFamilyLeaderView ? "Back to Dashboard" : "Back to Families"}
+              <ArrowLeft className="mr-1 h-3 w-3" />
+              {isMinistryLeaderView ? "Back to Dashboard" : "Back to Ministrys"}
             </Button>
           </div>
         </div>
@@ -263,7 +232,8 @@ const FamilyMembers = () => {
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMemberModalOpen(true)}
           >
-            Add New Member
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Member to Ministry
           </Button>
         </div>
       </div>
@@ -277,7 +247,7 @@ const FamilyMembers = () => {
       <Card className="shadow-brand">
         <CardHeader>
           <CardTitle className="text-brand-gradient">
-            Family Members List
+            Ministry Members List
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -289,15 +259,13 @@ const FamilyMembers = () => {
           ) : members.length === 0 ? (
             <div className="text-center py-12">
               <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">👥</span>
+                <Users className="text-white text-2xl" />
               </div>
               <h3 className="text-lg font-semibold mb-2">
-                No members found in this family
+                No members found in this ministry
               </h3>
               <p className="text-muted-foreground mb-4">
-                Add the first member to the{" "}
-                {isFamilyLeaderView ? "your" : family.name} family to get
-                started.
+                Add members to the {ministry.name} ministry to get started.
               </p>
               <Button
                 onClick={() => setIsNewMemberModalOpen(true)}
@@ -308,9 +276,9 @@ const FamilyMembers = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Mobile Card View - Hidden on desktop */}
+              {/* Mobile Card View */}
               <div className="block md:hidden space-y-3">
-                {members.map((member) => (
+                {members.map((member: Member) => (
                   <Card key={member.id} className="shadow-sm border">
                     <CardContent className="p-4">
                       <div className="space-y-3">
@@ -319,7 +287,7 @@ const FamilyMembers = () => {
                           <div className="flex items-center space-x-2">
                             <div
                               className={`h-2 w-2 rounded-full ${
-                                member.role?.name === "FL"
+                                member.role?.name === "TL"
                                   ? "bg-green-600"
                                   : member.status?.name === "Not Active"
                                   ? "bg-red-500"
@@ -333,7 +301,7 @@ const FamilyMembers = () => {
                           <div className="flex items-center space-x-2">
                             <Badge
                               className={`px-2 py-1 rounded-full text-xs ${
-                                member.role?.name === "FL"
+                                member.role?.name === "TL"
                                   ? "bg-green-100 text-green-900"
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
@@ -405,14 +373,19 @@ const FamilyMembers = () => {
                           >
                             Edit
                           </Button>
-                          {/* <Button
+                          <Button
                             variant="outline"
                             size="sm"
                             className="flex-1 text-red-600 hover:bg-red-50"
-                            onClick={() => handleDeleteMember(member)}
+                            onClick={() =>
+                              setMemberToRemove({
+                                id: member.id,
+                                name: member.full_name,
+                              })
+                            }
                           >
-                            Delete
-                          </Button> */}
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
@@ -420,7 +393,7 @@ const FamilyMembers = () => {
                 ))}
               </div>
 
-              {/* Desktop Table View - Hidden on mobile */}
+              {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
@@ -437,7 +410,7 @@ const FamilyMembers = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {members.map((member) => (
+                    {members.map((member: Member) => (
                       <tr
                         key={member.id}
                         className="border-b hover:bg-muted/50"
@@ -445,7 +418,7 @@ const FamilyMembers = () => {
                         <td className="p-3 flex items-center space-x-2">
                           <div
                             className={`h-2 w-2 rounded-full ${
-                              member.role?.name === "FL"
+                              member.role?.name === "TL"
                                 ? "bg-green-600"
                                 : member.status?.name === "Not Active"
                                 ? "bg-red-500"
@@ -454,7 +427,7 @@ const FamilyMembers = () => {
                           ></div>
                           <Badge
                             className={`px-2 py-1 rounded-full text-xs ${
-                              member.role?.name === "FL"
+                              member.role?.name === "TL"
                                 ? "bg-green-100 text-green-900"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
@@ -519,116 +492,25 @@ const FamilyMembers = () => {
                             >
                               Edit
                             </Button>
-                            {/* <Button
+                            <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:bg-red-50"
-                              onClick={() => handleDeleteMember(member)}
+                              onClick={() =>
+                                setMemberToRemove({
+                                  id: member.id,
+                                  name: member.full_name,
+                                })
+                              }
                             >
-                              Delete
-                            </Button> */}
+                              Remove
+                            </Button>
                           </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-                {/* Page size selector */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Show:</span>
-                  <Select
-                    value={pageSize.toString()}
-                    onValueChange={(value) => {
-                      setPageSize(Number(value));
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                  >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    per page
-                  </span>
-                </div>
-
-                {/* Pagination info */}
-                <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                  {Math.min(currentPage * pageSize, total)} of {total} members
-                </div>
-
-                {/* Pagination controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      Previous
-                    </Button>
-
-                    <div className="flex space-x-1">
-                      {(() => {
-                        const maxVisiblePages = 5;
-                        const halfVisible = Math.floor(maxVisiblePages / 2);
-
-                        let startPage = Math.max(1, currentPage - halfVisible);
-                        const endPage = Math.min(
-                          totalPages,
-                          startPage + maxVisiblePages - 1
-                        );
-
-                        // Adjust start page if we're near the end
-                        if (endPage - startPage + 1 < maxVisiblePages) {
-                          startPage = Math.max(
-                            1,
-                            endPage - maxVisiblePages + 1
-                          );
-                        }
-
-                        const pages = [];
-                        for (let i = startPage; i <= endPage; i++) {
-                          pages.push(i);
-                        }
-
-                        return pages.map((page) => (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className={
-                              currentPage === page
-                                ? "bg-brand-gradient text-white"
-                                : ""
-                            }
-                          >
-                            {page}
-                          </Button>
-                        ));
-                      })()}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -639,13 +521,13 @@ const FamilyMembers = () => {
       <FullscreenModal
         isOpen={isNewMemberModalOpen}
         onClose={handleNewMemberCancel}
-        title="Add New Member"
+        title="Add Member to Ministry"
       >
         <NewMemberModalForm
           onSuccess={handleNewMemberSuccess}
           onCancel={handleNewMemberCancel}
           mode="create"
-          defaultFamilyId={effectiveFamilyId || undefined}
+          defaultMinistryId={effectiveMinistryId || undefined}
         />
       </FullscreenModal>
 
@@ -663,29 +545,30 @@ const FamilyMembers = () => {
         />
       </FullscreenModal>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Remove Member Confirmation Dialog */}
       <AlertDialog
-        open={!!memberToDelete}
-        onOpenChange={() => setMemberToDelete(null)}
+        open={!!memberToRemove}
+        onOpenChange={() => setMemberToRemove(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Member</AlertDialogTitle>
+            <AlertDialogTitle>Remove Member from Ministry</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete{" "}
-              <strong>{memberToDelete?.name}</strong>? This action cannot be
-              undone and will permanently remove the member from the system.
+              Are you sure you want to remove{" "}
+              <strong>{memberToRemove?.name}</strong> from the {ministry.name}{" "}
+              ministry? This will not delete the member, only remove them from
+              this ministry.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDeleteMember}>
+            <AlertDialogCancel onClick={cancelRemoveMember}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDeleteMember}
+              onClick={confirmRemoveMember}
               className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete Member
+              Remove from Ministry
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -694,4 +577,4 @@ const FamilyMembers = () => {
   );
 };
 
-export default FamilyMembers;
+export default MinistryMembers;

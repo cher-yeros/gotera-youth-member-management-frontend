@@ -26,6 +26,12 @@ export interface User {
       id: number;
       name: string;
     };
+    ministries?: {
+      id: number;
+      name: string;
+      description?: string;
+      is_active: boolean;
+    }[];
   };
 }
 
