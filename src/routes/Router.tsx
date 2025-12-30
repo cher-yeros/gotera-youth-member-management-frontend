@@ -30,6 +30,9 @@ const ActivityLogs = lazy(() => import("../views/activity-logs/ActivityLogs"));
 const AttendanceManagement = lazy(
   () => import("../views/attendance/AttendanceManagement")
 );
+const FamilyMeetupsManagement = lazy(
+  () => import("../views/family-meetups/FamilyMeetupsManagement")
+);
 const MinistriesManagement = lazy(
   () => import("../views/ministries/MinistriesManagement")
 );
@@ -181,6 +184,14 @@ const Router = [
         element: (
           <ProtectedRoute requiredRole="fl">
             <AttendanceManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/family-meetups",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <FamilyMeetupsManagement />
           </ProtectedRoute>
         ),
       },

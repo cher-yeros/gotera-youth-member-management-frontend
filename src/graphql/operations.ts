@@ -251,6 +251,10 @@ export const MEMBER_FRAGMENT = gql`
       id
       name
     }
+    ministries {
+      id
+      name
+    }
   }
 `;
 
@@ -344,6 +348,15 @@ export const OVERVIEW_STATS_FRAGMENT = gql`
     totalLocations
     activeMembers
     inactiveMembers
+    notActiveMembers
+    movedOutMembers
+    newMembers
+    locationAllocatedMembers
+    locationUnallocatedMembers
+    professionAllocatedMembers
+    professionUnallocatedMembers
+    ministryAllocatedMembers
+    ministryUnallocatedMembers
   }
 `;
 
@@ -886,6 +899,12 @@ export const LOGIN = gql`
             description
             is_active
           }
+          ledMinistries {
+            id
+            name
+            description
+            is_active
+          }
         }
       }
     }
@@ -922,6 +941,10 @@ export const GET_FAMILY_MEMBERS = gql`
           name
         }
         location {
+          id
+          name
+        }
+        ministries {
           id
           name
         }

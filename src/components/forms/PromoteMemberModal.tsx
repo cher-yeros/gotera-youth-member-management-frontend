@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePromoteMember } from "@/hooks/useGraphQL";
+import { usePromoteMember, usePromoteMinistryLeader, useGetMinistries } from "@/hooks/useGraphQL";
 import { toast } from "react-toastify";
 
 interface PromoteMemberModalProps {
@@ -29,8 +29,18 @@ const PromoteMemberModal = ({
   onSuccess,
 }: PromoteMemberModalProps) => {
   const [selectedRole, setSelectedRole] = useState<string>("");
+  const [selectedMinistryId, setSelectedMinistryId] = useState<number | null>(null);
   const [isPromoting, setIsPromoting] = useState(false);
   const { promoteMember } = usePromoteMember();
+  const { promoteMinistryLeader } = usePromoteMinistryLeader();
+  const { data: ministriesData } = useGetMinistries();
+
+  // Reset ministry selection when role changes
+  useEffect(() => {
+    if (selectedRole !== "ml") {
+      setSelectedMinistryId(null);
+    }
+  }, [selectedRole]);
 
   const handlePromote = async () => {
     if (!selectedRole) {
@@ -38,20 +48,47 @@ const PromoteMemberModal = ({
       return;
     }
 
+    // If ML is selected, ministry is required
+    if (selectedRole === "ml" && !selectedMinistryId) {
+      toast.error("Please select a ministry for Ministry Leader role");
+      return;
+    }
+
     setIsPromoting(true);
     try {
-      const result = await promoteMember({
-        member_id: member.id,
-        role: selectedRole,
-      });
+      let result;
+      
+      if (selectedRole === "ml") {
+        // Use promoteMinistryLeader mutation for ML role
+        result = await promoteMinistryLeader({
+          member_id: member.id,
+          ministry_id: selectedMinistryId!,
+        });
+      } else {
+        // Use promoteMember mutation for other roles
+        result = await promoteMember({
+          member_id: member.id,
+          role: selectedRole.toUpperCase(), // Convert to uppercase (admin, FL, FM)
+        });
+      }
 
       if (result?.success) {
-        onSuccess(result.password, selectedRole);
+        onSuccess(result.password, selectedRole === "ml" ? "ML" : selectedRole.toUpperCase());
         onClose();
         setSelectedRole("");
+        setSelectedMinistryId(null);
+      } else if (result?.message) {
+        // Show error message from backend (e.g., "Member does not belong to the specified ministry")
+        toast.error(result.message);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error promoting member:", error);
+      // Show error message if available
+      if (error?.message) {
+        toast.error(error.message);
+      } else {
+        toast.error("Failed to promote member. Please try again.");
+      }
     } finally {
       setIsPromoting(false);
     }
@@ -59,6 +96,7 @@ const PromoteMemberModal = ({
 
   const handleClose = () => {
     setSelectedRole("");
+    setSelectedMinistryId(null);
     onClose();
   };
 
@@ -94,9 +132,35 @@ const PromoteMemberModal = ({
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="fl">FL (Family Leader)</SelectItem>
                 <SelectItem value="fm">FM (Family Member)</SelectItem>
+                <SelectItem value="ml">ML (Ministry Leader)</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {selectedRole === "ml" && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Select Ministry *</label>
+              <Select
+                value={selectedMinistryId?.toString() || ""}
+                onValueChange={(value) => setSelectedMinistryId(parseInt(value))}
+                disabled={isPromoting}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose a ministry..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {ministriesData?.ministries?.map((ministry: any) => (
+                    <SelectItem key={ministry.id} value={ministry.id.toString()}>
+                      {ministry.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                The member will be automatically added to the selected ministry if not already a member
+              </p>
+            </div>
+          )}
 
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
@@ -115,7 +179,11 @@ const PromoteMemberModal = ({
             </Button>
             <Button
               onClick={handlePromote}
-              disabled={!selectedRole || isPromoting}
+              disabled={
+                !selectedRole || 
+                isPromoting || 
+                (selectedRole === "ml" && !selectedMinistryId)
+              }
               className="bg-brand-gradient hover:opacity-90 transition-opacity"
             >
               {isPromoting ? "Promoting..." : "Promote Member"}

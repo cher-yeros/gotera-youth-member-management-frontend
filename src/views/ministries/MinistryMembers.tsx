@@ -1,4 +1,5 @@
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
+import AddMemberToMinistryForm from "@/components/forms/AddMemberToMinistryForm";
 import MemberSearch from "@/components/shared/MemberSearch";
 import {
   AlertDialog,
@@ -24,10 +25,11 @@ import {
 import { useAuth } from "@/redux/useAuth";
 import { ArrowLeft, UserPlus, Users } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 const MinistryMembers = () => {
   const { ministryId } = useParams<{ ministryId: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
@@ -39,12 +41,26 @@ const MinistryMembers = () => {
   } | null>(null);
 
   // Determine if this is a ministry leader accessing their own ministry
-  const isMinistryLeaderView = ministryId === "my-ministry";
+  // Check both the route param and the pathname since /ministries/my-ministry doesn't have a param
+  const isMinistryLeaderView =
+    location.pathname === "/ministries/my-ministry" ||
+    ministryId === "my-ministry";
+
+  // ML users lead ministries, so get from ledMinistries instead of ministries
   const effectiveMinistryId = isMinistryLeaderView
-    ? user?.member?.ministries?.[0]?.id
+    ? user?.member?.ledMinistries?.[0]?.id || user?.member?.ministries?.[0]?.id
     : ministryId
     ? parseInt(ministryId)
     : 0;
+
+  // Debug logging
+  console.log("MinistryMembers Debug:", {
+    pathname: location.pathname,
+    ministryId,
+    isMinistryLeaderView,
+    effectiveMinistryId,
+    ledMinistries: user?.member?.ledMinistries,
+  });
 
   // Fetch ministry data
   const { data: ministryData, loading: ministryLoading } = useGetMinistry(
@@ -60,7 +76,7 @@ const MinistryMembers = () => {
   const members = data?.ministryMembers || [];
   const ministry = ministryData?.ministry;
 
-  console.log({ ministryData });
+  console.log({ effectiveMinistryId });
 
   const handleSearch = useCallback((filters: MemberFilterInput) => {
     // Search functionality can be implemented here if needed
@@ -120,7 +136,7 @@ const MinistryMembers = () => {
     if (isMinistryLeaderView) {
       navigate("/ministry-dashboard");
     } else {
-      navigate("/ministrys");
+      navigate("/ministries");
     }
   };
 
@@ -154,7 +170,7 @@ const MinistryMembers = () => {
             onClick={handleBackToMinistrys}
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
           >
-            Back to Ministrys
+            Back to Ministries
           </Button>
         </div>
       </div>
@@ -222,7 +238,9 @@ const MinistryMembers = () => {
               className="text-sm"
             >
               <ArrowLeft className="mr-1 h-3 w-3" />
-              {isMinistryLeaderView ? "Back to Dashboard" : "Back to Ministrys"}
+              {isMinistryLeaderView
+                ? "Back to Dashboard"
+                : "Back to Ministries"}
             </Button>
           </div>
         </div>
@@ -517,17 +535,16 @@ const MinistryMembers = () => {
         </CardContent>
       </Card>
 
-      {/* New Member Modal */}
+      {/* Add Existing Member to Ministry Modal */}
       <FullscreenModal
         isOpen={isNewMemberModalOpen}
         onClose={handleNewMemberCancel}
         title="Add Member to Ministry"
       >
-        <NewMemberModalForm
+        <AddMemberToMinistryForm
+          ministryId={effectiveMinistryId || 0}
           onSuccess={handleNewMemberSuccess}
           onCancel={handleNewMemberCancel}
-          mode="create"
-          defaultMinistryId={effectiveMinistryId || undefined}
         />
       </FullscreenModal>
 

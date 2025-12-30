@@ -32,6 +32,12 @@ export interface User {
       description?: string;
       is_active: boolean;
     }[];
+    ledMinistries?: {
+      id: number;
+      name: string;
+      description?: string;
+      is_active: boolean;
+    }[];
   };
 }
 

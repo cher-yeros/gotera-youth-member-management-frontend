@@ -11,12 +11,16 @@ import { Link } from "react-router-dom";
 
 const MinistryLeaderDashboard = () => {
   const { user } = useAuth();
-  const ministryId = user?.member?.ministries?.[0]?.id;
+  // ML users lead ministries, so get from ledMinistries instead of ministries
+  const ministryId =
+    user?.member?.ledMinistries?.[0]?.id || user?.member?.ministries?.[0]?.id;
 
   // Fetch ministry-specific data
-  const { data: ministryData, loading: ministryLoading } = useGetMinistry(
-    ministryId || 0
-  );
+  const {
+    data: ministryData,
+    loading: ministryLoading,
+    error: ministryError,
+  } = useGetMinistry(ministryId || 0);
   const { data: membersData, loading: membersLoading } = useGetMinistryMembers(
     ministryId || 0
   );
@@ -126,7 +130,8 @@ const MinistryLeaderDashboard = () => {
     );
   }
 
-  if (!ministry) {
+  // Show error or no ministry message
+  if (ministryError || (!ministryLoading && !ministry)) {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
@@ -146,10 +151,13 @@ const MinistryLeaderDashboard = () => {
             <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
               <Users className="text-white text-2xl" />
             </div>
-            <h3 className="text-lg font-semibold mb-2">No Ministry Found</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              {ministryError ? "Ministry Not Found" : "No Ministry Found"}
+            </h3>
             <p className="text-muted-foreground text-center mb-4">
-              You are not associated with any ministry yet. Please contact an
-              administrator.
+              {ministryError
+                ? "The requested ministry could not be found or you don't have access to it."
+                : "You are not associated with any ministry yet. Please contact an administrator."}
             </p>
           </CardContent>
         </Card>
@@ -371,7 +379,7 @@ const MinistryLeaderDashboard = () => {
               </div>
 
               <div className="pt-2 border-t border-border">
-                <Link to={`/ministrys/${ministry.id}/members`}>
+                <Link to={`/ministries/${ministry.id}/members`}>
                   <Button
                     variant="outline"
                     className="w-full border-brand-gradient hover:bg-brand-gradient hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"

@@ -27,15 +27,19 @@ const ProtectedRoute = ({
     // If user doesn't have the required role, redirect based on their actual role
     if (userRole === "fl") {
       return <Navigate to="/family-dashboard" replace />;
+    } else if (userRole === "ml") {
+      return <Navigate to="/ministry-dashboard" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole as "admin" | "fl")) {
+  if (allowedRoles && !allowedRoles.includes(userRole as "admin" | "fl" | "ml")) {
     // If user doesn't have any of the allowed roles, redirect based on their actual role
     if (userRole === "fl") {
       return <Navigate to="/family-dashboard" replace />;
+    } else if (userRole === "ml") {
+      return <Navigate to="/ministry-dashboard" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;
     }
