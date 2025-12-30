@@ -14,6 +14,7 @@ import {
   Activity,
   Calendar,
   UserCog,
+  CalendarCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/redux/useAuth";
@@ -24,6 +25,7 @@ const adminNavigation = [
   { name: "Overview", href: "/overview", icon: Home },
   { name: "Members", href: "/members", icon: Users },
   { name: "Families", href: "/families", icon: UserCheck },
+  { name: "Family Meetups", href: "/family-meetups", icon: CalendarCheck },
   { name: "Ministries", href: "/ministries", icon: UserCog },
   { name: "Family Member Mapping", href: "/family-mapping", icon: Network },
   { name: "Professions", href: "/professions", icon: Briefcase },

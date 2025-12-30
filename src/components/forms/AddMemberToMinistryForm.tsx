@@ -4,7 +4,11 @@ import type { ComboBoxOption } from "@/components/ui/combo-box";
 import { ComboBox } from "@/components/ui/combo-box";
 import { useGetMembers, useUpdateMember } from "@/hooks/useGraphQL";
 import { toast } from "react-toastify";
-import type { Member } from "@/generated/graphql";
+
+// Type for member from GetMembersQuery result
+type MemberFromQuery = NonNullable<
+  NonNullable<ReturnType<typeof useGetMembers>["data"]>["members"]
+>["members"][number];
 
 interface AddMemberToMinistryFormProps {
   ministryId: number;
@@ -17,9 +21,11 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
   onSuccess,
   onCancel,
 }) => {
-  const [selectedMemberId, setSelectedMemberId] = useState<number | undefined>(undefined);
+  const [selectedMemberId, setSelectedMemberId] = useState<number | undefined>(
+    undefined
+  );
   const { updateMember, loading: isUpdating } = useUpdateMember();
-  
+
   // Fetch all members with pagination to get members without ministries
   // We'll fetch a large number to get all members, then filter client-side
   const { data: membersData, loading: membersLoading } = useGetMembers(
@@ -30,18 +36,28 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
   // Filter members to only show those who don't belong to any ministry
   const membersWithoutMinistry = useMemo(() => {
     if (!membersData?.members?.members) return [];
-    
-    return membersData.members.members.filter((member: Member) => {
+
+    return membersData.members.members.filter((member) => {
       // Member has no ministries (empty array or undefined)
-      return !member.ministries || member.ministries.length === 0;
+      // Type assertion needed because GetMembersQuery type doesn't include ministries in the type definition
+      // but the actual query result does include it (the fragment includes ministries)
+      const memberWithMinistries = member as MemberFromQuery & {
+        ministries?: Array<{ id: number; name: string }>;
+      };
+      return (
+        !memberWithMinistries.ministries ||
+        memberWithMinistries.ministries.length === 0
+      );
     });
   }, [membersData]);
 
   // Convert filtered members to ComboBox options
   const memberOptions: ComboBoxOption[] = useMemo(() => {
-    return membersWithoutMinistry.map((member: Member) => ({
+    return membersWithoutMinistry.map((member) => ({
       value: member.id,
-      label: `${member.full_name}${member.contact_no ? ` (${member.contact_no})` : ""}`,
+      label: `${member.full_name}${
+        member.contact_no ? ` (${member.contact_no})` : ""
+      }`,
     }));
   }, [membersWithoutMinistry]);
 
@@ -61,11 +77,17 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
     try {
       // Get the selected member's current ministry_ids
       const selectedMember = membersData?.members?.members.find(
-        (m: Member) => m.id === selectedMemberId
+        (m) => m.id === selectedMemberId
       );
 
       // Add the current ministry to the member's ministry_ids
-      const currentMinistryIds = selectedMember?.ministries?.map((m) => m.id) || [];
+      // Type assertion needed because GetMembersQuery type doesn't include ministries in the type definition
+      // but the actual query result does include it (the fragment includes ministries)
+      const memberWithMinistries = selectedMember as MemberFromQuery & {
+        ministries?: Array<{ id: number; name: string }>;
+      };
+      const currentMinistryIds =
+        memberWithMinistries?.ministries?.map((m) => m.id) || [];
       const updatedMinistryIds = [...currentMinistryIds, ministryId];
 
       // Update the member with the new ministry_ids
@@ -75,7 +97,7 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
       });
 
       toast.success("Member added to ministry successfully!");
-      
+
       if (onSuccess) {
         onSuccess();
       }
@@ -91,7 +113,8 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="mb-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">
-          Select an existing member who doesn't belong to any ministry to add them to this ministry.
+          Select an existing member who doesn't belong to any ministry to add
+          them to this ministry.
         </p>
       </div>
 
@@ -106,14 +129,21 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
           options={memberOptions}
           value={selectedMemberId}
           onValueChange={(value) =>
-            setSelectedMemberId(value ? (typeof value === "string" ? parseInt(value, 10) : value) : undefined)
+            setSelectedMemberId(
+              value
+                ? typeof value === "string"
+                  ? parseInt(value, 10)
+                  : value
+                : undefined
+            )
           }
           placeholder="Search and select a member..."
           disabled={isLoading}
         />
         {memberOptions.length === 0 && !membersLoading && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-            No members available. All members already belong to at least one ministry.
+            No members available. All members already belong to at least one
+            ministry.
           </p>
         )}
       </div>
@@ -140,4 +170,3 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
 };
 
 export default AddMemberToMinistryForm;
-

@@ -19,6 +19,7 @@ export interface Member {
   status?: Status;
   profession?: Profession;
   location?: Location;
+  ministries?: Ministry[];
 }
 
 export interface Family {
@@ -60,6 +61,15 @@ export interface Location {
   createdAt: string;
   updatedAt: string;
   members?: Member[];
+}
+
+export interface Ministry {
+  id: number;
+  name: string;
+  description?: string;
+  is_active?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Input Types for Mutations

@@ -6,7 +6,17 @@ import ThemeToggle from "@/components/ui/theme-toggle";
 import { useGetFamilyMembers, useGetFamilyStats } from "@/hooks/useGraphQL";
 import { useAuth } from "@/redux/useAuth";
 import type { Member } from "@/types/graphql";
-import { Briefcase, Home, MapPin, UserCheck, Users } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Briefcase,
+  Home,
+  MapPin,
+  UserCheck,
+  UserPlus,
+  Users,
+  UserX,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
 const FamilyLeaderDashboard = () => {
@@ -25,11 +35,51 @@ const FamilyLeaderDashboard = () => {
 
   // Calculate family statistics
   const totalMembers = members.length;
+
+  // Status-based statistics
   const activeMembers = members.filter(
     (member: Member) => member.status?.name === "Active"
   ).length;
-  const inactiveMembers = members.filter(
-    (member: Member) => member.status?.name === "Inactive"
+  const notActiveMembers = members.filter(
+    (member: Member) =>
+      member.status?.name === "Not Active" || member.status?.name === "Inactive"
+  ).length;
+  const movedOutMembers = members.filter(
+    (member: Member) =>
+      member.status?.name === "Moved out" || member.status?.name === "Moved Out"
+  ).length;
+
+  // New members (created in the last 30 days)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  const newMembers = members.filter((member: Member) => {
+    if (!member.createdAt) return false;
+    const createdAt = new Date(member.createdAt);
+    return createdAt >= thirtyDaysAgo;
+  }).length;
+
+  // Location statistics
+  const locationAllocated = members.filter(
+    (member: Member) => member.location?.id != null
+  ).length;
+  const locationUnallocated = members.filter(
+    (member: Member) => member.location?.id == null
+  ).length;
+
+  // Profession statistics
+  const professionAllocated = members.filter(
+    (member: Member) => member.profession?.id != null
+  ).length;
+  const professionUnallocated = members.filter(
+    (member: Member) => member.profession?.id == null
+  ).length;
+
+  // Ministry statistics
+  const ministryAllocated = members.filter(
+    (member: Member) => member.ministries && member.ministries.length > 0
+  ).length;
+  const ministryUnallocated = members.filter(
+    (member: Member) => !member.ministries || member.ministries.length === 0
   ).length;
 
   // Get unique professions and locations
@@ -57,7 +107,11 @@ const FamilyLeaderDashboard = () => {
       case "Active":
         return "bg-green-100 text-green-800";
       case "Inactive":
+      case "Not Active":
         return "bg-gray-100 text-gray-800";
+      case "Moved out":
+      case "Moved Out":
+        return "bg-orange-100 text-orange-800";
       default:
         return "bg-yellow-100 text-yellow-800";
     }
@@ -97,6 +151,17 @@ const FamilyLeaderDashboard = () => {
               key={index}
               variant="minimal"
               className="hover-brand-glow transition-all duration-300"
+            />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <LoadingCard
+              key={index}
+              title="Allocation Statistics"
+              subtitle="Loading allocation data"
+              variant="detailed"
+              skeletonLines={3}
             />
           ))}
         </div>
@@ -166,67 +231,199 @@ const FamilyLeaderDashboard = () => {
         <ThemeToggle variant="icon" />
       </div>
 
-      {/* Statistics Cards */}
+      {/* Status Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Total Members
-              </CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{totalMembers}</div>
-            <p className="text-xs text-muted-foreground">
-              {activeMembers} active members
-            </p>
-          </CardContent>
-        </Card>
-
         <Card className="hover-brand-glow transition-all duration-300">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium">
                 Active Members
               </CardTitle>
-              <UserCheck className="h-4 w-4 text-secondary" />
+              <UserCheck className="h-4 w-4 text-green-600" />
             </div>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="text-2xl font-bold">{activeMembers}</div>
-            <p className="text-xs text-muted-foreground">
-              {inactiveMembers} inactive
-            </p>
+            <p className="text-xs text-muted-foreground">Currently active</p>
           </CardContent>
         </Card>
 
         <Card className="hover-brand-glow transition-all duration-300">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Professions</CardTitle>
-              <Briefcase className="h-4 w-4 text-accent" />
+              <CardTitle className="text-sm font-medium">
+                Not Active Members
+              </CardTitle>
+              <UserX className="h-4 w-4 text-gray-600" />
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{professions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Different professions
-            </p>
+            <div className="text-2xl font-bold">{notActiveMembers}</div>
+            <p className="text-xs text-muted-foreground">Inactive members</p>
           </CardContent>
         </Card>
 
         <Card className="hover-brand-glow transition-all duration-300">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Locations</CardTitle>
-              <MapPin className="h-4 w-4 text-primary" />
+              <CardTitle className="text-sm font-medium">Moved Out</CardTitle>
+              <UserX className="h-4 w-4 text-orange-600" />
             </div>
           </CardHeader>
           <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{locations.length}</div>
-            <p className="text-xs text-muted-foreground">Covered locations</p>
+            <div className="text-2xl font-bold">{movedOutMembers}</div>
+            <p className="text-xs text-muted-foreground">Moved out members</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-brand-glow transition-all duration-300">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">New Members</CardTitle>
+              <UserPlus className="h-4 w-4 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">{newMembers}</div>
+            <p className="text-xs text-muted-foreground">Last 30 days</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Allocation Statistics Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Location Allocation */}
+        <Card className="shadow-brand">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-brand-gradient text-lg">
+              Location Allocation
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Members with and without location assignments
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <MapPin className="h-5 w-5 text-green-600" />
+                  <div className="text-left">
+                    <div className="font-semibold">Location Allocated</div>
+                    <div className="text-xs opacity-70">
+                      Members with location assigned
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold">{locationAllocated}</div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                  <div className="text-left">
+                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
+                      Location Unallocated
+                    </div>
+                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
+                      Members without location
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+                  {locationUnallocated}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Profession Allocation */}
+        <Card className="shadow-brand">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-brand-gradient text-lg">
+              Profession Allocation
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Members with and without profession assignments
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <Briefcase className="h-5 w-5 text-green-600" />
+                  <div className="text-left">
+                    <div className="font-semibold">Profession Allocated</div>
+                    <div className="text-xs opacity-70">
+                      Members with profession assigned
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold">{professionAllocated}</div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                  <div className="text-left">
+                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
+                      Profession Unallocated
+                    </div>
+                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
+                      Members without profession
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+                  {professionUnallocated}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Ministry Allocation */}
+        <Card className="shadow-brand">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-brand-gradient text-lg">
+              Ministry Allocation
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Members with and without ministry assignments
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <Activity className="h-5 w-5 text-green-600" />
+                  <div className="text-left">
+                    <div className="font-semibold">Ministry Allocated</div>
+                    <div className="text-xs opacity-70">
+                      Members in ministries
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold">{ministryAllocated}</div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
+                <div className="flex items-center space-x-3">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                  <div className="text-left">
+                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
+                      Ministry Unallocated
+                    </div>
+                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
+                      Members not in any ministry
+                    </div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+                  {ministryUnallocated}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
