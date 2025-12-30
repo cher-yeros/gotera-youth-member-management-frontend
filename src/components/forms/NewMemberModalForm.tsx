@@ -66,6 +66,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   >({
     full_name: "",
     contact_no: "",
+    gender: undefined,
     status_id: undefined,
     family_id: defaultFamilyId || undefined,
     ministry_ids: defaultMinistryId ? [defaultMinistryId] : [],
@@ -85,6 +86,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         id: member.id,
         full_name: member.full_name,
         contact_no: member.contact_no || "",
+        gender: member.gender || undefined,
         status_id: member.status_id || undefined,
         family_id: member.family_id || undefined,
         ministry_ids: [], // Initialize empty, will be set from form
@@ -201,6 +203,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           id: memberId!,
           full_name: formData.full_name?.trim() || undefined,
           contact_no: formData.contact_no?.trim() || undefined,
+          gender: formData.gender || undefined,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
           role_id: formData.role_id || undefined,
@@ -216,6 +219,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         const cleanedData: CreateMemberInput = {
           full_name: formData.full_name?.trim() || "",
           contact_no: formData.contact_no?.trim() || undefined,
+          gender: formData.gender || undefined,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
           role_id: formData.role_id || undefined,
@@ -311,6 +315,27 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
               {errors.contact_no && (
                 <p className="text-red-500 text-sm mt-1">{errors.contact_no}</p>
               )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="gender"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Gender
+              </label>
+              <ComboBox
+                options={[
+                  { value: "male", label: "Male" },
+                  { value: "female", label: "Female" },
+                ]}
+                value={formData.gender ?? undefined}
+                onValueChange={(value) =>
+                  handleComboBoxChange("gender", value)
+                }
+                placeholder="Select gender"
+                disabled={isLoading}
+              />
             </div>
           </div>
         </div>

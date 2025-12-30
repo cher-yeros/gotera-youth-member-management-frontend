@@ -25,6 +25,7 @@ export const MINISTRY_WITH_MEMBERS_FRAGMENT = gql`
       id
       full_name
       contact_no
+      gender
       role {
         id
         name
@@ -39,6 +40,7 @@ export const MINISTRY_WITH_MEMBERS_FRAGMENT = gql`
       id
       full_name
       contact_no
+      gender
       role {
         id
         name
@@ -58,6 +60,7 @@ export const MEMBER_BASIC_FRAGMENT = gql`
     id
     full_name
     contact_no
+    gender
     status_id
     family_id
     role_id
@@ -97,6 +100,7 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
     id
     full_name
     contact_no
+    gender
     status_id
     family_id
     role_id
@@ -221,6 +225,7 @@ export const MEMBER_FRAGMENT = gql`
     id
     full_name
     contact_no
+    gender
     status_id
     family_id
     role_id
@@ -269,6 +274,7 @@ export const FAMILY_FRAGMENT = gql`
       id
       full_name
       contact_no
+      gender
       role {
         id
         name

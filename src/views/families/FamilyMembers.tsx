@@ -375,6 +375,14 @@ const FamilyMembers = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">
+                              Gender:
+                            </span>
+                            <span className="capitalize">
+                              {member.gender || "N/A"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
                               Profession:
                             </span>
                             <span>
@@ -427,6 +435,7 @@ const FamilyMembers = () => {
                     <tr className="border-b">
                       <th className="text-left p-3 font-semibold">Name</th>
                       <th className="text-left p-3 font-semibold">Contact</th>
+                      <th className="text-left p-3 font-semibold">Gender</th>
                       <th className="text-left p-3 font-semibold">Role</th>
                       <th className="text-left p-3 font-semibold">Status</th>
                       <th className="text-left p-3 font-semibold">
@@ -475,6 +484,11 @@ const FamilyMembers = () => {
                             ) : (
                               "N/A"
                             )}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm capitalize">
+                            {member.gender || "N/A"}
                           </div>
                         </td>
                         <td className="p-3">

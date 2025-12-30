@@ -254,6 +254,7 @@ const Members = () => {
       "ID",
       "Full Name",
       "Contact Number",
+      "Gender",
       "Family",
       "Role",
       "Status",
@@ -267,6 +268,7 @@ const Members = () => {
       member.id,
       member.full_name || "",
       member.contact_no || "",
+      member.gender || "",
       member.family?.name || "",
       member.role?.name || "",
       member.status?.name || "",
@@ -529,6 +531,14 @@ const Members = () => {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">
+                              Gender:
+                            </span>
+                            <span className="capitalize">
+                              {member.gender || "N/A"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">
                               Family:
                             </span>
                             <span>{member.family?.name || "N/A"}</span>
@@ -613,6 +623,7 @@ const Members = () => {
                     <tr className="border-b">
                       <th className="text-left p-3 font-semibold">Name</th>
                       <th className="text-left p-3 font-semibold">Contact</th>
+                      <th className="text-left p-3 font-semibold">Gender</th>
                       <th className="text-left p-3 font-semibold">Family</th>
                       {/* <th className="text-left p-3 font-semibold">Role</th> */}
                       <th className="text-left p-3 font-semibold">Status</th>
@@ -662,6 +673,11 @@ const Members = () => {
                             ) : (
                               "N/A"
                             )}
+                          </div>
+                        </td>
+                        <td className="p-3">
+                          <div className="text-sm capitalize">
+                            {member.gender || "N/A"}
                           </div>
                         </td>
                         <td className="p-3">
