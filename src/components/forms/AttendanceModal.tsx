@@ -1,7 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,9 +14,10 @@ import {
   BULK_CREATE_ATTENDANCE,
   GET_FAMILY_MEMBERS,
   GET_FAMILY_MEMBER_ATTENDANCES,
+  GET_FAMILY_MEETUPS,
 } from "@/graphql/operations";
-import { useMutation, useQuery } from "@apollo/client/react";
-import { CheckCircle, Save, Users, XCircle } from "lucide-react";
+import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
+import { CheckCircle, Users, XCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -41,6 +41,8 @@ interface AttendanceRecord {
   member_id: number;
   is_present: boolean;
   notes?: string;
+  /** True once this member has a saved attendance row */
+  recorded: boolean;
 }
 
 interface ExistingAttendance {
@@ -64,14 +66,15 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     AttendanceRecord[]
   >([]);
   const [notes, setNotes] = useState<{ [key: number]: string }>({});
-  const [isEditing, setIsEditing] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+  const client = useApolloClient();
 
   const { data: familyData, loading: familyLoading } = useQuery(
     GET_FAMILY_MEMBERS,
     {
       variables: { familyId },
       skip: !open,
-    }
+    },
   );
 
   const { data: existingAttendanceData, loading: attendanceLoading } = useQuery(
@@ -82,83 +85,108 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         pagination: { page: 1, limit: 100 },
       },
       skip: !open,
-    }
+      fetchPolicy: "network-only",
+    },
   );
 
-  const [bulkCreateAttendance, { loading: saving }] = useMutation(
-    BULK_CREATE_ATTENDANCE,
-    {
-      onCompleted: () => {
-        toast.success(
-          isEditing
-            ? "Attendance updated successfully!"
-            : "Attendance recorded successfully!"
-        );
-        setOpen(false);
-        setAttendanceRecords([]);
-        setNotes({});
-        setIsEditing(false);
-      },
-      onError: (error) => {
-        toast.error(
-          `Error ${isEditing ? "updating" : "recording"} attendance: ${
-            error.message
-          }`
-        );
-      },
-    }
-  );
+  const [bulkCreateAttendance] = useMutation(BULK_CREATE_ATTENDANCE);
 
+  // Load once when the modal opens — do not reset after optimistic saves
   useEffect(() => {
-    if ((familyData as { family?: { members: Member[] } })?.family?.members) {
-      const members = (familyData as { family: { members: Member[] } }).family
-        .members;
-      const existingAttendances =
-        (
-          existingAttendanceData as {
-            familyMemberAttendances?: { attendances: ExistingAttendance[] };
-          }
-        )?.familyMemberAttendances?.attendances || [];
-
-      // Check if we have existing attendance records
-      const hasExistingAttendance = existingAttendances.length > 0;
-      setIsEditing(hasExistingAttendance);
-
-      // Create a map of existing attendance for quick lookup
-      const existingAttendanceMap = new Map(
-        existingAttendances.map((att) => [att.member_id, att])
-      );
-
-      const initialRecords: AttendanceRecord[] = members.map(
-        (member: Member) => {
-          const existingAttendance = existingAttendanceMap.get(member.id);
-          return {
-            member_id: member.id,
-            is_present: existingAttendance?.is_present || false,
-            notes: existingAttendance?.notes || "",
-          };
-        }
-      );
-
-      setAttendanceRecords(initialRecords);
-
-      // Set notes from existing attendance
-      const notesMap: { [key: number]: string } = {};
-      existingAttendances.forEach((att) => {
-        notesMap[att.member_id] = att.notes || "";
-      });
-      setNotes(notesMap);
+    if (!open) {
+      setHydrated(false);
+      return;
     }
-  }, [familyData, existingAttendanceData]);
+    if (hydrated) return;
 
-  const handleAttendanceChange = (memberId: number, isPresent: boolean) => {
+    const members = (familyData as { family?: { members: Member[] } })?.family
+      ?.members;
+    if (!members || attendanceLoading) return;
+
+    const existingAttendances =
+      (
+        existingAttendanceData as {
+          familyMemberAttendances?: { attendances: ExistingAttendance[] };
+        }
+      )?.familyMemberAttendances?.attendances || [];
+
+    const existingAttendanceMap = new Map(
+      existingAttendances.map((att) => [att.member_id, att]),
+    );
+
+    setAttendanceRecords(
+      members.map((member: Member) => {
+        const existingAttendance = existingAttendanceMap.get(member.id);
+        return {
+          member_id: member.id,
+          is_present: existingAttendance?.is_present || false,
+          notes: existingAttendance?.notes || "",
+          recorded: !!existingAttendance,
+        };
+      }),
+    );
+
+    const notesMap: { [key: number]: string } = {};
+    existingAttendances.forEach((att) => {
+      notesMap[att.member_id] = att.notes || "";
+    });
+    setNotes(notesMap);
+    setHydrated(true);
+  }, [open, hydrated, familyData, existingAttendanceData, attendanceLoading]);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    setOpen(nextOpen);
+    // Refresh meetup list only after closing, without interrupting the modal
+    if (!nextOpen) {
+      client.refetchQueries({
+        include: [GET_FAMILY_MEETUPS],
+      });
+    }
+  };
+
+  const handleAttendanceChange = async (
+    memberId: number,
+    isPresent: boolean,
+  ) => {
+    const previous = attendanceRecords.find((r) => r.member_id === memberId);
+
+    // Instant UI flip — API runs in the background
     setAttendanceRecords((prev) =>
       prev.map((record) =>
         record.member_id === memberId
-          ? { ...record, is_present: isPresent }
-          : record
-      )
+          ? { ...record, is_present: isPresent, recorded: true }
+          : record,
+      ),
     );
+
+    try {
+      await bulkCreateAttendance({
+        variables: {
+          input: {
+            meetup_id: meetupId,
+            attendances: [
+              {
+                meetup_id: meetupId,
+                member_id: memberId,
+                is_present: isPresent,
+                notes: notes[memberId] || "",
+              },
+            ],
+          },
+        },
+      });
+    } catch (error: unknown) {
+      if (previous) {
+        setAttendanceRecords((prev) =>
+          prev.map((record) =>
+            record.member_id === memberId ? previous : record,
+          ),
+        );
+      }
+      const message =
+        error instanceof Error ? error.message : "Failed to save attendance";
+      toast.error(message);
+    }
   };
 
   const handleNotesChange = (memberId: number, note: string) => {
@@ -168,35 +196,45 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }));
   };
 
-  const handleSave = async () => {
-    const attendanceData = attendanceRecords.map((record) => ({
-      meetup_id: meetupId,
-      member_id: record.member_id,
-      is_present: record.is_present,
-      notes: notes[record.member_id] || "",
-    }));
+  const handleNotesBlur = async (memberId: number) => {
+    const record = attendanceRecords.find((r) => r.member_id === memberId);
+    if (!record?.recorded) return;
 
     try {
       await bulkCreateAttendance({
         variables: {
           input: {
             meetup_id: meetupId,
-            attendances: attendanceData,
+            attendances: [
+              {
+                meetup_id: meetupId,
+                member_id: memberId,
+                is_present: record.is_present,
+                notes: notes[memberId] || "",
+              },
+            ],
           },
         },
       });
-    } catch (error) {
-      console.error("Error saving attendance:", error);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Failed to save notes";
+      toast.error(message);
     }
   };
 
-  const presentCount = attendanceRecords.filter((r) => r.is_present).length;
+  const recordedRecords = attendanceRecords.filter((r) => r.recorded);
+  const presentCount = recordedRecords.filter((r) => r.is_present).length;
+  const absentCount = recordedRecords.filter((r) => !r.is_present).length;
   const totalCount = attendanceRecords.length;
-  const attendanceRate = totalCount > 0 ? (presentCount / totalCount) * 100 : 0;
+  const attendanceRate =
+    recordedRecords.length > 0
+      ? (presentCount / recordedRecords.length) * 100
+      : 0;
 
-  if (familyLoading || attendanceLoading) {
+  if (familyLoading || attendanceLoading || (open && !hydrated)) {
     return (
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
           {trigger || (
             <Button>
@@ -215,7 +253,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger || (
           <Button>
@@ -226,12 +264,15 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>
-            {isEditing ? "Edit Family Attendance" : "Record Family Attendance"}
-          </DialogTitle>
+          <DialogTitle>Record Family Attendance</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
+          <p className="text-sm text-muted-foreground">
+            Click Present or Absent for each member — changes save
+            automatically.
+          </p>
+
           {/* Attendance Summary */}
           <Card>
             <CardHeader>
@@ -250,7 +291,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-red-600">
-                    {totalCount - presentCount}
+                    {absentCount}
                   </div>
                   <div className="text-sm text-muted-foreground">Absent</div>
                 </div>
@@ -280,55 +321,64 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                 familyData as { family?: { members: Member[] } }
               )?.family?.members?.map((member: Member) => {
                 const record = attendanceRecords.find(
-                  (r) => r.member_id === member.id
+                  (r) => r.member_id === member.id,
                 );
-                const isPresent = record?.is_present || false;
+                const isRecorded = record?.recorded || false;
+                const isPresent = isRecorded && (record?.is_present || false);
+                const isAbsent = isRecorded && !record?.is_present;
 
                 return (
-                  <Card key={member.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <h4 className="font-medium">{member.full_name}</h4>
-                            {member.contact_no && (
-                              <p className="text-sm text-muted-foreground">
-                                {member.contact_no}
-                              </p>
-                            )}
-                            {member.role && (
-                              <Badge variant="secondary" className="text-xs">
-                                {member.role.name}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+                  <Card key={member.id} className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate">
+                          {member.full_name}
+                        </h4>
+                        {member.contact_no && (
+                          <p className="text-sm text-muted-foreground">
+                            {member.contact_no}
+                          </p>
+                        )}
+                        {member.role && (
+                          <Badge variant="secondary" className="text-xs mt-1">
+                            {member.role.name}
+                          </Badge>
+                        )}
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id={`present-${member.id}`}
-                            checked={isPresent}
-                            onCheckedChange={(checked) =>
-                              handleAttendanceChange(
-                                member.id,
-                                checked as boolean
-                              )
-                            }
-                          />
-                          <Label
-                            htmlFor={`present-${member.id}`}
-                            className="flex items-center gap-2"
-                          >
-                            {isPresent ? (
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            ) : (
-                              <XCircle className="h-4 w-4 text-red-600" />
-                            )}
-                            {isPresent ? "Present" : "Absent"}
-                          </Label>
-                        </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={isPresent ? "default" : "outline"}
+                          className={
+                            isPresent
+                              ? "bg-green-600 hover:bg-green-700 text-white min-w-[5.75rem] h-9 text-sm transition-colors"
+                              : "min-w-[5.75rem] h-9 text-sm transition-colors"
+                          }
+                          onClick={() =>
+                            handleAttendanceChange(member.id, true)
+                          }
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1.5" />
+                          Present
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={isAbsent ? "default" : "outline"}
+                          className={
+                            isAbsent
+                              ? "bg-red-600 hover:bg-red-700 text-white min-w-[5.75rem] h-9 text-sm transition-colors"
+                              : "min-w-[5.75rem] h-9 text-sm transition-colors"
+                          }
+                          onClick={() =>
+                            handleAttendanceChange(member.id, false)
+                          }
+                        >
+                          <XCircle className="h-4 w-4 mr-1.5" />
+                          Absent
+                        </Button>
                       </div>
                     </div>
 
@@ -342,6 +392,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
                         onChange={(e) =>
                           handleNotesChange(member.id, e.target.value)
                         }
+                        onBlur={() => handleNotesBlur(member.id)}
                         placeholder="Add notes for this member..."
                         rows={2}
                         className="mt-1"
@@ -353,24 +404,9 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2 pt-4 border-t">
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {saving
-                ? isEditing
-                  ? "Updating..."
-                  : "Saving..."
-                : isEditing
-                ? "Update Attendance"
-                : "Save Attendance"}
+          <div className="flex justify-end pt-4 border-t">
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+              Done
             </Button>
           </div>
         </div>

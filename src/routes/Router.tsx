@@ -39,6 +39,28 @@ const MinistriesManagement = lazy(
 const MinistryMembers = lazy(
   () => import("../views/ministries/MinistryMembers")
 );
+const FollowUpManagement = lazy(
+  () => import("../views/follow-up/FollowUpManagement")
+);
+const FollowUpCaseDetail = lazy(
+  () => import("../views/follow-up/FollowUpCaseDetail")
+);
+const TeenagersPage = lazy(() => import("../views/teenagers/TeenagersPage"));
+const TeenClassesPage = lazy(
+  () => import("../views/teen-classes/TeenClassesPage")
+);
+const TeenClassDetail = lazy(
+  () => import("../views/teen-classes/TeenClassDetail")
+);
+const TeenSessionsManagement = lazy(
+  () => import("../views/teen-classes/TeenSessionsManagement")
+);
+const TeenAttendanceManagement = lazy(
+  () => import("../views/teen-attendance/TeenAttendanceManagement")
+);
+const TeenTeacherDashboard = lazy(
+  () => import("../views/dashboard/TeenTeacherDashboard")
+);
 const Login = lazy(() => import("../views/authentication/Login"));
 const ComboBoxTest = lazy(() => import("../components/test/ComboBoxTest"));
 
@@ -192,6 +214,78 @@ const Router = [
         element: (
           <ProtectedRoute requiredRole="admin">
             <FamilyMeetupsManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/follow-up",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FUL"]}>
+            <FollowUpManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/follow-up/:id",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FUL"]}>
+            <FollowUpCaseDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teenagers",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <TeenagersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teen-classes",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <TeenClassesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teen-classes/my-classes",
+        element: (
+          <ProtectedRoute requiredRole="tt">
+            <TeenClassDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teen-classes/:classId",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "TT"]}>
+            <TeenClassDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teen-sessions",
+        element: (
+          <ProtectedRoute requiredRole="admin">
+            <TeenSessionsManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teen-attendance",
+        element: (
+          <ProtectedRoute allowedRoles={["admin", "main", "tt"]}>
+            <TeenAttendanceManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/teen-dashboard",
+        element: (
+          <ProtectedRoute requiredRole="tt">
+            <TeenTeacherDashboard />
           </ProtectedRoute>
         ),
       },

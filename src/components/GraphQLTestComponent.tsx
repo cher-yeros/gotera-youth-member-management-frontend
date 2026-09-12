@@ -101,7 +101,7 @@ const GraphQLTestComponent = () => {
           </p>
           <p className="text-sm text-muted-foreground">
             Make sure the backend server is running on
-            http://localhost:4000/graphql
+            http://10.92.97.106:4000/graphql
           </p>
         </CardContent>
       </Card>

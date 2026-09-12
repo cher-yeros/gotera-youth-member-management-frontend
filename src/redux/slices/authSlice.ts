@@ -9,6 +9,7 @@ export interface User {
   id: number;
   phone: string;
   role: string;
+  roles?: string[];
   member?: {
     id: number;
     contact_no?: string;
@@ -22,6 +23,11 @@ export interface User {
       name: string;
       description: string;
     };
+    roles?: {
+      id: number;
+      name: string;
+      description: string;
+    }[];
     status?: {
       id: number;
       name: string;

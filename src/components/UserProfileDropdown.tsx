@@ -12,6 +12,7 @@ import { ChevronDown, LogOut, Settings, User } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch } from "@/redux/hooks";
+import { formatMemberRoles, getUserRoles } from "@/lib/roles";
 
 const UserProfileDropdown = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,6 +23,10 @@ const UserProfileDropdown = () => {
   if (!isAuthenticated || !user) {
     return null;
   }
+
+  const roleLabel =
+    getUserRoles(user).join(", ") ||
+    formatMemberRoles(user.member, "Family Member");
 
   const handleLogout = async () => {
     try {
@@ -52,7 +57,7 @@ const UserProfileDropdown = () => {
       const names = user.member.full_name.split(" ");
       if (names.length >= 2) {
         return `${names[0].charAt(0)}${names[names.length - 1].charAt(
-          0
+          0,
         )}`.toUpperCase();
       }
       return names[0].charAt(0).toUpperCase();
@@ -91,7 +96,7 @@ const UserProfileDropdown = () => {
               {getDisplayName()}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400">
-              {user?.member?.role?.name || "Family Member"}
+              {roleLabel}
             </div>
           </div>
           <ChevronDown className="h-4 w-4 text-gray-500 hidden md:block" />
@@ -121,7 +126,7 @@ const UserProfileDropdown = () => {
                   {user?.phone}
                 </div>
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  {user?.member?.role?.name || "Family Member"}
+                  {roleLabel}
                 </div>
               </div>
             </div>

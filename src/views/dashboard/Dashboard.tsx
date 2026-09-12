@@ -6,14 +6,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import type { Member } from "@/generated/graphql";
-import { useGetOverviewStats, useGetRecentMembers } from "@/hooks/useGraphQL";
+import {
+  useGetIncompleteFamilies,
+  useGetMinistries,
+  useGetOverviewStats,
+  useGetRecentMembers,
+} from "@/hooks/useGraphQL";
+import { useGetTeenOverviewStats } from "@/hooks/useTeenGraphQL";
+import { GET_FOLLOW_UP_DASHBOARD } from "@/graphql/operations";
+import { useQuery } from "@apollo/client/react";
 import {
   Activity,
   AlertTriangle,
   Briefcase,
+  CalendarClock,
+  CheckCircle2,
   Clock,
+  GraduationCap,
   Home,
   MapPin,
+  PhoneCall,
   TrendingUp,
   UserCheck,
   Users,
@@ -25,10 +37,34 @@ const Dashboard = () => {
   const { data: statsData, loading: statsLoading } = useGetOverviewStats();
   const { data: recentMembersData, loading: recentMembersLoading } =
     useGetRecentMembers(3);
+  const { data: incompleteFamiliesData, loading: incompleteFamiliesLoading } =
+    useGetIncompleteFamilies(50);
+  const { data: ministriesData, loading: ministriesLoading } =
+    useGetMinistries();
+  const { data: followUpDashData } = useQuery(GET_FOLLOW_UP_DASHBOARD);
+  const { data: teenStatsData } = useGetTeenOverviewStats();
+  const teenStats = (teenStatsData as any)?.teenOverviewStats;
 
   const stats = statsData?.overviewStats;
   const recentMembers = recentMembersData?.recentMembers || [];
-  const isLoading = statsLoading || recentMembersLoading;
+  const incompleteFamilies = incompleteFamiliesData?.incompleteFamilies || [];
+  const followUpDash = (followUpDashData as any)?.followUpDashboard;
+  const ministries = ministriesData?.ministries || [];
+  const dayUnassignedMinistries = ministries.filter(
+    (ministry) => !ministry.program_day || !ministry.program_frequency,
+  );
+  const fullyUncompletedFamilies = incompleteFamilies.filter(
+    (family: any) => family.isFullyIncomplete,
+  );
+  const incompleteFamiliesCount =
+    stats?.incompleteFamiliesCount ?? incompleteFamilies.length;
+  const fullyIncompleteFamiliesCount =
+    stats?.fullyIncompleteFamiliesCount ?? fullyUncompletedFamilies.length;
+  const isLoading =
+    statsLoading ||
+    recentMembersLoading ||
+    incompleteFamiliesLoading ||
+    ministriesLoading;
 
   const getInitials = (name: string) => {
     return name
@@ -151,6 +187,40 @@ const Dashboard = () => {
         <Card className="hover-brand-glow transition-all duration-300">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Teenagers</CardTitle>
+              <GraduationCap className="h-4 w-4 text-primary" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="text-2xl font-bold">
+              {teenStats?.activeTeenagers || 0}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {teenStats?.totalClasses || 0} classes
+              {teenStats?.incompleteTeenagers
+                ? ` · ${teenStats.incompleteTeenagers} incomplete`
+                : ""}
+            </p>
+            <Link
+              to="/teenagers"
+              className="text-xs text-primary hover:underline"
+            >
+              Manage teenagers
+            </Link>
+          </CardContent>
+        </Card>
+
+        <Card
+          className={`hover-brand-glow transition-all duration-300 ${
+            incompleteFamiliesCount > 0
+              ? fullyIncompleteFamiliesCount > 0
+                ? "border-2 border-red-500/40"
+                : "border-2 border-yellow-500/40"
+              : ""
+          }`}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
               <CardTitle className="text-sm font-medium">Families</CardTitle>
               <Home className="h-4 w-4 text-secondary" />
             </div>
@@ -159,7 +229,11 @@ const Dashboard = () => {
             <div className="text-2xl font-bold">
               {stats?.totalFamilies || 0}
             </div>
-            <p className="text-xs text-muted-foreground">Registered families</p>
+            <p className="text-xs text-muted-foreground">
+              {incompleteFamiliesCount > 0
+                ? `${incompleteFamiliesCount} with incomplete info`
+                : "Registered families"}
+            </p>
           </CardContent>
         </Card>
 
@@ -195,6 +269,323 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Follow-up pipeline summary */}
+      {followUpDash && (
+        <Card className="shadow-brand">
+          <CardHeader className="pb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <CardTitle className="text-brand-gradient text-lg flex items-center gap-2">
+                  <PhoneCall className="h-5 w-5 text-primary" />
+                  Follow-up pipeline
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Newcomer intake and coordinator workload
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/follow-up">Open Follow-up</Link>
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">New</div>
+                <div className="text-xl font-bold">{followUpDash.newCount}</div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">Assigned</div>
+                <div className="text-xl font-bold">
+                  {followUpDash.assignedCount}
+                </div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">In progress</div>
+                <div className="text-xl font-bold">
+                  {followUpDash.inProgressCount}
+                </div>
+              </div>
+              <div className="rounded-lg border p-3 border-red-200">
+                <div className="text-xs text-red-700">Overdue</div>
+                <div className="text-xl font-bold text-red-700">
+                  {followUpDash.overdueCount}
+                </div>
+              </div>
+              <div className="rounded-lg border p-3">
+                <div className="text-xs text-muted-foreground">
+                  Promoted this month
+                </div>
+                <div className="text-xl font-bold">
+                  {followUpDash.joinedThisMonth}
+                </div>
+              </div>
+            </div>
+            {followUpDash.coordinatorWorkload?.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {followUpDash.coordinatorWorkload.map((c: any) => (
+                  <Badge key={c.member_id} variant="outline">
+                    {c.full_name}: {c.openCases} open
+                    {c.overdueCases > 0 ? ` · ${c.overdueCases} overdue` : ""}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Families with incomplete member data */}
+      <Card
+        className={`shadow-brand ${
+          fullyIncompleteFamiliesCount > 0
+            ? "border-2 border-red-500/40"
+            : incompleteFamiliesCount > 0
+              ? "border-2 border-yellow-500/40"
+              : ""
+        }`}
+      >
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle className="text-brand-gradient text-lg flex items-center gap-2">
+                <AlertTriangle
+                  className={`h-5 w-5 ${
+                    fullyIncompleteFamiliesCount > 0
+                      ? "text-red-600"
+                      : incompleteFamiliesCount > 0
+                        ? "text-yellow-600"
+                        : "text-green-600"
+                  }`}
+                />
+                Families with Incomplete Info
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Families with Active members missing contact, gender, status,
+                role, profession, location, or ministry
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-yellow-100 text-yellow-800">
+                {incompleteFamiliesCount} incomplete
+              </Badge>
+              {fullyIncompleteFamiliesCount > 0 && (
+                <Badge className="bg-red-100 text-red-800">
+                  {fullyIncompleteFamiliesCount} fully incomplete
+                </Badge>
+              )}
+              <Badge className="bg-green-100 text-green-800">
+                {Math.max(
+                  (stats?.totalFamilies || 0) - incompleteFamiliesCount,
+                  0,
+                )}{" "}
+                complete
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {incompleteFamilies.length === 0 ? (
+            <div className="flex items-center gap-3 p-4 rounded-lg border border-green-500/30 bg-green-50 dark:bg-green-950/20">
+              <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" />
+              <div>
+                <p className="font-medium text-green-900 dark:text-green-100">
+                  All families look complete
+                </p>
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Every registered family has complete member profiles.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {incompleteFamilies.map((family: any) => (
+                <div
+                  key={family.id}
+                  className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border transition-colors ${
+                    family.isFullyIncomplete
+                      ? "border-red-500/50 bg-red-50/60 dark:bg-red-950/20"
+                      : "border-yellow-500/40 bg-yellow-50/50 dark:bg-yellow-950/10"
+                  }`}
+                >
+                  <div
+                    className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
+                      family.isFullyIncomplete
+                        ? "bg-red-100 dark:bg-red-900/40"
+                        : "bg-yellow-100 dark:bg-yellow-900/40"
+                    }`}
+                  >
+                    <Home
+                      className={`h-5 w-5 ${
+                        family.isFullyIncomplete
+                          ? "text-red-600"
+                          : "text-yellow-700"
+                      }`}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold truncate">{family.name}</p>
+                      {family.isFullyIncomplete ? (
+                        <Badge className="text-xs bg-red-100 text-red-800">
+                          Fully incomplete
+                        </Badge>
+                      ) : (
+                        <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                          Incomplete
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {family.incompleteMemberCount} of {family.memberCount}{" "}
+                      active members need data filled
+                      {family.fullyIncompleteMemberCount > 0
+                        ? ` · ${family.fullyIncompleteMemberCount} mostly empty`
+                        : ""}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Badge variant="secondary" className="text-xs">
+                      {family.completeMemberCount} complete
+                    </Badge>
+                    <Link to={`/families/${family.id}/members`}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-current"
+                      >
+                        View Members
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-2">
+                <Link to="/families">
+                  <Button
+                    variant="outline"
+                    className="w-full border-brand-gradient hover:bg-brand-gradient hover:text-white transition-all duration-200"
+                  >
+                    <Home className="mr-2 h-4 w-4" />
+                    Manage All Families
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Ministries without regular program day */}
+      <Card
+        className={`shadow-brand ${
+          dayUnassignedMinistries.length > 0
+            ? "border-2 border-yellow-500/40"
+            : ""
+        }`}
+      >
+        <CardHeader className="pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle className="text-brand-gradient text-lg flex items-center gap-2">
+                <CalendarClock
+                  className={`h-5 w-5 ${
+                    dayUnassignedMinistries.length > 0
+                      ? "text-yellow-600"
+                      : "text-green-600"
+                  }`}
+                />
+                Day Unassigned Ministries
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Ministries that have not set a weekly, bi-monthly, or monthly
+                program day
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge className="bg-yellow-100 text-yellow-800">
+                {dayUnassignedMinistries.length} unassigned
+              </Badge>
+              <Badge className="bg-green-100 text-green-800">
+                {Math.max(
+                  ministries.length - dayUnassignedMinistries.length,
+                  0,
+                )}{" "}
+                scheduled
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {dayUnassignedMinistries.length === 0 ? (
+            <div className="flex items-center gap-3 p-4 rounded-lg border border-green-500/30 bg-green-50 dark:bg-green-950/20">
+              <CheckCircle2 className="h-6 w-6 text-green-600 shrink-0" />
+              <div>
+                <p className="font-medium text-green-900 dark:text-green-100">
+                  All ministries have a program day
+                </p>
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  Every ministry has a regular program schedule set.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {dayUnassignedMinistries.map((ministry) => (
+                <div
+                  key={ministry.id}
+                  className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border border-yellow-500/40 bg-yellow-50/50 dark:bg-yellow-950/10"
+                >
+                  <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0 bg-yellow-100 dark:bg-yellow-900/40">
+                    <CalendarClock className="h-5 w-5 text-yellow-700" />
+                  </div>
+                  <div className="flex-1 min-w-0 space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold truncate">{ministry.name}</p>
+                      <Badge
+                        className={`text-xs ${
+                          ministry.is_active
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {ministry.is_active ? "Active" : "Inactive"}
+                      </Badge>
+                      <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                        Program day not set
+                      </Badge>
+                    </div>
+                    {ministry.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-1">
+                        {ministry.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link to={`/ministries/${ministry.id}/members`}>
+                      <Button variant="outline" size="sm">
+                        View Ministry
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+              <div className="pt-2">
+                <Link to="/ministries">
+                  <Button
+                    variant="outline"
+                    className="w-full border-brand-gradient hover:bg-brand-gradient hover:text-white transition-all duration-200"
+                  >
+                    <CalendarClock className="mr-2 h-4 w-4" />
+                    Manage All Ministries
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Member Status Statistics */}
       <Card className="shadow-brand">
@@ -590,7 +981,7 @@ const Dashboard = () => {
                     </div>
                     <Badge
                       className={`text-xs ${getStatusColor(
-                        member.status?.name || "Unknown"
+                        member.status?.name || "Unknown",
                       )}`}
                     >
                       {member.status?.name || "Unknown"}

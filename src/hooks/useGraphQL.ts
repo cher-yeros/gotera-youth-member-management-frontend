@@ -41,6 +41,7 @@ import {
   GET_OVERVIEW_STATS,
   GET_RECENT_MEMBERS,
   GET_FAMILY_SUMMARIES,
+  GET_INCOMPLETE_FAMILIES,
   GET_PROFESSION_SUMMARIES,
   GET_LOCATION_SUMMARIES,
   LOGIN,
@@ -112,13 +113,15 @@ export const useGetMember = (id: number) => {
 
 export const useGetMembers = (
   filter?: MemberFilterInput,
-  pagination?: PaginationInput
+  pagination?: PaginationInput,
+  options?: { skip?: boolean },
 ) => {
   return useQuery<GetMembersQuery>(GET_MEMBERS, {
     variables: { filter, pagination },
     errorPolicy: "all",
     notifyOnNetworkStatusChange: true,
     fetchPolicy: "no-cache",
+    skip: options?.skip,
     context: {
       queryKey: `members-${pagination?.page || 1}-${pagination?.limit || 10}`,
     },
@@ -142,7 +145,7 @@ export const useCreateMember = () => {
         toast.error(`Failed to create member: ${error.message}`);
       },
       refetchQueries: ["GetMembers"],
-    }
+    },
   );
 
   const handleCreateMember = async (input: CreateMemberInput) => {
@@ -168,8 +171,13 @@ export const useUpdateMember = () => {
       onError: (error) => {
         toast.error(`Failed to update member: ${error.message}`);
       },
-      refetchQueries: ["GetMembers"],
-    }
+      refetchQueries: [
+        "GetMembers",
+        "GetMember",
+        "GetIncompleteFamilies",
+        "GetOverviewStats",
+      ],
+    },
   );
 
   const handleUpdateMember = async (input: UpdateMemberInput) => {
@@ -196,7 +204,7 @@ export const useDeleteMember = () => {
         toast.error(`Failed to delete member: ${error.message}`);
       },
       refetchQueries: ["GetMembers"],
-    }
+    },
   );
 
   const handleDeleteMember = async (id: number) => {
@@ -306,6 +314,13 @@ export const useGetFamilies = () => {
   });
 };
 
+export const useGetIncompleteFamilies = (limit: number = 50) => {
+  return useQuery<any>(GET_INCOMPLETE_FAMILIES, {
+    variables: { limit },
+    errorPolicy: "all",
+  });
+};
+
 export const useGetFamily = (id: number) => {
   return useQuery<GetFamilyQuery>(GET_FAMILY, {
     variables: { id },
@@ -325,7 +340,7 @@ export const useCreateFamily = () => {
         toast.error(`Failed to create family: ${error.message}`);
       },
       refetchQueries: ["GetFamilies"],
-    }
+    },
   );
 
   const handleCreateFamily = async (input: CreateFamilyInput) => {
@@ -352,7 +367,7 @@ export const useUpdateFamily = () => {
         toast.error(`Failed to update family: ${error.message}`);
       },
       refetchQueries: ["GetFamilies"],
-    }
+    },
   );
 
   const handleUpdateFamily = async (input: UpdateFamilyInput) => {
@@ -379,7 +394,7 @@ export const useDeleteFamily = () => {
         toast.error(`Failed to delete family: ${error.message}`);
       },
       refetchQueries: ["GetFamilies"],
-    }
+    },
   );
 
   const handleDeleteFamily = async (id: number) => {
@@ -413,7 +428,7 @@ export const useCreateRole = () => {
         toast.error(`Failed to create role: ${error.message}`);
       },
       refetchQueries: ["GetRoles"],
-    }
+    },
   );
 
   const handleCreateRole = async (input: CreateRoleInput) => {
@@ -440,7 +455,7 @@ export const useUpdateRole = () => {
         toast.error(`Failed to update role: ${error.message}`);
       },
       refetchQueries: ["GetRoles"],
-    }
+    },
   );
 
   const handleUpdateRole = async (input: UpdateRoleInput) => {
@@ -467,7 +482,7 @@ export const useDeleteRole = () => {
         toast.error(`Failed to delete role: ${error.message}`);
       },
       refetchQueries: ["GetRoles"],
-    }
+    },
   );
 
   const handleDeleteRole = async (id: number) => {
@@ -501,7 +516,7 @@ export const useCreateStatus = () => {
         toast.error(`Failed to create status: ${error.message}`);
       },
       refetchQueries: ["GetStatuses"],
-    }
+    },
   );
 
   const handleCreateStatus = async (input: CreateStatusInput) => {
@@ -528,7 +543,7 @@ export const useUpdateStatus = () => {
         toast.error(`Failed to update status: ${error.message}`);
       },
       refetchQueries: ["GetStatuses"],
-    }
+    },
   );
 
   const handleUpdateStatus = async (input: UpdateStatusInput) => {
@@ -555,7 +570,7 @@ export const useDeleteStatus = () => {
         toast.error(`Failed to delete status: ${error.message}`);
       },
       refetchQueries: ["GetStatuses"],
-    }
+    },
   );
 
   const handleDeleteStatus = async (id: number) => {
@@ -597,7 +612,7 @@ export const useCreateProfession = () => {
         toast.error(`Failed to create profession: ${error.message}`);
       },
       refetchQueries: ["GetProfessions"],
-    }
+    },
   );
 
   const handleCreateProfession = async (input: CreateProfessionInput) => {
@@ -624,7 +639,7 @@ export const useUpdateProfession = () => {
         toast.error(`Failed to update profession: ${error.message}`);
       },
       refetchQueries: ["GetProfessions"],
-    }
+    },
   );
 
   const handleUpdateProfession = async (input: UpdateProfessionInput) => {
@@ -651,7 +666,7 @@ export const useDeleteProfession = () => {
         toast.error(`Failed to delete profession: ${error.message}`);
       },
       refetchQueries: ["GetProfessions"],
-    }
+    },
   );
 
   const handleDeleteProfession = async (id: number) => {
@@ -693,7 +708,7 @@ export const useCreateLocation = () => {
         toast.error(`Failed to create location: ${error.message}`);
       },
       refetchQueries: ["GetLocations"],
-    }
+    },
   );
 
   const handleCreateLocation = async (input: CreateLocationInput) => {
@@ -720,7 +735,7 @@ export const useUpdateLocation = () => {
         toast.error(`Failed to update location: ${error.message}`);
       },
       refetchQueries: ["GetLocations"],
-    }
+    },
   );
 
   const handleUpdateLocation = async (input: UpdateLocationInput) => {
@@ -747,7 +762,7 @@ export const useDeleteLocation = () => {
         toast.error(`Failed to delete location: ${error.message}`);
       },
       refetchQueries: ["GetLocations"],
-    }
+    },
   );
 
   const handleDeleteLocation = async (id: number) => {
@@ -815,7 +830,7 @@ export const useLogin = () => {
           setCredentials({
             token: loginResponse.token,
             user: loginResponse.user,
-          })
+          }),
         );
 
         toast.success("Login successful!");
@@ -1008,7 +1023,7 @@ export const usePromoteMinistryLeader = () => {
       onError: (error) => {
         toast.error(`Failed to promote ministry leader: ${error.message}`);
       },
-    }
+    },
   );
 
   const handlePromoteMinistryLeader = async (input: any) => {

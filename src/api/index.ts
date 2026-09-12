@@ -12,7 +12,7 @@ import { store } from "@/redux/store";
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:4000/graphql", // GraphQL endpoint for Gotera Youth backend
+  baseURL: "http://10.92.97.106:4000/graphql", // GraphQL endpoint for Gotera Youth backend
   headers: {
     "Content-Type": "application/json",
   },
@@ -31,7 +31,7 @@ api.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 export default api;

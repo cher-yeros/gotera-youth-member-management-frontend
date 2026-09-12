@@ -14,7 +14,6 @@ import {
   useGetLocations,
   useGetMember,
   useGetProfessions,
-  useGetRoles,
   useGetStatuses,
   useGetMinistries,
   useUpdateMember,
@@ -45,7 +44,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
 
   // Fetch member data if in update mode
   const { data: memberData, loading: memberLoading } = useGetMember(
-    memberId || 0
+    memberId || 0,
   ) as {
     data: GetMemberQuery | undefined;
     loading: boolean;
@@ -53,7 +52,6 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
 
   // Fetch all the lookup data
   const { data: familiesData, loading: familiesLoading } = useGetFamilies();
-  const { data: rolesData, loading: rolesLoading } = useGetRoles();
   const { data: statusesData, loading: statusesLoading } = useGetStatuses();
   const { data: professionsData, loading: professionsLoading } =
     useGetProfessions();
@@ -70,7 +68,6 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     status_id: undefined,
     family_id: defaultFamilyId || undefined,
     ministry_ids: defaultMinistryId ? [defaultMinistryId] : [],
-    role_id: undefined,
     profession_id: undefined,
     location_id: undefined,
     profession_name: "",
@@ -89,7 +86,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         gender: member.gender || undefined,
         status_id: member.status_id || undefined,
         family_id: member.family_id || undefined,
-        ministry_ids: [], // Initialize empty, will be set from form
+        ministry_ids: member.ministries?.map((m) => m.id) || [],
         role_id: member.role_id || undefined,
         profession_id: member.profession_id || undefined,
         location_id: member.location_id || undefined,
@@ -122,12 +119,6 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
       label: ministry.name,
     })) || [];
 
-  const getRoleOptions = (): ComboBoxOption[] =>
-    rolesData?.roles?.map((role) => ({
-      value: role.id,
-      label: role.name,
-    })) || [];
-
   const getProfessionOptions = (): ComboBoxOption[] =>
     professionsData?.professions?.map((profession) => ({
       value: profession.id,
@@ -143,7 +134,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle input changes
   const handleInputChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined | number[]
+    value: string | number | undefined | number[],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -162,7 +153,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle ComboBox changes for foreign keys
   const handleComboBoxChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined | number[]
+    value: string | number | undefined | number[],
   ) => {
     handleInputChange(field, value);
   };
@@ -206,7 +197,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           gender: formData.gender || undefined,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
-          role_id: formData.role_id || undefined,
+          ministry_ids: formData.ministry_ids || [],
           profession_id: formData.profession_id || undefined,
           location_id: formData.location_id || undefined,
           profession_name: formData.profession_name?.trim() || undefined,
@@ -222,7 +213,10 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           gender: formData.gender || undefined,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
-          role_id: formData.role_id || undefined,
+          ministry_ids:
+            formData.ministry_ids && formData.ministry_ids.length > 0
+              ? formData.ministry_ids
+              : undefined,
           profession_id: formData.profession_id || undefined,
           location_id: formData.location_id || undefined,
           profession_name: formData.profession_name?.trim() || undefined,
@@ -239,22 +233,14 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     } catch (error) {
       console.error(
         `Error ${isUpdateMode ? "updating" : "creating"} member:`,
-        error
+        error,
       );
       // Error handling is done in the hooks with toast notifications
     }
   };
 
-  const isLoading =
-    isCreating ||
-    isUpdating ||
-    memberLoading ||
-    familiesLoading ||
-    rolesLoading ||
-    statusesLoading ||
-    professionsLoading ||
-    locationsLoading ||
-    ministrysLoading;
+  const isSubmitting = isCreating || isUpdating;
+  const isFamilyLocked = !!defaultFamilyId || !!memberData?.member?.family_id;
 
   return (
     <div className="space-y-6">
@@ -285,9 +271,11 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                 type="text"
                 value={formData.full_name || ""}
                 onChange={(e) => handleInputChange("full_name", e.target.value)}
-                placeholder="Enter full name"
+                placeholder={
+                  memberLoading ? "Loading member..." : "Enter full name"
+                }
                 className={errors.full_name ? "border-red-500" : ""}
-                disabled={isLoading}
+                disabled={isSubmitting || memberLoading}
               />
               {errors.full_name && (
                 <p className="text-red-500 text-sm mt-1">{errors.full_name}</p>
@@ -310,7 +298,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                 }
                 placeholder="Enter phone number"
                 className={errors.contact_no ? "border-red-500" : ""}
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
               {errors.contact_no && (
                 <p className="text-red-500 text-sm mt-1">{errors.contact_no}</p>
@@ -330,11 +318,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   { value: "female", label: "Female" },
                 ]}
                 value={formData.gender ?? undefined}
-                onValueChange={(value) =>
-                  handleComboBoxChange("gender", value)
-                }
+                onValueChange={(value) => handleComboBoxChange("gender", value)}
                 placeholder="Select gender"
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -361,7 +347,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   handleComboBoxChange("status_id", value)
                 }
                 placeholder="Select status"
-                disabled={isLoading}
+                loading={statusesLoading}
+                loadingText="Loading statuses..."
+                disabled={isSubmitting}
               />
             </div>
 
@@ -379,11 +367,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   handleComboBoxChange("family_id", value)
                 }
                 placeholder="Select family"
-                disabled={
-                  isLoading ||
-                  !!defaultFamilyId ||
-                  !!memberData?.member?.family_id
-                }
+                loading={familiesLoading}
+                loadingText="Loading families..."
+                disabled={isSubmitting || isFamilyLocked}
               />
             </div>
 
@@ -411,30 +397,33 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   }
                 }}
                 placeholder="Select ministries"
-                disabled={isLoading}
+                loading={ministrysLoading}
+                loadingText="Loading ministries..."
+                disabled={isSubmitting}
               />
               {formData.ministry_ids && formData.ministry_ids.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {formData.ministry_ids.map((id) => {
                     const ministry = ministrysData?.ministries?.find(
-                      (m: Ministry) => m.id === id
+                      (m: Ministry) => m.id === id,
                     );
                     return (
                       <span
                         key={id}
                         className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                       >
-                        {ministry?.name}
+                        {ministry?.name || `Ministry #${id}`}
                         <button
                           type="button"
                           onClick={() => {
                             const newIds =
                               formData.ministry_ids?.filter(
-                                (mid) => mid !== id
+                                (mid) => mid !== id,
                               ) || [];
                             handleComboBoxChange("ministry_ids", newIds);
                           }}
                           className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+                          disabled={isSubmitting}
                         >
                           ×
                         </button>
@@ -443,24 +432,6 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   })}
                 </div>
               )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="role_id"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-              >
-                Role
-              </label>
-              <ComboBox
-                options={getRoleOptions()}
-                value={formData.role_id ?? undefined}
-                onValueChange={(value) =>
-                  handleComboBoxChange("role_id", value)
-                }
-                placeholder="Select role"
-                disabled={isLoading}
-              />
             </div>
 
             <div>
@@ -477,7 +448,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   handleComboBoxChange("profession_id", value)
                 }
                 placeholder="Select profession"
-                disabled={isLoading}
+                loading={professionsLoading}
+                loadingText="Loading professions..."
+                disabled={isSubmitting}
               />
             </div>
 
@@ -495,7 +468,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   handleComboBoxChange("location_id", value)
                 }
                 placeholder="Select location"
-                disabled={isLoading}
+                loading={locationsLoading}
+                loadingText="Loading locations..."
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -523,7 +498,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   handleInputChange("profession_name", e.target.value)
                 }
                 placeholder="Enter custom profession name"
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Override the profession name from the dropdown above
@@ -545,7 +520,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                   handleInputChange("location_name", e.target.value)
                 }
                 placeholder="Enter custom location name"
-                disabled={isLoading}
+                disabled={isSubmitting}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Override the location name from the dropdown above
@@ -560,23 +535,23 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
             type="button"
             variant="outline"
             onClick={onCancel}
-            disabled={isLoading}
+            disabled={isSubmitting}
             className="flex-1 sm:flex-none sm:order-2"
           >
             Cancel
           </Button>
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting || memberLoading}
             className="flex-1 sm:flex-none sm:order-1"
           >
-            {isLoading
+            {isSubmitting
               ? isUpdateMode
                 ? "Updating..."
                 : "Creating..."
               : isUpdateMode
-              ? "Update Member"
-              : "Create Member"}
+                ? "Update Member"
+                : "Create Member"}
           </Button>
         </div>
       </form>

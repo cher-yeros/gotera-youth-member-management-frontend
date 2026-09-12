@@ -7,6 +7,8 @@ export const MINISTRY_FRAGMENT = gql`
     name
     description
     is_active
+    program_frequency
+    program_day
     createdAt
     updatedAt
   }
@@ -19,6 +21,8 @@ export const MINISTRY_WITH_MEMBERS_FRAGMENT = gql`
     name
     description
     is_active
+    program_frequency
+    program_day
     createdAt
     updatedAt
     members {
@@ -79,6 +83,11 @@ export const MEMBER_BASIC_FRAGMENT = gql`
       name
       description
     }
+    roles {
+      id
+      name
+      description
+    }
     status {
       id
       name
@@ -119,6 +128,11 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
       name
       description
     }
+    roles {
+      id
+      name
+      description
+    }
     status {
       id
       name
@@ -142,6 +156,7 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
 export const FAMILY_MEETUP_FRAGMENT = gql`
   fragment FamilyMeetupFragment on FamilyMeetup {
     id
+    batch_id
     family_id
     title
     description
@@ -176,6 +191,50 @@ export const FAMILY_MEETUP_FRAGMENT = gql`
       }
     }
   }
+`;
+
+export const FAMILY_MEETUP_BATCH_FRAGMENT = gql`
+  fragment FamilyMeetupBatchFragment on FamilyMeetupBatch {
+    id
+    title
+    description
+    meetup_date
+    location
+    created_by
+    is_active
+    createdAt
+    updatedAt
+    creator {
+      id
+      full_name
+    }
+    meetups {
+      id
+      family_id
+      title
+      description
+      meetup_date
+      location
+      is_active
+      family {
+        id
+        name
+      }
+      attendances {
+        id
+        is_present
+      }
+    }
+  }
+`;
+
+export const GET_FAMILY_MEETUP_BATCH = gql`
+  query GetFamilyMeetupBatch($id: Int!) {
+    familyMeetupBatch(id: $id) {
+      ...FamilyMeetupBatchFragment
+    }
+  }
+  ${FAMILY_MEETUP_BATCH_FRAGMENT}
 `;
 
 // Fragment for FamilyMemberAttendance
@@ -240,6 +299,11 @@ export const MEMBER_FRAGMENT = gql`
       name
     }
     role {
+      id
+      name
+      description
+    }
+    roles {
       id
       name
       description
@@ -363,6 +427,8 @@ export const OVERVIEW_STATS_FRAGMENT = gql`
     professionUnallocatedMembers
     ministryAllocatedMembers
     ministryUnallocatedMembers
+    incompleteFamiliesCount
+    fullyIncompleteFamiliesCount
   }
 `;
 
@@ -395,6 +461,10 @@ export const FAMILY_SUMMARY_FRAGMENT = gql`
     id
     name
     memberCount
+    incompleteMemberCount
+    fullyIncompleteMemberCount
+    completeMemberCount
+    isFullyIncomplete
     createdAt
     location {
       id
@@ -629,6 +699,15 @@ export const GET_FAMILY_SUMMARIES = gql`
   ${FAMILY_SUMMARY_FRAGMENT}
 `;
 
+export const GET_INCOMPLETE_FAMILIES = gql`
+  query GetIncompleteFamilies($limit: Int) {
+    incompleteFamilies(limit: $limit) {
+      ...FamilySummaryFragment
+    }
+  }
+  ${FAMILY_SUMMARY_FRAGMENT}
+`;
+
 export const GET_PROFESSION_SUMMARIES = gql`
   query GetProfessionSummaries($limit: Int) {
     professionSummaries(limit: $limit) {
@@ -680,12 +759,18 @@ export const PROMOTE_MEMBER = gql`
         id
         phone
         role
+        roles
         createdAt
         member {
           id
           contact_no
           full_name
           role {
+            id
+            name
+            description
+          }
+          roles {
             id
             name
             description
@@ -882,6 +967,7 @@ export const LOGIN = gql`
         id
         phone
         role
+        roles
         member {
           id
           contact_no
@@ -891,6 +977,11 @@ export const LOGIN = gql`
             name
           }
           role {
+            id
+            name
+            description
+          }
+          roles {
             id
             name
             description
@@ -933,6 +1024,7 @@ export const GET_FAMILY_MEMBERS = gql`
         id
         full_name
         contact_no
+        gender
         role {
           id
           name
@@ -1016,6 +1108,24 @@ export const GET_FAMILY_MEETUPS = gql`
   ${FAMILY_MEETUP_FRAGMENT}
 `;
 
+export const GET_FAMILY_MEETUP_BATCHES = gql`
+  query GetFamilyMeetupBatches(
+    $filter: MeetupFilterInput
+    $pagination: PaginationInput
+  ) {
+    familyMeetupBatches(filter: $filter, pagination: $pagination) {
+      batches {
+        ...FamilyMeetupBatchFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${FAMILY_MEETUP_BATCH_FRAGMENT}
+`;
+
 export const GET_FAMILY_MEMBER_ATTENDANCE = gql`
   query GetFamilyMemberAttendance($id: Int!) {
     familyMemberAttendance(id: $id) {
@@ -1053,6 +1163,30 @@ export const GET_MEETUP_ATTENDANCE_STATS = gql`
 `;
 
 // ATTENDANCE MUTATIONS
+export const CREATE_FAMILY_MEETUP_BATCH = gql`
+  mutation CreateFamilyMeetupBatch($input: CreateFamilyMeetupBatchInput!) {
+    createFamilyMeetupBatch(input: $input) {
+      ...FamilyMeetupBatchFragment
+    }
+  }
+  ${FAMILY_MEETUP_BATCH_FRAGMENT}
+`;
+
+export const UPDATE_FAMILY_MEETUP_BATCH = gql`
+  mutation UpdateFamilyMeetupBatch($input: UpdateFamilyMeetupBatchInput!) {
+    updateFamilyMeetupBatch(input: $input) {
+      ...FamilyMeetupBatchFragment
+    }
+  }
+  ${FAMILY_MEETUP_BATCH_FRAGMENT}
+`;
+
+export const DELETE_FAMILY_MEETUP_BATCH = gql`
+  mutation DeleteFamilyMeetupBatch($id: Int!) {
+    deleteFamilyMeetupBatch(id: $id)
+  }
+`;
+
 export const CREATE_FAMILY_MEETUP = gql`
   mutation CreateFamilyMeetup($input: CreateFamilyMeetupInput!) {
     createFamilyMeetup(input: $input) {
@@ -1136,6 +1270,8 @@ export const GET_MINISTRY_STATS = gql`
       name
       description
       is_active
+      program_frequency
+      program_day
       createdAt
       updatedAt
       totalMembers
@@ -1220,4 +1356,707 @@ export const PROMOTE_MINISTRY_LEADER = gql`
       }
     }
   }
+`;
+
+// =====================
+// Follow-up
+// =====================
+
+export const FOLLOW_UP_CASE_FRAGMENT = gql`
+  fragment FollowUpCaseFragment on FollowUpCase {
+    id
+    member_id
+    status
+    source
+    first_visit_date
+    assigned_to
+    assigned_at
+    next_follow_up_at
+    priority
+    outcome_notes
+    closed_at
+    created_by
+    family_id
+    createdAt
+    updatedAt
+    member {
+      id
+      full_name
+      contact_no
+      gender
+      status_id
+      family_id
+      status {
+        id
+        name
+      }
+      family {
+        id
+        name
+      }
+    }
+    assignee {
+      id
+      full_name
+      contact_no
+    }
+    creator {
+      id
+      full_name
+    }
+    family {
+      id
+      name
+    }
+    contacts {
+      id
+      case_id
+      contact_type
+      outcome
+      notes
+      contacted_at
+      next_follow_up_at
+      recorded_by
+      createdAt
+      recorder {
+        id
+        full_name
+      }
+    }
+    assignments {
+      id
+      case_id
+      from_member_id
+      to_member_id
+      reason
+      assigned_by
+      assigned_at
+      fromMember {
+        id
+        full_name
+      }
+      toMember {
+        id
+        full_name
+      }
+      assigner {
+        id
+        full_name
+      }
+    }
+  }
+`;
+
+export const GET_FOLLOW_UP_CASES = gql`
+  query GetFollowUpCases(
+    $filter: FollowUpCaseFilterInput
+    $pagination: PaginationInput
+  ) {
+    followUpCases(filter: $filter, pagination: $pagination) {
+      items {
+        ...FollowUpCaseFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const GET_MY_FOLLOW_UP_CASES = gql`
+  query GetMyFollowUpCases(
+    $filter: FollowUpCaseFilterInput
+    $pagination: PaginationInput
+  ) {
+    myFollowUpCases(filter: $filter, pagination: $pagination) {
+      items {
+        ...FollowUpCaseFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const GET_FOLLOW_UP_CASE = gql`
+  query GetFollowUpCase($id: Int!) {
+    followUpCase(id: $id) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const GET_FOLLOW_UP_DASHBOARD = gql`
+  query GetFollowUpDashboard {
+    followUpDashboard {
+      newCount
+      assignedCount
+      inProgressCount
+      overdueCount
+      joinedThisMonth
+      notInterestedCount
+      unreachableCount
+      movedOutCount
+      coordinatorWorkload {
+        member_id
+        full_name
+        openCases
+        overdueCases
+      }
+    }
+  }
+`;
+
+export const GET_FOLLOW_UP_COORDINATORS = gql`
+  query GetFollowUpCoordinators {
+    followUpCoordinators {
+      id
+      full_name
+      contact_no
+      role {
+        id
+        name
+      }
+      roles {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const INTAKE_NEWCOMER = gql`
+  mutation IntakeNewcomer($input: IntakeNewcomerInput!) {
+    intakeNewcomer(input: $input) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const ASSIGN_FOLLOW_UP_CASE = gql`
+  mutation AssignFollowUpCase($input: AssignFollowUpCaseInput!) {
+    assignFollowUpCase(input: $input) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const REASSIGN_FOLLOW_UP_CASE = gql`
+  mutation ReassignFollowUpCase($input: AssignFollowUpCaseInput!) {
+    reassignFollowUpCase(input: $input) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const LOG_FOLLOW_UP_CONTACT = gql`
+  mutation LogFollowUpContact($input: LogFollowUpContactInput!) {
+    logFollowUpContact(input: $input) {
+      id
+      case_id
+      contact_type
+      outcome
+      notes
+      contacted_at
+      next_follow_up_at
+      recorded_by
+      recorder {
+        id
+        full_name
+      }
+    }
+  }
+`;
+
+export const UPDATE_FOLLOW_UP_CASE = gql`
+  mutation UpdateFollowUpCase($input: UpdateFollowUpCaseInput!) {
+    updateFollowUpCase(input: $input) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const GRADUATE_FOLLOW_UP_CASE = gql`
+  mutation GraduateFollowUpCase($input: GraduateFollowUpCaseInput!) {
+    graduateFollowUpCase(input: $input) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const CLOSE_FOLLOW_UP_CASE = gql`
+  mutation CloseFollowUpCase($input: CloseFollowUpCaseInput!) {
+    closeFollowUpCase(input: $input) {
+      ...FollowUpCaseFragment
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+// ==================== TEENAGERS ====================
+
+export const TEEN_CLASS_FRAGMENT = gql`
+  fragment TeenClassFragment on TeenClass {
+    id
+    name
+    description
+    createdAt
+    updatedAt
+    teenCount
+    teacherCount
+    teenagers {
+      id
+      full_name
+      contact_no
+      gender
+      birth_date
+      location_id
+      guardian_name
+      guardian_contact
+      guardian_relationship
+      status
+      class_id
+      location {
+        id
+        name
+      }
+    }
+    teachers {
+      id
+      class_id
+      member_id
+      is_active
+      member {
+        id
+        full_name
+        contact_no
+        role {
+          id
+          name
+        }
+      }
+    }
+  }
+`;
+
+export const TEENAGER_FRAGMENT = gql`
+  fragment TeenagerFragment on Teenager {
+    id
+    full_name
+    contact_no
+    gender
+    birth_date
+    location_id
+    guardian_name
+    guardian_contact
+    guardian_relationship
+    class_id
+    status
+    promoted_member_id
+    createdAt
+    updatedAt
+    teenClass {
+      id
+      name
+    }
+    location {
+      id
+      name
+    }
+    promotedMember {
+      id
+      full_name
+    }
+  }
+`;
+
+export const CLASS_SESSION_FRAGMENT = gql`
+  fragment ClassSessionFragment on ClassSession {
+    id
+    batch_id
+    class_id
+    title
+    description
+    topic
+    session_date
+    location
+    created_by
+    is_active
+    createdAt
+    updatedAt
+    teenClass {
+      id
+      name
+    }
+    creator {
+      id
+      full_name
+    }
+    attendanceStats {
+      total
+      present
+      absent
+      attendanceRate
+    }
+  }
+`;
+
+export const CLASS_SESSION_BATCH_FRAGMENT = gql`
+  fragment ClassSessionBatchFragment on ClassSessionBatch {
+    id
+    title
+    description
+    session_date
+    location
+    created_by
+    is_active
+    createdAt
+    updatedAt
+    creator {
+      id
+      full_name
+    }
+    sessions {
+      ...ClassSessionFragment
+    }
+  }
+  ${CLASS_SESSION_FRAGMENT}
+`;
+
+export const TEEN_ATTENDANCE_FRAGMENT = gql`
+  fragment TeenAttendanceFragment on TeenAttendance {
+    id
+    session_id
+    teenager_id
+    is_present
+    notes
+    recorded_by
+    createdAt
+    updatedAt
+    teenager {
+      id
+      full_name
+      contact_no
+    }
+    recorder {
+      id
+      full_name
+    }
+  }
+`;
+
+export const GET_TEEN_CLASSES = gql`
+  query GetTeenClasses {
+    teenClasses {
+      ...TeenClassFragment
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
+`;
+
+export const GET_MY_TEEN_CLASSES = gql`
+  query GetMyTeenClasses {
+    myTeenClasses {
+      ...TeenClassFragment
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
+`;
+
+export const GET_TEEN_CLASS = gql`
+  query GetTeenClass($id: Int!) {
+    teenClass(id: $id) {
+      ...TeenClassFragment
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
+`;
+
+export const GET_TEENAGERS = gql`
+  query GetTeenagers(
+    $filter: TeenagerFilterInput
+    $pagination: PaginationInput
+  ) {
+    teenagers(filter: $filter, pagination: $pagination) {
+      teenagers {
+        ...TeenagerFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${TEENAGER_FRAGMENT}
+`;
+
+export const GET_TEENAGER = gql`
+  query GetTeenager($id: Int!) {
+    teenager(id: $id) {
+      ...TeenagerFragment
+      classHistory {
+        id
+        from_class_id
+        to_class_id
+        moved_at
+        note
+        fromClass {
+          id
+          name
+        }
+        toClass {
+          id
+          name
+        }
+      }
+    }
+  }
+  ${TEENAGER_FRAGMENT}
+`;
+
+export const GET_TEEN_OVERVIEW_STATS = gql`
+  query GetTeenOverviewStats {
+    teenOverviewStats {
+      totalTeenagers
+      activeTeenagers
+      promotedTeenagers
+      totalClasses
+      incompleteTeenagers
+    }
+  }
+`;
+
+export const GET_CLASS_SESSIONS = gql`
+  query GetClassSessions(
+    $filter: ClassSessionFilterInput
+    $pagination: PaginationInput
+  ) {
+    classSessions(filter: $filter, pagination: $pagination) {
+      sessions {
+        ...ClassSessionFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${CLASS_SESSION_FRAGMENT}
+`;
+
+export const GET_CLASS_SESSION = gql`
+  query GetClassSession($id: Int!) {
+    classSession(id: $id) {
+      ...ClassSessionFragment
+      attendances {
+        ...TeenAttendanceFragment
+      }
+    }
+  }
+  ${CLASS_SESSION_FRAGMENT}
+  ${TEEN_ATTENDANCE_FRAGMENT}
+`;
+
+export const GET_CLASS_SESSION_BATCHES = gql`
+  query GetClassSessionBatches(
+    $filter: ClassSessionFilterInput
+    $pagination: PaginationInput
+  ) {
+    classSessionBatches(filter: $filter, pagination: $pagination) {
+      batches {
+        ...ClassSessionBatchFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${CLASS_SESSION_BATCH_FRAGMENT}
+`;
+
+export const GET_TEEN_ATTENDANCES = gql`
+  query GetTeenAttendances(
+    $filter: TeenAttendanceFilterInput
+    $pagination: PaginationInput
+  ) {
+    teenAttendances(filter: $filter, pagination: $pagination) {
+      attendances {
+        ...TeenAttendanceFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${TEEN_ATTENDANCE_FRAGMENT}
+`;
+
+export const CREATE_TEEN_CLASS = gql`
+  mutation CreateTeenClass($input: CreateTeenClassInput!) {
+    createTeenClass(input: $input) {
+      ...TeenClassFragment
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
+`;
+
+export const UPDATE_TEEN_CLASS = gql`
+  mutation UpdateTeenClass($input: UpdateTeenClassInput!) {
+    updateTeenClass(input: $input) {
+      ...TeenClassFragment
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
+`;
+
+export const DELETE_TEEN_CLASS = gql`
+  mutation DeleteTeenClass($id: Int!) {
+    deleteTeenClass(id: $id)
+  }
+`;
+
+export const CREATE_TEENAGER = gql`
+  mutation CreateTeenager($input: CreateTeenagerInput!) {
+    createTeenager(input: $input) {
+      ...TeenagerFragment
+    }
+  }
+  ${TEENAGER_FRAGMENT}
+`;
+
+export const UPDATE_TEENAGER = gql`
+  mutation UpdateTeenager($input: UpdateTeenagerInput!) {
+    updateTeenager(input: $input) {
+      ...TeenagerFragment
+    }
+  }
+  ${TEENAGER_FRAGMENT}
+`;
+
+export const DELETE_TEENAGER = gql`
+  mutation DeleteTeenager($id: Int!) {
+    deleteTeenager(id: $id)
+  }
+`;
+
+export const TRANSFER_TEENAGER = gql`
+  mutation TransferTeenager($input: TransferTeenagerInput!) {
+    transferTeenager(input: $input) {
+      success
+      message
+      teenager {
+        ...TeenagerFragment
+      }
+      oldClass {
+        id
+        name
+      }
+      newClass {
+        id
+        name
+      }
+    }
+  }
+  ${TEENAGER_FRAGMENT}
+`;
+
+export const ASSIGN_CLASS_TEACHER = gql`
+  mutation AssignClassTeacher($input: AssignClassTeacherInput!) {
+    assignClassTeacher(input: $input) {
+      success
+      message
+      password
+      classTeacher {
+        id
+        class_id
+        member_id
+        is_active
+        member {
+          id
+          full_name
+          contact_no
+        }
+      }
+    }
+  }
+`;
+
+export const REMOVE_CLASS_TEACHER = gql`
+  mutation RemoveClassTeacher($input: RemoveClassTeacherInput!) {
+    removeClassTeacher(input: $input)
+  }
+`;
+
+export const CREATE_CLASS_SESSION_BATCH = gql`
+  mutation CreateClassSessionBatch($input: CreateClassSessionBatchInput!) {
+    createClassSessionBatch(input: $input) {
+      ...ClassSessionBatchFragment
+    }
+  }
+  ${CLASS_SESSION_BATCH_FRAGMENT}
+`;
+
+export const UPDATE_CLASS_SESSION_BATCH = gql`
+  mutation UpdateClassSessionBatch($input: UpdateClassSessionBatchInput!) {
+    updateClassSessionBatch(input: $input) {
+      ...ClassSessionBatchFragment
+    }
+  }
+  ${CLASS_SESSION_BATCH_FRAGMENT}
+`;
+
+export const UPDATE_CLASS_SESSION = gql`
+  mutation UpdateClassSession($input: UpdateClassSessionInput!) {
+    updateClassSession(input: $input) {
+      ...ClassSessionFragment
+    }
+  }
+  ${CLASS_SESSION_FRAGMENT}
+`;
+
+export const DELETE_CLASS_SESSION_BATCH = gql`
+  mutation DeleteClassSessionBatch($id: Int!) {
+    deleteClassSessionBatch(id: $id)
+  }
+`;
+
+export const BULK_CREATE_TEEN_ATTENDANCE = gql`
+  mutation BulkCreateTeenAttendance($input: BulkTeenAttendanceInput!) {
+    bulkCreateTeenAttendance(input: $input) {
+      ...TeenAttendanceFragment
+    }
+  }
+  ${TEEN_ATTENDANCE_FRAGMENT}
+`;
+
+export const PROMOTE_TEENAGER_TO_MEMBER = gql`
+  mutation PromoteTeenagerToMember($input: PromoteTeenagerToMemberInput!) {
+    promoteTeenagerToMember(input: $input) {
+      success
+      message
+      password
+      teenager {
+        ...TeenagerFragment
+      }
+      member {
+        id
+        full_name
+        contact_no
+      }
+    }
+  }
+  ${TEENAGER_FRAGMENT}
 `;

@@ -3,14 +3,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import ThemeToggle from "@/components/ui/theme-toggle";
+import SetMinistryProgramModal from "@/components/forms/SetMinistryProgramModal";
 import { useGetMinistry, useGetMinistryMembers } from "@/hooks/useGraphQL";
+import { formatMinistryProgram } from "@/lib/ministryProgram";
 import { useAuth } from "@/redux/useAuth";
 import type { Member } from "@/types/graphql";
-import { Briefcase, Crown, MapPin, UserCheck, Users } from "lucide-react";
+import {
+  Briefcase,
+  CalendarClock,
+  Crown,
+  MapPin,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 const MinistryLeaderDashboard = () => {
   const { user } = useAuth();
+  const [isProgramModalOpen, setIsProgramModalOpen] = useState(false);
   // ML users lead ministries, so get from ledMinistries instead of ministries
   const ministryId =
     user?.member?.ledMinistries?.[0]?.id || user?.member?.ministries?.[0]?.id;
@@ -20,36 +31,41 @@ const MinistryLeaderDashboard = () => {
     data: ministryData,
     loading: ministryLoading,
     error: ministryError,
+    refetch: refetchMinistry,
   } = useGetMinistry(ministryId || 0);
   const { data: membersData, loading: membersLoading } = useGetMinistryMembers(
-    ministryId || 0
+    ministryId || 0,
   );
 
   const ministry = ministryData?.ministry;
   const members = membersData?.ministryMembers || [];
   const isLoading = ministryLoading || membersLoading;
+  const programLabel = formatMinistryProgram(
+    ministry?.program_frequency,
+    ministry?.program_day,
+  );
 
   // Calculate ministry statistics
   const totalMembers = members.length;
   const activeMembers = members.filter(
-    (member: Member) => member.status?.name === "Active"
+    (member: Member) => member.status?.name === "Active",
   ).length;
   const inactiveMembers = members.filter(
-    (member: Member) => member.status?.name === "Inactive"
+    (member: Member) => member.status?.name === "Inactive",
   ).length;
   const ministryLeaders = members.filter(
-    (member: Member) => member.role?.name === "TL"
+    (member: Member) => member.role?.name === "ML",
   ).length;
 
   // Get unique professions and locations
   const professions = [
     ...new Set(
-      members.map((member: Member) => member.profession?.name).filter(Boolean)
+      members.map((member: Member) => member.profession?.name).filter(Boolean),
     ),
   ];
   const locations = [
     ...new Set(
-      members.map((member: Member) => member.location?.name).filter(Boolean)
+      members.map((member: Member) => member.location?.name).filter(Boolean),
     ),
   ];
 
@@ -307,14 +323,14 @@ const MinistryLeaderDashboard = () => {
                     <div className="flex flex-col space-y-1">
                       <Badge
                         className={`text-xs ${getStatusColor(
-                          member.status?.name || "Unknown"
+                          member.status?.name || "Unknown",
                         )}`}
                       >
                         {member.status?.name || "Unknown"}
                       </Badge>
                       <Badge
                         className={`text-xs ${getRoleColor(
-                          member.role?.name || "Unknown"
+                          member.role?.name || "Unknown",
                         )}`}
                       >
                         {member.role?.name || "Unknown"}
@@ -341,6 +357,22 @@ const MinistryLeaderDashboard = () => {
                 <span className="text-sm text-muted-foreground">
                   {ministry.name}
                 </span>
+              </div>
+
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-sm font-medium">Regular Program</span>
+                <div className="text-right">
+                  {programLabel ? (
+                    <Badge className="bg-indigo-100 text-indigo-800">
+                      <CalendarClock className="mr-1 h-3 w-3" />
+                      {programLabel}
+                    </Badge>
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Not set
+                    </span>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between">
@@ -378,7 +410,15 @@ const MinistryLeaderDashboard = () => {
                 </span>
               </div>
 
-              <div className="pt-2 border-t border-border">
+              <div className="pt-2 border-t border-border space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full border-brand-gradient hover:bg-brand-gradient hover:text-white transition-all duration-200 shadow-sm hover:shadow-md"
+                  onClick={() => setIsProgramModalOpen(true)}
+                >
+                  <CalendarClock className="mr-2 h-4 w-4" />
+                  Set Regular Program Day
+                </Button>
                 <Link to={`/ministries/${ministry.id}/members`}>
                   <Button
                     variant="outline"
@@ -419,7 +459,7 @@ const MinistryLeaderDashboard = () => {
                       <Badge variant="secondary" className="text-xs">
                         {
                           members.filter(
-                            (m: Member) => m.profession?.name === profession
+                            (m: Member) => m.profession?.name === profession,
                           ).length
                         }
                       </Badge>
@@ -449,7 +489,7 @@ const MinistryLeaderDashboard = () => {
                       <Badge variant="secondary" className="text-xs">
                         {
                           members.filter(
-                            (m: Member) => m.location?.name === location
+                            (m: Member) => m.location?.name === location,
                           ).length
                         }
                       </Badge>
@@ -465,6 +505,20 @@ const MinistryLeaderDashboard = () => {
           </div>
         </CardContent>
       </Card>
+
+      <SetMinistryProgramModal
+        ministry={{
+          id: ministry.id,
+          name: ministry.name,
+          program_frequency: ministry.program_frequency,
+          program_day: ministry.program_day,
+        }}
+        isOpen={isProgramModalOpen}
+        onClose={() => setIsProgramModalOpen(false)}
+        onSuccess={() => {
+          refetchMinistry();
+        }}
+      />
     </div>
   );
 };

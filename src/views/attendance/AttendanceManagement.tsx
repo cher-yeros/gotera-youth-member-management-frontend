@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import { GET_FAMILY_MEETUPS } from "@/graphql/operations";
+import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { useQuery } from "@apollo/client/react";
 import { format } from "date-fns";
@@ -50,6 +51,7 @@ const AttendanceManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
 
   const familyId = user?.member?.family?.id;
+  const canCreateMeetup = hasAnyRole(user, [ROLE.ADMIN, ROLE.FC]);
 
   const { data, loading, error } = useQuery(GET_FAMILY_MEETUPS, {
     variables: {
@@ -65,36 +67,50 @@ const AttendanceManagement: React.FC = () => {
   const meetups =
     (data as { familyMeetups?: { meetups: FamilyMeetup[] } })?.familyMeetups
       ?.meetups || [];
-  const currentDate = new Date();
 
-  const upcomingMeetups = meetups.filter((meetup: FamilyMeetup) => {
-    // Handle Unix timestamp (milliseconds) with validation
-    const timestamp = parseInt(meetup.meetup_date);
-    if (isNaN(timestamp)) {
-      console.error(`Invalid timestamp: ${meetup.meetup_date}`);
-      return false;
-    }
+  // Compare by calendar day so today's meetups stay in Upcoming
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
 
-    const meetupDate = new Date(timestamp);
-    if (isNaN(meetupDate.getTime())) {
-      console.error(`Invalid date from timestamp: ${timestamp}`);
-      return false;
-    }
+  const getMeetupDay = (meetupDate: string) => {
+    const timestamp = parseInt(meetupDate);
+    if (isNaN(timestamp)) return null;
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) return null;
+    const day = new Date(date);
+    day.setHours(0, 0, 0, 0);
+    return day;
+  };
 
-    const isUpcoming = meetupDate >= currentDate;
+  const isMeetupToday = (meetupDate: string) => {
+    const day = getMeetupDay(meetupDate);
+    return !!day && day.getTime() === startOfToday.getTime();
+  };
 
-    return isUpcoming;
-  });
+  // Upcoming: soonest first (today on top). Past: most recent day first.
+  const byMeetupDateAsc = (a: FamilyMeetup, b: FamilyMeetup) =>
+    parseInt(a.meetup_date) - parseInt(b.meetup_date);
+  const byMeetupDateDesc = (a: FamilyMeetup, b: FamilyMeetup) =>
+    parseInt(b.meetup_date) - parseInt(a.meetup_date);
 
-  const pastMeetups = meetups.filter((meetup: FamilyMeetup) => {
-    const timestamp = parseInt(meetup.meetup_date);
-    if (isNaN(timestamp)) return false;
+  const upcomingMeetups = meetups
+    .filter((meetup: FamilyMeetup) => {
+      const meetupDay = getMeetupDay(meetup.meetup_date);
+      if (!meetupDay) {
+        console.error(`Invalid timestamp: ${meetup.meetup_date}`);
+        return false;
+      }
+      return meetupDay >= startOfToday;
+    })
+    .sort(byMeetupDateAsc);
 
-    const meetupDate = new Date(timestamp);
-    if (isNaN(meetupDate.getTime())) return false;
-
-    return meetupDate < currentDate;
-  });
+  const pastMeetups = meetups
+    .filter((meetup: FamilyMeetup) => {
+      const meetupDay = getMeetupDay(meetup.meetup_date);
+      if (!meetupDay) return false;
+      return meetupDay < startOfToday;
+    })
+    .sort(byMeetupDateDesc);
   const formatMeetupDate = (meetupDate: string) => {
     const timestamp = parseInt(meetupDate);
     if (isNaN(timestamp)) return "Invalid Date";
@@ -112,10 +128,10 @@ const AttendanceManagement: React.FC = () => {
         (meetup: FamilyMeetup) =>
           meetup.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           meetup.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          meetup.description.toLowerCase().includes(searchTerm.toLowerCase())
+          meetup.description.toLowerCase().includes(searchTerm.toLowerCase()),
       );
     },
-    [searchTerm]
+    [searchTerm],
   );
 
   const handleSearch = useCallback((search: string) => {
@@ -137,7 +153,7 @@ const AttendanceManagement: React.FC = () => {
   const getAttendanceStats = (meetup: FamilyMeetup) => {
     const totalMembers = meetup.attendances.length;
     const presentMembers = meetup.attendances.filter(
-      (a) => a.is_present
+      (a) => a.is_present,
     ).length;
     const absentMembers = totalMembers - presentMembers;
     const attendanceRate =
@@ -152,13 +168,13 @@ const AttendanceManagement: React.FC = () => {
   };
 
   const getStatusBadge = (meetup: FamilyMeetup) => {
-    const meetupDate = new Date(meetup.meetup_date);
+    const meetupDate = new Date(parseInt(meetup.meetup_date));
     const now = new Date();
 
-    if (meetupDate < now) {
-      return <Badge variant="secondary">Past</Badge>;
-    } else if (meetupDate.toDateString() === now.toDateString()) {
+    if (meetupDate.toDateString() === now.toDateString()) {
       return <Badge variant="default">Today</Badge>;
+    } else if (meetupDate < now) {
+      return <Badge variant="secondary">Past</Badge>;
     } else {
       return <Badge variant="outline">Upcoming</Badge>;
     }
@@ -212,7 +228,7 @@ const AttendanceManagement: React.FC = () => {
         </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle variant="icon" />
-          <CreateFamilyMeetupModal familyId={familyId} />
+          {canCreateMeetup && <CreateFamilyMeetupModal familyId={familyId} />}
         </div>
       </div>
 
@@ -287,7 +303,9 @@ const AttendanceManagement: React.FC = () => {
                   <p className="text-muted-foreground mb-4">
                     {searchTerm
                       ? "Try adjusting your search criteria or clear the filters to see all meetups."
-                      : "Create a new meetup to get started with attendance tracking."}
+                      : canCreateMeetup
+                        ? "Create a meetup batch to schedule the same meetup for every family."
+                        : "No meetups have been scheduled yet. Contact an admin or Family Coordinator to create one."}
                   </p>
                   {searchTerm ? (
                     <Button
@@ -298,14 +316,16 @@ const AttendanceManagement: React.FC = () => {
                       Clear Filters
                     </Button>
                   ) : (
-                    <CreateFamilyMeetupModal
-                      familyId={familyId}
-                      trigger={
-                        <Button className="bg-brand-gradient hover:opacity-90 transition-opacity">
-                          Create First Meetup
-                        </Button>
-                      }
-                    />
+                    canCreateMeetup && (
+                      <CreateFamilyMeetupModal
+                        familyId={familyId}
+                        trigger={
+                          <Button className="bg-brand-gradient hover:opacity-90 transition-opacity">
+                            Create First Meetup Batch
+                          </Button>
+                        }
+                      />
+                    )
                   )}
                 </div>
               ) : (
@@ -314,10 +334,10 @@ const AttendanceManagement: React.FC = () => {
                   <div className="block md:hidden space-y-3">
                     {(() => {
                       const paginatedMeetups = filteredMeetups(
-                        upcomingMeetups
+                        upcomingMeetups,
                       ).slice(
                         (currentPage - 1) * pageSize,
-                        currentPage * pageSize
+                        currentPage * pageSize,
                       );
                       return paginatedMeetups.map((meetup: FamilyMeetup) => {
                         const stats = getAttendanceStats(meetup);
@@ -394,22 +414,35 @@ const AttendanceManagement: React.FC = () => {
                                   </div>
                                 )}
 
-                                {/* Action buttons */}
+                                {/* Action buttons — attendance only for today's meetup */}
                                 <div className="flex space-x-2 pt-2">
-                                  <AttendanceModal
-                                    meetupId={meetup.id}
-                                    familyId={familyId}
-                                    trigger={
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1 text-green-600 hover:bg-green-50"
-                                      >
-                                        <Users className="h-4 w-4 mr-1" />
-                                        Record Attendance
-                                      </Button>
-                                    }
-                                  />
+                                  {isMeetupToday(meetup.meetup_date) ? (
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={familyId}
+                                      trigger={
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="flex-1 text-green-600 hover:bg-green-50"
+                                        >
+                                          <Users className="h-4 w-4 mr-1" />
+                                          Record Attendance
+                                        </Button>
+                                      }
+                                    />
+                                  ) : (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      disabled
+                                      className="flex-1"
+                                      title="Attendance can only be recorded on the meetup day"
+                                    >
+                                      <Users className="h-4 w-4 mr-1" />
+                                      Record Attendance
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </CardContent>
@@ -445,10 +478,10 @@ const AttendanceManagement: React.FC = () => {
                       <tbody>
                         {(() => {
                           const paginatedMeetups = filteredMeetups(
-                            upcomingMeetups
+                            upcomingMeetups,
                           ).slice(
                             (currentPage - 1) * pageSize,
-                            currentPage * pageSize
+                            currentPage * pageSize,
                           );
                           return paginatedMeetups.map(
                             (meetup: FamilyMeetup) => {
@@ -494,24 +527,36 @@ const AttendanceManagement: React.FC = () => {
                                     </div>
                                   </td>
                                   <td className="p-3">
-                                    <AttendanceModal
-                                      meetupId={meetup.id}
-                                      familyId={familyId}
-                                      trigger={
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          className="text-green-600 hover:bg-green-50"
-                                        >
-                                          <Users className="h-4 w-4 mr-1" />
-                                          Record
-                                        </Button>
-                                      }
-                                    />
+                                    {isMeetupToday(meetup.meetup_date) ? (
+                                      <AttendanceModal
+                                        meetupId={meetup.id}
+                                        familyId={familyId}
+                                        trigger={
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="text-green-600 hover:bg-green-50"
+                                          >
+                                            <Users className="h-4 w-4 mr-1" />
+                                            Record
+                                          </Button>
+                                        }
+                                      />
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        disabled
+                                        title="Attendance can only be recorded on the meetup day"
+                                      >
+                                        <Users className="h-4 w-4 mr-1" />
+                                        Record
+                                      </Button>
+                                    )}
                                   </td>
                                 </tr>
                               );
-                            }
+                            },
                           );
                         })()}
                       </tbody>
@@ -521,7 +566,7 @@ const AttendanceManagement: React.FC = () => {
                   {/* Pagination */}
                   {(() => {
                     const totalPages = Math.ceil(
-                      filteredMeetups(upcomingMeetups).length / pageSize
+                      filteredMeetups(upcomingMeetups).length / pageSize,
                     );
                     if (totalPages <= 1) return null;
 
@@ -554,7 +599,7 @@ const AttendanceManagement: React.FC = () => {
                           Showing {(currentPage - 1) * pageSize + 1} to{" "}
                           {Math.min(
                             currentPage * pageSize,
-                            filteredMeetups(upcomingMeetups).length
+                            filteredMeetups(upcomingMeetups).length,
                           )}{" "}
                           of {filteredMeetups(upcomingMeetups).length} upcoming
                           meetups
@@ -575,20 +620,20 @@ const AttendanceManagement: React.FC = () => {
                             {(() => {
                               const maxVisiblePages = 5;
                               const halfVisible = Math.floor(
-                                maxVisiblePages / 2
+                                maxVisiblePages / 2,
                               );
                               let startPage = Math.max(
                                 1,
-                                currentPage - halfVisible
+                                currentPage - halfVisible,
                               );
                               const endPage = Math.min(
                                 totalPages,
-                                startPage + maxVisiblePages - 1
+                                startPage + maxVisiblePages - 1,
                               );
                               if (endPage - startPage + 1 < maxVisiblePages) {
                                 startPage = Math.max(
                                   1,
-                                  endPage - maxVisiblePages + 1
+                                  endPage - maxVisiblePages + 1,
                                 );
                               }
                               const pages = [];
@@ -663,10 +708,10 @@ const AttendanceManagement: React.FC = () => {
                   <div className="block md:hidden space-y-3">
                     {(() => {
                       const paginatedMeetups = filteredMeetups(
-                        pastMeetups
+                        pastMeetups,
                       ).slice(
                         (currentPage - 1) * pageSize,
-                        currentPage * pageSize
+                        currentPage * pageSize,
                       );
                       return paginatedMeetups.map((meetup: FamilyMeetup) => {
                         const stats = getAttendanceStats(meetup);
@@ -773,10 +818,10 @@ const AttendanceManagement: React.FC = () => {
                       <tbody>
                         {(() => {
                           const paginatedMeetups = filteredMeetups(
-                            pastMeetups
+                            pastMeetups,
                           ).slice(
                             (currentPage - 1) * pageSize,
-                            currentPage * pageSize
+                            currentPage * pageSize,
                           );
                           return paginatedMeetups.map(
                             (meetup: FamilyMeetup) => {
@@ -823,7 +868,7 @@ const AttendanceManagement: React.FC = () => {
                                   </td>
                                 </tr>
                               );
-                            }
+                            },
                           );
                         })()}
                       </tbody>
@@ -833,7 +878,7 @@ const AttendanceManagement: React.FC = () => {
                   {/* Pagination */}
                   {(() => {
                     const totalPages = Math.ceil(
-                      filteredMeetups(pastMeetups).length / pageSize
+                      filteredMeetups(pastMeetups).length / pageSize,
                     );
                     if (totalPages <= 1) return null;
 
@@ -866,7 +911,7 @@ const AttendanceManagement: React.FC = () => {
                           Showing {(currentPage - 1) * pageSize + 1} to{" "}
                           {Math.min(
                             currentPage * pageSize,
-                            filteredMeetups(pastMeetups).length
+                            filteredMeetups(pastMeetups).length,
                           )}{" "}
                           of {filteredMeetups(pastMeetups).length} past meetups
                         </div>
@@ -886,20 +931,20 @@ const AttendanceManagement: React.FC = () => {
                             {(() => {
                               const maxVisiblePages = 5;
                               const halfVisible = Math.floor(
-                                maxVisiblePages / 2
+                                maxVisiblePages / 2,
                               );
                               let startPage = Math.max(
                                 1,
-                                currentPage - halfVisible
+                                currentPage - halfVisible,
                               );
                               const endPage = Math.min(
                                 totalPages,
-                                startPage + maxVisiblePages - 1
+                                startPage + maxVisiblePages - 1,
                               );
                               if (endPage - startPage + 1 < maxVisiblePages) {
                                 startPage = Math.max(
                                   1,
-                                  endPage - maxVisiblePages + 1
+                                  endPage - maxVisiblePages + 1,
                                 );
                               }
                               const pages = [];

@@ -40,7 +40,7 @@ const TransferMemberModal = ({
 
   // Filter out the current family from the options
   const availableFamilies = families.filter(
-    (family) => family.id !== member.family?.id
+    (family) => family.id !== member.family?.id,
   );
 
   useEffect(() => {
@@ -111,13 +111,13 @@ const TransferMemberModal = ({
               </SelectTrigger>
               <SelectContent>
                 {familiesLoading ? (
-                  <SelectItem value="" disabled>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
                     Loading families...
-                  </SelectItem>
+                  </div>
                 ) : availableFamilies.length === 0 ? (
-                  <SelectItem value="" disabled>
+                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
                     No other families available
-                  </SelectItem>
+                  </div>
                 ) : (
                   availableFamilies.map((family) => (
                     <SelectItem key={family.id} value={family.id.toString()}>

@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useDeleteMember, useGetMembers } from "@/hooks/useGraphQL";
+import { getMemberCompleteness } from "@/lib/memberCompleteness";
 import { useState, useCallback } from "react";
 import type { MemberFilterInput, GetMembersQuery } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +48,7 @@ const Members = () => {
     id: number;
     full_name: string;
     contact_no: string;
+    ministries?: Array<{ id: number; name: string }> | null;
   } | null>(null);
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [memberToResetPassword, setMemberToResetPassword] = useState<{
@@ -86,6 +88,53 @@ const Members = () => {
   const total = data?.members?.total || 0;
   // Calculate totalPages on frontend to handle "All" option properly
   const totalPages = pageSize === 10000 ? 1 : Math.ceil(total / pageSize);
+
+  const getCompletenessBadge = (member: (typeof members)[number]) => {
+    const { applicable, isIncomplete, isFullyIncomplete, missingFields } =
+      getMemberCompleteness(member);
+
+    if (!applicable) {
+      return (
+        <Badge className="text-xs bg-gray-100 text-gray-700">
+          Not checked (inactive)
+        </Badge>
+      );
+    }
+
+    if (isFullyIncomplete) {
+      return (
+        <div className="space-y-1">
+          <Badge className="text-xs bg-red-100 text-red-800">
+            Mostly empty
+          </Badge>
+          <p className="text-[11px] text-muted-foreground leading-tight">
+            Missing: {missingFields.join(", ")}
+          </p>
+        </div>
+      );
+    }
+
+    if (isIncomplete) {
+      return (
+        <div className="space-y-1">
+          <Badge className="text-xs bg-yellow-100 text-yellow-800">
+            Incomplete
+          </Badge>
+          <p className="text-[11px] text-muted-foreground leading-tight">
+            Missing: {missingFields.join(", ")}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <Badge className="text-xs bg-green-100 text-green-800">Complete</Badge>
+    );
+  };
+
+  const incompleteOnPage = members.filter(
+    (member) => getMemberCompleteness(member).isIncomplete,
+  ).length;
 
   const handleSearch = useCallback((filters: MemberFilterInput) => {
     setSearchFilters(filters);
@@ -152,6 +201,7 @@ const Members = () => {
     id: number;
     full_name: string;
     contact_no?: string | null | undefined;
+    ministries?: Array<{ id: number; name: string }> | null;
   }) => {
     if (!member.contact_no) {
       return; // This shouldn't happen since the button is disabled when contact_no is null/undefined
@@ -160,6 +210,7 @@ const Members = () => {
       id: member.id,
       full_name: member.full_name,
       contact_no: member.contact_no,
+      ministries: member.ministries ?? [],
     });
     setIsPromoteModalOpen(true);
   };
@@ -299,7 +350,7 @@ const Members = () => {
 
   const downloadExcel = (
     data: GetMembersQuery["members"]["members"],
-    filename: string
+    filename: string,
   ) => {
     // For Excel export, we'll use a simple CSV format that Excel can open
     // In a real application, you might want to use a library like xlsx
@@ -316,7 +367,7 @@ const Members = () => {
 
       if (allMembers.length === 0) {
         toast.warning(
-          "No members found to export. Please ensure there are members in the current view."
+          "No members found to export. Please ensure there are members in the current view.",
         );
         return;
       }
@@ -420,7 +471,19 @@ const Members = () => {
 
       <Card className="shadow-brand">
         <CardHeader>
-          <CardTitle className="text-brand-gradient">Members List</CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="text-brand-gradient">Members List</CardTitle>
+            {!loading && members.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <Badge className="bg-yellow-100 text-yellow-800">
+                  {incompleteOnPage} incomplete on this page
+                </Badge>
+                <Badge className="bg-green-100 text-green-800">
+                  {members.length - incompleteOnPage} complete on this page
+                </Badge>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -478,8 +541,8 @@ const Members = () => {
                                 member.role?.name === "FL"
                                   ? "bg-green-600"
                                   : member.status?.name === "Not Active"
-                                  ? "bg-red-500"
-                                  : "bg-blue-500"
+                                    ? "bg-red-500"
+                                    : "bg-blue-500"
                               }`}
                             ></div>
                             <div className="font-semibold text-lg">
@@ -501,14 +564,16 @@ const Members = () => {
                                 member.status?.name === "Active"
                                   ? "bg-green-100 text-green-800"
                                   : member.status?.name === "Not Active"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
                               {member.status?.name || "N/A"}
                             </span>
                           </div>
                         </div>
+
+                        <div>{getCompletenessBadge(member)}</div>
 
                         {/* Member details */}
                         <div className="space-y-2 text-sm">
@@ -622,6 +687,7 @@ const Members = () => {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-3 font-semibold">Name</th>
+                      <th className="text-left p-3 font-semibold">Info</th>
                       <th className="text-left p-3 font-semibold">Contact</th>
                       <th className="text-left p-3 font-semibold">Gender</th>
                       <th className="text-left p-3 font-semibold">Family</th>
@@ -635,125 +701,138 @@ const Members = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {data?.members?.members?.map((member) => (
-                      <tr
-                        key={member.id}
-                        className="border-b hover:bg-muted/50"
-                      >
-                        <td className="p-3 flex items-center space-x-2">
-                          <div
-                            className={`h-2 w-2 rounded-full ${
-                              member.role?.name === "FL"
-                                ? "bg-green-600"
-                                : member.status?.name === "Not Active"
-                                ? "bg-red-500"
-                                : "bg-blue-500"
-                            }`}
-                          ></div>
-                          <Badge
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              member.role?.name === "FL"
-                                ? "bg-green-100 text-green-900"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {member.role?.name || "N/A"}
-                          </Badge>
-                          <div className="font-medium">{member.full_name}</div>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-sm text-muted-foreground">
-                            {member.contact_no ? (
-                              <a
-                                href={`tel:${member.contact_no}`}
-                                className="text-blue-600 hover:text-blue-800 hover:underline"
-                              >
-                                {member.contact_no}
-                              </a>
-                            ) : (
-                              "N/A"
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-sm capitalize">
-                            {member.gender || "N/A"}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-sm">
-                            {member.family?.name || "N/A"}
-                          </div>
-                        </td>
-                        {/* <td className="p-3">
+                    {data?.members?.members?.map((member) => {
+                      const completeness = getMemberCompleteness(member);
+                      return (
+                        <tr
+                          key={member.id}
+                          className={`border-b hover:bg-muted/50 ${
+                            completeness.isFullyIncomplete
+                              ? "bg-red-50/40 dark:bg-red-950/10"
+                              : completeness.isIncomplete
+                                ? "bg-yellow-50/30 dark:bg-yellow-950/10"
+                                : ""
+                          }`}
+                        >
+                          <td className="p-3 flex items-center space-x-2">
+                            <div
+                              className={`h-2 w-2 rounded-full ${
+                                member.role?.name === "FL"
+                                  ? "bg-green-600"
+                                  : member.status?.name === "Not Active"
+                                    ? "bg-red-500"
+                                    : "bg-blue-500"
+                              }`}
+                            ></div>
+                            <Badge
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                member.role?.name === "FL"
+                                  ? "bg-green-100 text-green-900"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {member.role?.name || "N/A"}
+                            </Badge>
+                            <div className="font-medium">
+                              {member.full_name}
+                            </div>
+                          </td>
+                          <td className="p-3 max-w-[180px]">
+                            {getCompletenessBadge(member)}
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm text-muted-foreground">
+                              {member.contact_no ? (
+                                <a
+                                  href={`tel:${member.contact_no}`}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                >
+                                  {member.contact_no}
+                                </a>
+                              ) : (
+                                "N/A"
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm capitalize">
+                              {member.gender || "N/A"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {member.family?.name || "N/A"}
+                            </div>
+                          </td>
+                          {/* <td className="p-3">
                           <div className="text-sm">
                             {member.role?.name || "N/A"}
                           </div>
                         </td> */}
-                        <td className="p-3">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              member.status?.name === "Active"
-                                ? "bg-green-100 text-green-800"
-                                : member.status?.name === "Not Active"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {member.status?.name || "N/A"}
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-sm">
-                            {member.profession?.name ||
-                              member.profession_name ||
-                              "N/A"}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="text-sm">
-                            {member.location?.name ||
-                              member.location_name ||
-                              "N/A"}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-blue-600 hover:bg-blue-50"
-                              onClick={() => handleUpdateMember(member.id)}
+                          <td className="p-3">
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs ${
+                                member.status?.name === "Active"
+                                  ? "bg-green-100 text-green-800"
+                                  : member.status?.name === "Not Active"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
+                              }`}
                             >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-green-600 hover:bg-green-50"
-                              onClick={() => handlePromoteMember(member)}
-                              disabled={!member.contact_no}
-                            >
-                              Promote
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-orange-600 hover:bg-orange-50"
-                              onClick={() => handleResetPassword(member)}
-                              disabled={!member.contact_no}
-                            >
-                              Reset PW
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-purple-600 hover:bg-purple-50"
-                              onClick={() => handleTransferMember(member)}
-                            >
-                              Transfer
-                            </Button>
-                            {/* <Button
+                              {member.status?.name || "N/A"}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {member.profession?.name ||
+                                member.profession_name ||
+                                "N/A"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {member.location?.name ||
+                                member.location_name ||
+                                "N/A"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-blue-600 hover:bg-blue-50"
+                                onClick={() => handleUpdateMember(member.id)}
+                              >
+                                Edit
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-green-600 hover:bg-green-50"
+                                onClick={() => handlePromoteMember(member)}
+                                disabled={!member.contact_no}
+                              >
+                                Promote
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-orange-600 hover:bg-orange-50"
+                                onClick={() => handleResetPassword(member)}
+                                disabled={!member.contact_no}
+                              >
+                                Reset PW
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-purple-600 hover:bg-purple-50"
+                                onClick={() => handleTransferMember(member)}
+                              >
+                                Transfer
+                              </Button>
+                              {/* <Button
                               variant="outline"
                               size="sm"
                               className="text-red-600 hover:bg-red-50"
@@ -761,10 +840,11 @@ const Members = () => {
                             >
                               Delete
                             </Button> */}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -846,14 +926,14 @@ const Members = () => {
                         let startPage = Math.max(1, currentPage - halfVisible);
                         const endPage = Math.min(
                           totalPages,
-                          startPage + maxVisiblePages - 1
+                          startPage + maxVisiblePages - 1,
                         );
 
                         // Adjust start page if we're near the end
                         if (endPage - startPage + 1 < maxVisiblePages) {
                           startPage = Math.max(
                             1,
-                            endPage - maxVisiblePages + 1
+                            endPage - maxVisiblePages + 1,
                           );
                         }
 

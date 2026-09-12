@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CheckIcon, ChevronsUpDownIcon } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +31,8 @@ interface ComboBoxProps {
   searchPlaceholder?: string;
   emptyText?: string;
   disabled?: boolean;
+  loading?: boolean;
+  loadingText?: string;
   className?: string;
 }
 
@@ -44,31 +46,51 @@ const ComboBox = React.forwardRef<HTMLButtonElement, ComboBoxProps>(
       searchPlaceholder = "Search...",
       emptyText = "No option found.",
       disabled = false,
+      loading = false,
+      loadingText = "Loading...",
       className,
     },
-    ref
+    ref,
   ) => {
     const [open, setOpen] = React.useState(false);
 
     const selectedOption = options.find((option) => option.value === value);
 
     return (
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (loading || disabled) return;
+          setOpen(nextOpen);
+        }}
+      >
         <PopoverTrigger asChild>
           <Button
             ref={ref}
             variant="outline"
             role="combobox"
             aria-expanded={open}
+            aria-busy={loading}
             className={cn(
               "w-full justify-between",
-              !selectedOption && "text-muted-foreground",
-              className
+              !selectedOption && !loading && "text-muted-foreground",
+              className,
             )}
-            disabled={disabled}
+            disabled={disabled || loading}
           >
-            {selectedOption ? selectedOption.label : placeholder}
-            <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            {loading ? (
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {loadingText}
+              </span>
+            ) : selectedOption ? (
+              selectedOption.label
+            ) : (
+              placeholder
+            )}
+            {!loading && (
+              <ChevronsUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
@@ -80,10 +102,11 @@ const ComboBox = React.forwardRef<HTMLButtonElement, ComboBoxProps>(
                 {options.map((option) => (
                   <CommandItem
                     key={option.value}
-                    value={option.value.toString()}
-                    onSelect={(currentValue) => {
-                      const isSelected = currentValue === value?.toString();
-                      const newValue = isSelected ? undefined : option.value;
+                    value={`${option.label} ${option.value}`}
+                    keywords={[option.label]}
+                    onSelect={() => {
+                      const newValue =
+                        option.value === value ? undefined : option.value;
                       onValueChange?.(newValue);
                       setOpen(false);
                     }}
@@ -91,7 +114,7 @@ const ComboBox = React.forwardRef<HTMLButtonElement, ComboBoxProps>(
                     <CheckIcon
                       className={cn(
                         "mr-2 h-4 w-4",
-                        value === option.value ? "opacity-100" : "opacity-0"
+                        value === option.value ? "opacity-100" : "opacity-0",
                       )}
                     />
                     {option.label}
@@ -103,7 +126,7 @@ const ComboBox = React.forwardRef<HTMLButtonElement, ComboBoxProps>(
         </PopoverContent>
       </Popover>
     );
-  }
+  },
 );
 
 ComboBox.displayName = "ComboBox";

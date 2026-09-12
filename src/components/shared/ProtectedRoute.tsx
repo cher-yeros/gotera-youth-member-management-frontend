@@ -1,10 +1,11 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/redux/useAuth";
+import { getDefaultPathForUser, getUserRoles, hasAnyRole } from "@/lib/roles";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: "admin" | "fl" | "ml";
-  allowedRoles?: ("admin" | "fl" | "ml")[];
+  requiredRole?: string;
+  allowedRoles?: string[];
 }
 
 const ProtectedRoute = ({
@@ -15,34 +16,39 @@ const ProtectedRoute = ({
   const { user, isAuthenticated } = useAuth();
   const location = useLocation();
 
-  // If not authenticated, redirect to login
   if (!isAuthenticated || !user) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
-  // Check role-based access
-  const userRole = user.role?.toLowerCase();
+  const roles = getUserRoles(user).map((r) => r.toLowerCase());
 
-  if (requiredRole && userRole !== requiredRole) {
-    // If user doesn't have the required role, redirect based on their actual role
-    if (userRole === "fl") {
-      return <Navigate to="/family-dashboard" replace />;
-    } else if (userRole === "ml") {
-      return <Navigate to="/ministry-dashboard" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
+  if (requiredRole) {
+    const accepted = [requiredRole.toLowerCase()];
+    // Main Leader shares admin route access
+    if (requiredRole.toLowerCase() === "admin") {
+      accepted.push("main");
+    }
+    // Family Coordinator / Follow-up Leader share family-leader routes
+    if (requiredRole.toLowerCase() === "fl") {
+      accepted.push("fc", "ful");
+    }
+    // Admin/Main can access TT routes
+    if (requiredRole.toLowerCase() === "tt") {
+      accepted.push("admin", "main");
+    }
+    if (!accepted.some((r) => roles.includes(r))) {
+      return <Navigate to={getDefaultPathForUser(user)} replace />;
     }
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole as "admin" | "fl" | "ml")) {
-    // If user doesn't have any of the allowed roles, redirect based on their actual role
-    if (userRole === "fl") {
-      return <Navigate to="/family-dashboard" replace />;
-    } else if (userRole === "ml") {
-      return <Navigate to="/ministry-dashboard" replace />;
-    } else {
-      return <Navigate to="/dashboard" replace />;
-    }
+  if (
+    allowedRoles &&
+    !hasAnyRole(
+      user,
+      allowedRoles.map((r) => r.toUpperCase()),
+    )
+  ) {
+    return <Navigate to={getDefaultPathForUser(user)} replace />;
   }
 
   return <>{children}</>;

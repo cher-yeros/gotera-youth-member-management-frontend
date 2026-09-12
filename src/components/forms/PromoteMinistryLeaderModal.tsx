@@ -37,8 +37,8 @@ const PromoteMinistryLeaderModal = ({
   // Filter members who are not already users and don't have TL role
   const eligibleMembers = ministry.members.filter((member) => {
     const hasUserAccount = member.user !== null;
-    const isAlreadyTL = member.role?.name === "TL";
-    return !hasUserAccount && !isAlreadyTL;
+    const isAlreadyML = member.role?.name === "ML";
+    return !hasUserAccount && !isAlreadyML;
   });
 
   const handlePromote = async () => {

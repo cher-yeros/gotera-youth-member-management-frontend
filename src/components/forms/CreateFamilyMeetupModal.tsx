@@ -20,11 +20,15 @@ import {
 import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { CREATE_FAMILY_MEETUP, GET_FAMILY_MEETUPS } from "@/graphql/operations";
+import {
+  CREATE_FAMILY_MEETUP_BATCH,
+  GET_FAMILY_MEETUPS,
+} from "@/graphql/operations";
 import { toast } from "react-toastify";
 
 interface CreateFamilyMeetupModalProps {
-  familyId: number;
+  /** Optional: used only to refetch this family's meetups after batch create */
+  familyId?: number;
   trigger?: React.ReactNode;
 }
 
@@ -39,51 +43,50 @@ export const CreateFamilyMeetupModal: React.FC<
     meetup_date: new Date(),
   });
 
-  const [createFamilyMeetup, { loading }] = useMutation(CREATE_FAMILY_MEETUP, {
-    refetchQueries: [
-      {
-        query: GET_FAMILY_MEETUPS,
-        variables: {
-          filter: { family_id: familyId },
-          pagination: { page: 1, limit: 10 },
-        },
+  const [createFamilyMeetupBatch, { loading }] = useMutation(
+    CREATE_FAMILY_MEETUP_BATCH,
+    {
+      refetchQueries: familyId
+        ? [
+            {
+              query: GET_FAMILY_MEETUPS,
+              variables: {
+                filter: { family_id: familyId },
+                pagination: { page: 1, limit: 50 },
+              },
+            },
+          ]
+        : [],
+      onCompleted: () => {
+        toast.success("Meetup batch created for all families!");
+        setOpen(false);
+        setFormData({
+          title: "",
+          description: "",
+          location: "",
+          meetup_date: new Date(),
+        });
       },
-    ],
-    onCompleted: () => {
-      toast.success("Family meetup created successfully!");
-      setOpen(false);
-      setFormData({
-        title: "",
-        description: "",
-        location: "",
-        meetup_date: new Date(),
-      });
+      onError: (error: {
+        message?: string;
+        graphQLErrors?: Array<{ message: string }>;
+      }) => {
+        console.error("Meetup batch creation error:", error);
+
+        let errorMessage = "Error creating meetup batch";
+
+        if (error.message && error.message.includes("CombinedGraphQLErrors:")) {
+          errorMessage = error.message.replace("CombinedGraphQLErrors: ", "");
+        } else if (error.graphQLErrors && error.graphQLErrors.length > 0) {
+          errorMessage = error.graphQLErrors[0].message;
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        toast.error(errorMessage);
+      },
     },
-    onError: (error: {
-      message?: string;
-      graphQLErrors?: Array<{ message: string }>;
-    }) => {
-      console.error("Meetup creation error:", error);
-
-      // Get the error message from different error types
-      let errorMessage = "Error creating meetup";
-
-      // Handle CombinedGraphQLErrors
-      if (error.message && error.message.includes("CombinedGraphQLErrors:")) {
-        errorMessage = error.message.replace("CombinedGraphQLErrors: ", "");
-      }
-      // Handle regular GraphQL errors
-      else if (error.graphQLErrors && error.graphQLErrors.length > 0) {
-        errorMessage = error.graphQLErrors[0].message;
-      }
-      // Handle regular error messages
-      else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      toast.error(errorMessage);
-    },
-  });
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,10 +97,9 @@ export const CreateFamilyMeetupModal: React.FC<
     }
 
     try {
-      await createFamilyMeetup({
+      await createFamilyMeetupBatch({
         variables: {
           input: {
-            family_id: familyId,
             title: formData.title,
             description: formData.description,
             location: formData.location,
@@ -107,13 +109,6 @@ export const CreateFamilyMeetupModal: React.FC<
       });
     } catch (error) {
       console.log(error);
-      // Handle CombinedGraphQLErrors
-
-      // } else if (error instanceof Error && error.message.includes("CombinedGraphQLErrors:")) {
-      //   toast.error(error.message.replace("CombinedGraphQLErrors: ", ""));
-      // } else {
-      //   toast.error("Error creating meetup");
-      // }
     }
   };
 
@@ -136,9 +131,12 @@ export const CreateFamilyMeetupModal: React.FC<
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create Family Meetup</DialogTitle>
+          <DialogTitle>Create Meetup Batch</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Creates the same meetup for every family on the selected day.
+          </p>
           <div className="space-y-2">
             <Label htmlFor="title">Title *</Label>
             <Input
@@ -181,7 +179,7 @@ export const CreateFamilyMeetupModal: React.FC<
                   variant="outline"
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !formData.meetup_date && "text-muted-foreground"
+                    !formData.meetup_date && "text-muted-foreground",
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
@@ -214,7 +212,7 @@ export const CreateFamilyMeetupModal: React.FC<
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Meetup"}
+              {loading ? "Creating..." : "Create Batch"}
             </Button>
           </div>
         </form>

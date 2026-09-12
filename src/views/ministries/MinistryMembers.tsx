@@ -22,8 +22,9 @@ import {
   useGetMinistryMembers,
   useUpdateMember,
 } from "@/hooks/useGraphQL";
+import { formatMinistryProgram } from "@/lib/ministryProgram";
 import { useAuth } from "@/redux/useAuth";
-import { ArrowLeft, UserPlus, Users } from "lucide-react";
+import { ArrowLeft, CalendarClock, UserPlus, Users } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 
@@ -50,8 +51,8 @@ const MinistryMembers = () => {
   const effectiveMinistryId = isMinistryLeaderView
     ? user?.member?.ledMinistries?.[0]?.id || user?.member?.ministries?.[0]?.id
     : ministryId
-    ? parseInt(ministryId)
-    : 0;
+      ? parseInt(ministryId)
+      : 0;
 
   // Debug logging
   console.log("MinistryMembers Debug:", {
@@ -64,17 +65,21 @@ const MinistryMembers = () => {
 
   // Fetch ministry data
   const { data: ministryData, loading: ministryLoading } = useGetMinistry(
-    effectiveMinistryId || 0
+    effectiveMinistryId || 0,
   );
 
   // Fetch ministry members
   const { data, loading, error, refetch } = useGetMinistryMembers(
-    effectiveMinistryId || 0
+    effectiveMinistryId || 0,
   );
   const { updateMember } = useUpdateMember();
 
   const members = data?.ministryMembers || [];
   const ministry = ministryData?.ministry;
+  const programLabel = formatMinistryProgram(
+    ministry?.program_frequency,
+    ministry?.program_day,
+  );
 
   console.log({ effectiveMinistryId });
 
@@ -230,6 +235,12 @@ const MinistryMembers = () => {
               ? `Members of your ministry (${members.length} total)`
               : `Members of the ${ministry.name} ministry (${members.length} total)`}
           </p>
+          {programLabel && (
+            <Badge className="mt-2 w-fit bg-indigo-100 text-indigo-800">
+              <CalendarClock className="mr-1 h-3 w-3" />
+              {programLabel}
+            </Badge>
+          )}
           <div className="mt-2">
             <Button
               variant="outline"
@@ -305,11 +316,11 @@ const MinistryMembers = () => {
                           <div className="flex items-center space-x-2">
                             <div
                               className={`h-2 w-2 rounded-full ${
-                                member.role?.name === "TL"
+                                member.role?.name === "ML"
                                   ? "bg-green-600"
                                   : member.status?.name === "Not Active"
-                                  ? "bg-red-500"
-                                  : "bg-blue-500"
+                                    ? "bg-red-500"
+                                    : "bg-blue-500"
                               }`}
                             ></div>
                             <div className="font-semibold text-lg">
@@ -319,7 +330,7 @@ const MinistryMembers = () => {
                           <div className="flex items-center space-x-2">
                             <Badge
                               className={`px-2 py-1 rounded-full text-xs ${
-                                member.role?.name === "TL"
+                                member.role?.name === "ML"
                                   ? "bg-green-100 text-green-900"
                                   : "bg-yellow-100 text-yellow-800"
                               }`}
@@ -331,8 +342,8 @@ const MinistryMembers = () => {
                                 member.status?.name === "Active"
                                   ? "bg-green-100 text-green-800"
                                   : member.status?.name === "Not Active"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-yellow-100 text-yellow-800"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-yellow-100 text-yellow-800"
                               }`}
                             >
                               {member.status?.name || "N/A"}
@@ -445,16 +456,16 @@ const MinistryMembers = () => {
                         <td className="p-3 flex items-center space-x-2">
                           <div
                             className={`h-2 w-2 rounded-full ${
-                              member.role?.name === "TL"
+                              member.role?.name === "ML"
                                 ? "bg-green-600"
                                 : member.status?.name === "Not Active"
-                                ? "bg-red-500"
-                                : "bg-blue-500"
+                                  ? "bg-red-500"
+                                  : "bg-blue-500"
                             }`}
                           ></div>
                           <Badge
                             className={`px-2 py-1 rounded-full text-xs ${
-                              member.role?.name === "TL"
+                              member.role?.name === "ML"
                                 ? "bg-green-100 text-green-900"
                                 : "bg-yellow-100 text-yellow-800"
                             }`}
@@ -493,8 +504,8 @@ const MinistryMembers = () => {
                               member.status?.name === "Active"
                                 ? "bg-green-100 text-green-800"
                                 : member.status?.name === "Not Active"
-                                ? "bg-red-100 text-red-800"
-                                : "bg-yellow-100 text-yellow-800"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-yellow-100 text-yellow-800"
                             }`}
                           >
                             {member.status?.name || "N/A"}

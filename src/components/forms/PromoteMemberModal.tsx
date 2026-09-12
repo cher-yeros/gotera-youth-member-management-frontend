@@ -8,19 +8,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePromoteMember, usePromoteMinistryLeader, useGetMinistries } from "@/hooks/useGraphQL";
+import { usePromoteMember, usePromoteMinistryLeader } from "@/hooks/useGraphQL";
 import { toast } from "react-toastify";
+import { ROLE, ROLE_LABELS, type RoleCode } from "@/lib/roles";
 
 interface PromoteMemberModalProps {
   member: {
     id: number;
     full_name: string;
     contact_no: string;
+    ministries?: Array<{ id: number; name: string }> | null;
   };
   isOpen: boolean;
   onClose: () => void;
   onSuccess: (password: string, role: string) => void;
 }
+
+const ASSIGNABLE_ROLES: RoleCode[] = [
+  ROLE.ADMIN,
+  ROLE.MAIN,
+  ROLE.FC,
+  ROLE.FL,
+  ROLE.FUL,
+  ROLE.ML,
+  ROLE.TT,
+  ROLE.FM,
+];
 
 const PromoteMemberModal = ({
   member,
@@ -28,62 +41,69 @@ const PromoteMemberModal = ({
   onClose,
   onSuccess,
 }: PromoteMemberModalProps) => {
-  const [selectedRole, setSelectedRole] = useState<string>("");
-  const [selectedMinistryId, setSelectedMinistryId] = useState<number | null>(null);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedMinistryId, setSelectedMinistryId] = useState<number | null>(
+    null,
+  );
   const [isPromoting, setIsPromoting] = useState(false);
   const { promoteMember } = usePromoteMember();
   const { promoteMinistryLeader } = usePromoteMinistryLeader();
-  const { data: ministriesData } = useGetMinistries();
 
-  // Reset ministry selection when role changes
+  const memberMinistries = member.ministries ?? [];
+  const needsMinistry = selectedRoles.includes(ROLE.ML);
+
   useEffect(() => {
-    if (selectedRole !== "ml") {
+    if (!needsMinistry) {
       setSelectedMinistryId(null);
     }
-  }, [selectedRole]);
+  }, [needsMinistry]);
+
+  const toggleRole = (role: string) => {
+    setSelectedRoles((prev) =>
+      prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role],
+    );
+  };
 
   const handlePromote = async () => {
-    if (!selectedRole) {
-      toast.error("Please select a role");
+    if (selectedRoles.length === 0) {
+      toast.error("Please select at least one role");
       return;
     }
 
-    // If ML is selected, ministry is required
-    if (selectedRole === "ml" && !selectedMinistryId) {
+    if (needsMinistry && !selectedMinistryId) {
       toast.error("Please select a ministry for Ministry Leader role");
       return;
     }
 
     setIsPromoting(true);
     try {
-      let result;
-      
-      if (selectedRole === "ml") {
-        // Use promoteMinistryLeader mutation for ML role
-        result = await promoteMinistryLeader({
-          member_id: member.id,
-          ministry_id: selectedMinistryId!,
-        });
-      } else {
-        // Use promoteMember mutation for other roles
-        result = await promoteMember({
-          member_id: member.id,
-          role: selectedRole.toUpperCase(), // Convert to uppercase (admin, FL, FM)
-        });
+      const result = await promoteMember({
+        member_id: member.id,
+        roles: selectedRoles,
+      });
+
+      if (!result?.success) {
+        if (result?.message) toast.error(result.message);
+        return;
       }
 
-      if (result?.success) {
-        onSuccess(result.password, selectedRole === "ml" ? "ML" : selectedRole.toUpperCase());
-        onClose();
-        setSelectedRole("");
-        setSelectedMinistryId(null);
-      } else if (result?.message) {
-        // Show error message from backend (e.g., "Member does not belong to the specified ministry")
-        toast.error(result.message);
+      // Link ministry leadership when ML is among the assigned roles
+      if (needsMinistry && selectedMinistryId) {
+        const mlResult = await promoteMinistryLeader({
+          member_id: member.id,
+          ministry_id: selectedMinistryId,
+        });
+        if (mlResult && !mlResult.success && mlResult.message) {
+          toast.error(mlResult.message);
+        }
       }
+
+      onSuccess(result.password, selectedRoles.join(", "));
+      onClose();
+      setSelectedRoles([]);
+      setSelectedMinistryId(null);
     } catch (error: any) {
       console.error("Error promoting member:", error);
-      // Show error message if available
       if (error?.message) {
         toast.error(error.message);
       } else {
@@ -95,7 +115,7 @@ const PromoteMemberModal = ({
   };
 
   const handleClose = () => {
-    setSelectedRole("");
+    setSelectedRoles([]);
     setSelectedMinistryId(null);
     onClose();
   };
@@ -111,7 +131,7 @@ const PromoteMemberModal = ({
         <CardContent className="space-y-4">
           <div>
             <p className="text-sm text-muted-foreground mb-2">
-              Promote <strong>{member.full_name}</strong> to a user account
+              Assign roles for <strong>{member.full_name}</strong>
             </p>
             <p className="text-xs text-muted-foreground">
               Contact: {member.contact_no || "N/A"}
@@ -119,45 +139,65 @@ const PromoteMemberModal = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Select Role</label>
-            <Select
-              value={selectedRole}
-              onValueChange={(value) => setSelectedRole(value as string)}
-              disabled={isPromoting}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Choose a role..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="fl">FL (Family Leader)</SelectItem>
-                <SelectItem value="fm">FM (Family Member)</SelectItem>
-                <SelectItem value="ml">ML (Ministry Leader)</SelectItem>
-              </SelectContent>
-            </Select>
+            <label className="text-sm font-medium">Select Role(s)</label>
+            <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto border rounded-md p-3">
+              {ASSIGNABLE_ROLES.map((role) => (
+                <label
+                  key={role}
+                  className="flex items-center gap-2 text-sm cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={selectedRoles.includes(role)}
+                    onChange={() => toggleRole(role)}
+                    disabled={isPromoting}
+                  />
+                  <span>
+                    <span className="font-medium">{role}</span>
+                    <span className="text-muted-foreground">
+                      {" "}
+                      — {ROLE_LABELS[role]}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
 
-          {selectedRole === "ml" && (
+          {needsMinistry && (
             <div className="space-y-2">
               <label className="text-sm font-medium">Select Ministry *</label>
-              <Select
-                value={selectedMinistryId?.toString() || ""}
-                onValueChange={(value) => setSelectedMinistryId(parseInt(value))}
-                disabled={isPromoting}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Choose a ministry..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {ministriesData?.ministries?.map((ministry: any) => (
-                    <SelectItem key={ministry.id} value={ministry.id.toString()}>
-                      {ministry.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {memberMinistries.length === 0 ? (
+                <p className="text-sm text-muted-foreground border rounded-md p-3">
+                  This member is not assigned to any ministry. Assign them to a
+                  ministry before promoting to Ministry Leader.
+                </p>
+              ) : (
+                <Select
+                  value={selectedMinistryId?.toString() || ""}
+                  onValueChange={(value) =>
+                    setSelectedMinistryId(parseInt(value))
+                  }
+                  disabled={isPromoting}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Choose a ministry..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {memberMinistries.map((ministry) => (
+                      <SelectItem
+                        key={ministry.id}
+                        value={ministry.id.toString()}
+                      >
+                        {ministry.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <p className="text-xs text-muted-foreground">
-                The member will be automatically added to the selected ministry if not already a member
+                Only ministries this member is already assigned to are shown
               </p>
             </div>
           )}
@@ -165,7 +205,7 @@ const PromoteMemberModal = ({
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-sm text-blue-800">
               <strong>Note:</strong> A random 6-digit password will be generated
-              and displayed after promotion.
+              for new accounts and displayed after promotion.
             </p>
           </div>
 
@@ -180,9 +220,9 @@ const PromoteMemberModal = ({
             <Button
               onClick={handlePromote}
               disabled={
-                !selectedRole || 
-                isPromoting || 
-                (selectedRole === "ml" && !selectedMinistryId)
+                selectedRoles.length === 0 ||
+                isPromoting ||
+                (needsMinistry && !selectedMinistryId)
               }
               className="bg-brand-gradient hover:opacity-90 transition-opacity"
             >

@@ -21,7 +21,8 @@ import {
   useGetMinistryStats,
   useDeleteMinistry,
 } from "@/hooks/useGraphQL";
-import { Users, UserPlus, Settings, Trash2 } from "lucide-react";
+import { formatMinistryProgram } from "@/lib/ministryProgram";
+import { Users, UserPlus, Settings, Trash2, CalendarClock } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const MinistriesManagement = () => {
@@ -260,8 +261,14 @@ const MinistriesManagement = () => {
                   name: string;
                   description?: string;
                   is_active: boolean;
+                  program_frequency?: string | null;
+                  program_day?: string | null;
                 };
                 const stats = getMinistryStats(ministryData.id);
+                const programLabel = formatMinistryProgram(
+                  ministryData.program_frequency,
+                  ministryData.program_day,
+                );
                 return (
                   <Card
                     key={ministryData.id}
@@ -285,6 +292,16 @@ const MinistriesManagement = () => {
                       {ministryData.description && (
                         <p className="text-sm text-muted-foreground">
                           {ministryData.description}
+                        </p>
+                      )}
+                      {programLabel ? (
+                        <Badge className="mt-2 w-fit bg-indigo-100 text-indigo-800">
+                          <CalendarClock className="mr-1 h-3 w-3" />
+                          {programLabel}
+                        </Badge>
+                      ) : (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Regular program not set
                         </p>
                       )}
                     </CardHeader>

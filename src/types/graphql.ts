@@ -5,6 +5,7 @@ export interface Member {
   id: number;
   full_name: string;
   contact_no?: string;
+  gender?: string;
   status_id?: number;
   family_id?: number;
   role_id?: number;
@@ -16,6 +17,7 @@ export interface Member {
   updatedAt: string;
   family?: Family;
   role?: Role;
+  roles?: Role[];
   status?: Status;
   profession?: Profession;
   location?: Location;
@@ -68,6 +70,8 @@ export interface Ministry {
   name: string;
   description?: string;
   is_active?: boolean;
+  program_frequency?: string | null;
+  program_day?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -151,6 +155,10 @@ export interface MemberFilterInput {
   family_id?: number;
   profession_id?: number;
   location_id?: number;
+  ministry_id?: number;
+  ministry_ids?: number[];
+  role_name?: string;
+  search?: string;
 }
 
 export interface PaginationInput {

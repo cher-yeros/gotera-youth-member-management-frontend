@@ -4,12 +4,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import { useGetFamilyMembers, useGetFamilyStats } from "@/hooks/useGraphQL";
+import { getMemberCompleteness } from "@/lib/memberCompleteness";
 import { useAuth } from "@/redux/useAuth";
 import type { Member } from "@/types/graphql";
 import {
   Activity,
   AlertTriangle,
   Briefcase,
+  CheckCircle2,
+  ClipboardList,
   Home,
   MapPin,
   UserCheck,
@@ -25,7 +28,7 @@ const FamilyLeaderDashboard = () => {
 
   // Fetch family-specific data
   const { data: familyData, loading: familyLoading } = useGetFamilyMembers(
-    familyId || 0
+    familyId || 0,
   );
   const { loading: statsLoading } = useGetFamilyStats(familyId || 0);
 
@@ -38,15 +41,17 @@ const FamilyLeaderDashboard = () => {
 
   // Status-based statistics
   const activeMembers = members.filter(
-    (member: Member) => member.status?.name === "Active"
+    (member: Member) => member.status?.name === "Active",
   ).length;
   const notActiveMembers = members.filter(
     (member: Member) =>
-      member.status?.name === "Not Active" || member.status?.name === "Inactive"
+      member.status?.name === "Not Active" ||
+      member.status?.name === "Inactive",
   ).length;
   const movedOutMembers = members.filter(
     (member: Member) =>
-      member.status?.name === "Moved out" || member.status?.name === "Moved Out"
+      member.status?.name === "Moved out" ||
+      member.status?.name === "Moved Out",
   ).length;
 
   // New members (created in the last 30 days)
@@ -60,37 +65,53 @@ const FamilyLeaderDashboard = () => {
 
   // Location statistics
   const locationAllocated = members.filter(
-    (member: Member) => member.location?.id != null
+    (member: Member) => member.location?.id != null,
   ).length;
   const locationUnallocated = members.filter(
-    (member: Member) => member.location?.id == null
+    (member: Member) => member.location?.id == null,
   ).length;
 
   // Profession statistics
   const professionAllocated = members.filter(
-    (member: Member) => member.profession?.id != null
+    (member: Member) => member.profession?.id != null,
   ).length;
   const professionUnallocated = members.filter(
-    (member: Member) => member.profession?.id == null
+    (member: Member) => member.profession?.id == null,
   ).length;
 
   // Ministry statistics
   const ministryAllocated = members.filter(
-    (member: Member) => member.ministries && member.ministries.length > 0
+    (member: Member) => member.ministries && member.ministries.length > 0,
   ).length;
   const ministryUnallocated = members.filter(
-    (member: Member) => !member.ministries || member.ministries.length === 0
+    (member: Member) => !member.ministries || member.ministries.length === 0,
   ).length;
+
+  // Profile completeness (Active members only)
+  const memberCompleteness = members.map((member: Member) => ({
+    member,
+    ...getMemberCompleteness(member),
+  }));
+  const activeForCompleteness = memberCompleteness.filter((m) => m.applicable);
+  const incompleteMembers = activeForCompleteness.filter((m) => m.isIncomplete);
+  const fullyIncompleteMembers = activeForCompleteness.filter(
+    (m) => m.isFullyIncomplete,
+  );
+  const completeMembers =
+    activeForCompleteness.length - incompleteMembers.length;
+  const isFullyUncompletedFamily =
+    activeForCompleteness.length > 0 && completeMembers === 0;
+  const hasUnfilledData = incompleteMembers.length > 0;
 
   // Get unique professions and locations
   const professions = [
     ...new Set(
-      members.map((member: Member) => member.profession?.name).filter(Boolean)
+      members.map((member: Member) => member.profession?.name).filter(Boolean),
     ),
   ];
   const locations = [
     ...new Set(
-      members.map((member: Member) => member.location?.name).filter(Boolean)
+      members.map((member: Member) => member.location?.name).filter(Boolean),
     ),
   ];
 
@@ -231,8 +252,117 @@ const FamilyLeaderDashboard = () => {
         <ThemeToggle variant="icon" />
       </div>
 
+      {/* Data completeness alert */}
+      {hasUnfilledData && (
+        <Card
+          className={
+            isFullyUncompletedFamily
+              ? "border-2 border-red-500/60 bg-red-50 dark:bg-red-950/20 shadow-brand"
+              : "border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 shadow-brand"
+          }
+        >
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div
+                className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${
+                  isFullyUncompletedFamily
+                    ? "bg-red-100 dark:bg-red-900/40"
+                    : "bg-yellow-100 dark:bg-yellow-900/40"
+                }`}
+              >
+                <AlertTriangle
+                  className={`h-6 w-6 ${
+                    isFullyUncompletedFamily
+                      ? "text-red-600 dark:text-red-400"
+                      : "text-yellow-600 dark:text-yellow-500"
+                  }`}
+                />
+              </div>
+              <div className="flex-1 space-y-2">
+                <h3
+                  className={`text-lg font-semibold ${
+                    isFullyUncompletedFamily
+                      ? "text-red-900 dark:text-red-100"
+                      : "text-yellow-900 dark:text-yellow-100"
+                  }`}
+                >
+                  {isFullyUncompletedFamily
+                    ? "Fully uncompleted family"
+                    : "Incomplete member data"}
+                </h3>
+                <p
+                  className={`text-sm ${
+                    isFullyUncompletedFamily
+                      ? "text-red-800 dark:text-red-200"
+                      : "text-yellow-800 dark:text-yellow-200"
+                  }`}
+                >
+                  {isFullyUncompletedFamily
+                    ? `None of the ${activeForCompleteness.length} active members in this family have a complete profile. Please fill in missing contact, gender, status, role, profession, location, and ministry.`
+                    : `${incompleteMembers.length} of ${activeForCompleteness.length} active members have unfilled fields${
+                        fullyIncompleteMembers.length > 0
+                          ? `, including ${fullyIncompleteMembers.length} with mostly empty profiles`
+                          : ""
+                      }.`}
+                </p>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Badge
+                    className={
+                      isFullyUncompletedFamily
+                        ? "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200"
+                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200"
+                    }
+                  >
+                    {incompleteMembers.length} incomplete
+                  </Badge>
+                  {fullyIncompleteMembers.length > 0 && (
+                    <Badge className="bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200">
+                      {fullyIncompleteMembers.length} mostly empty
+                    </Badge>
+                  )}
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200">
+                    {completeMembers} complete
+                  </Badge>
+                </div>
+              </div>
+              <Link to="/families/my-family">
+                <Button
+                  variant="outline"
+                  className="shrink-0 border-current hover:bg-white/60 dark:hover:bg-black/20"
+                >
+                  <ClipboardList className="mr-2 h-4 w-4" />
+                  Update Members
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {!hasUnfilledData && activeForCompleteness.length > 0 && (
+        <Card className="border-2 border-green-500/40 bg-green-50 dark:bg-green-950/20 shadow-brand">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900/40 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-green-900 dark:text-green-100">
+                  Family data complete
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-200">
+                  All {activeForCompleteness.length} active members have
+                  contact, gender, status, role, profession, location, and
+                  ministry filled in.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Status Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="hover-brand-glow transition-all duration-300">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
@@ -286,6 +416,49 @@ const FamilyLeaderDashboard = () => {
           <CardContent className="pt-0">
             <div className="text-2xl font-bold">{newMembers}</div>
             <p className="text-xs text-muted-foreground">Last 30 days</p>
+          </CardContent>
+        </Card>
+
+        <Card
+          className={`hover-brand-glow transition-all duration-300 ${
+            hasUnfilledData
+              ? isFullyUncompletedFamily
+                ? "border-2 border-red-500/50"
+                : "border-2 border-yellow-500/50"
+              : ""
+          }`}
+        >
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">
+                Incomplete Profiles
+              </CardTitle>
+              <ClipboardList
+                className={`h-4 w-4 ${
+                  hasUnfilledData ? "text-yellow-600" : "text-green-600"
+                }`}
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div
+              className={`text-2xl font-bold ${
+                hasUnfilledData
+                  ? isFullyUncompletedFamily
+                    ? "text-red-600"
+                    : "text-yellow-700 dark:text-yellow-400"
+                  : "text-green-600"
+              }`}
+            >
+              {incompleteMembers.length}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {isFullyUncompletedFamily
+                ? "Family fully incomplete"
+                : hasUnfilledData
+                  ? "Need data filled"
+                  : "All profiles complete"}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -452,51 +625,89 @@ const FamilyLeaderDashboard = () => {
                   </p>
                 </div>
               ) : (
-                members.map((member: Member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center space-x-3 p-3 rounded-lg border border-border hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="h-10 w-10 bg-brand-gradient rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                      {getInitials(member.full_name)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {member.full_name}
-                      </p>
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        {member.profession?.name && (
-                          <span className="flex items-center">
-                            <Briefcase className="mr-1 h-3 w-3" />
-                            {member.profession.name}
-                          </span>
-                        )}
-                        {member.location?.name && (
-                          <span className="flex items-center">
-                            <MapPin className="mr-1 h-3 w-3" />
-                            {member.location.name}
-                          </span>
+                memberCompleteness.map(
+                  ({
+                    member,
+                    applicable,
+                    missingFields,
+                    isIncomplete,
+                    isFullyIncomplete,
+                  }) => (
+                    <div
+                      key={member.id}
+                      className={`flex items-start space-x-3 p-3 rounded-lg border transition-colors ${
+                        isFullyIncomplete
+                          ? "border-red-500/50 bg-red-50/50 dark:bg-red-950/10"
+                          : isIncomplete
+                            ? "border-yellow-500/40 bg-yellow-50/40 dark:bg-yellow-950/10"
+                            : "border-border hover:bg-muted/50"
+                      }`}
+                    >
+                      <div className="h-10 w-10 bg-brand-gradient rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                        {getInitials(member.full_name)}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-sm font-medium truncate">
+                            {member.full_name}
+                          </p>
+                          {!applicable ? (
+                            <Badge className="text-xs bg-gray-100 text-gray-700">
+                              Not checked (inactive)
+                            </Badge>
+                          ) : isFullyIncomplete ? (
+                            <Badge className="text-xs bg-red-100 text-red-800">
+                              Mostly empty
+                            </Badge>
+                          ) : isIncomplete ? (
+                            <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                              Incomplete
+                            </Badge>
+                          ) : (
+                            <Badge className="text-xs bg-green-100 text-green-800">
+                              Complete
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          {member.profession?.name && (
+                            <span className="flex items-center">
+                              <Briefcase className="mr-1 h-3 w-3" />
+                              {member.profession.name}
+                            </span>
+                          )}
+                          {member.location?.name && (
+                            <span className="flex items-center">
+                              <MapPin className="mr-1 h-3 w-3" />
+                              {member.location.name}
+                            </span>
+                          )}
+                        </div>
+                        {isIncomplete && (
+                          <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                            Missing: {missingFields.join(", ")}
+                          </p>
                         )}
                       </div>
+                      <div className="flex flex-col space-y-1 shrink-0">
+                        <Badge
+                          className={`text-xs ${getStatusColor(
+                            member.status?.name || "Unknown",
+                          )}`}
+                        >
+                          {member.status?.name || "Unknown"}
+                        </Badge>
+                        <Badge
+                          className={`text-xs ${getRoleColor(
+                            member.role?.name || "Unknown",
+                          )}`}
+                        >
+                          {member.role?.name || "Unknown"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex flex-col space-y-1">
-                      <Badge
-                        className={`text-xs ${getStatusColor(
-                          member.status?.name || "Unknown"
-                        )}`}
-                      >
-                        {member.status?.name || "Unknown"}
-                      </Badge>
-                      <Badge
-                        className={`text-xs ${getRoleColor(
-                          member.role?.name || "Unknown"
-                        )}`}
-                      >
-                        {member.role?.name || "Unknown"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))
+                  ),
+                )
               )}
             </div>
           </CardContent>
@@ -529,6 +740,25 @@ const FamilyLeaderDashboard = () => {
                 <span className="text-sm font-medium">Active Members</span>
                 <Badge className="bg-green-100 text-green-800">
                   {activeMembers} Active
+                </Badge>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Data Completeness</span>
+                <Badge
+                  className={
+                    isFullyUncompletedFamily
+                      ? "bg-red-100 text-red-800"
+                      : hasUnfilledData
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-green-100 text-green-800"
+                  }
+                >
+                  {isFullyUncompletedFamily
+                    ? "Fully incomplete"
+                    : hasUnfilledData
+                      ? `${incompleteMembers.length} incomplete`
+                      : "All complete"}
                 </Badge>
               </div>
 
@@ -587,7 +817,7 @@ const FamilyLeaderDashboard = () => {
                       <Badge variant="secondary" className="text-xs">
                         {
                           members.filter(
-                            (m: Member) => m.profession?.name === profession
+                            (m: Member) => m.profession?.name === profession,
                           ).length
                         }
                       </Badge>
@@ -617,7 +847,7 @@ const FamilyLeaderDashboard = () => {
                       <Badge variant="secondary" className="text-xs">
                         {
                           members.filter(
-                            (m: Member) => m.location?.name === location
+                            (m: Member) => m.location?.name === location,
                           ).length
                         }
                       </Badge>

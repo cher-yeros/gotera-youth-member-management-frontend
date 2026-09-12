@@ -14,6 +14,7 @@ import { useLogin } from "@/hooks/useGraphQL";
 import { useAppDispatch } from "@/redux/hooks";
 import { setCredentials } from "@/redux/slices/authSlice";
 import { useAuth } from "@/redux/useAuth";
+import { getDefaultPathForUser } from "@/lib/roles";
 import { ArrowRight, Eye, EyeOff, Lock, Phone } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -115,13 +116,8 @@ const Login = () => {
           })
         );
 
-        // Navigate based on user role
-        const userRole = result.user.role?.toLowerCase();
-        if (userRole === "fl") {
-          navigate("/families/my-family");
-        } else {
-          navigate("/dashboard");
-        }
+        // Navigate based on user roles (supports multiple)
+        navigate(getDefaultPathForUser(result.user));
       } else {
         // Handle unsuccessful login
         const errorMessage =
