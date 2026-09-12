@@ -42,6 +42,7 @@ import {
   GET_RECENT_MEMBERS,
   GET_FAMILY_SUMMARIES,
   GET_INCOMPLETE_FAMILIES,
+  GET_FAMILY_PLACEMENT_NEEDS,
   GET_PROFESSION_SUMMARIES,
   GET_LOCATION_SUMMARIES,
   LOGIN,
@@ -317,6 +318,14 @@ export const useGetFamilies = () => {
 export const useGetIncompleteFamilies = (limit: number = 50) => {
   return useQuery<any>(GET_INCOMPLETE_FAMILIES, {
     variables: { limit },
+    errorPolicy: "all",
+  });
+};
+
+export const useGetFamilyPlacementNeeds = () => {
+  return useQuery<{
+    familyPlacementNeeds: import("@/lib/familyPlacement").FamilyPlacementNeed[];
+  }>(GET_FAMILY_PLACEMENT_NEEDS, {
     errorPolicy: "all",
   });
 };
@@ -922,9 +931,10 @@ export const useGetMinistry = (ministryId: number) => {
   });
 };
 
-export const useGetMinistries = () => {
+export const useGetMinistries = (options?: { skip?: boolean }) => {
   return useQuery<any>(GET_MINISTRIES, {
     errorPolicy: "all",
+    skip: options?.skip,
   });
 };
 

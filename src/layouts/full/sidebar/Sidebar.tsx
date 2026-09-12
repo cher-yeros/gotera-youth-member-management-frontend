@@ -86,6 +86,26 @@ const adminNavigation: NavEntry[] = [
   },
 ];
 
+/** Family Coordinator: admin family + member surfaces only */
+const fcNavigation: NavEntry[] = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Overview", href: "/overview", icon: Home },
+  {
+    name: "Members",
+    icon: Users,
+    children: [{ name: "All Members", href: "/members", icon: Users }],
+  },
+  {
+    name: "Families",
+    icon: UserCheck,
+    children: [
+      { name: "All Families", href: "/families", icon: UserCheck },
+      { name: "Family Meetups", href: "/family-meetups", icon: CalendarCheck },
+      { name: "Member Mapping", href: "/family-mapping", icon: Network },
+    ],
+  },
+];
+
 const flNavigation: NavItem[] = [
   { name: "Dashboard", href: "/family-dashboard", icon: LayoutDashboard },
   { name: "My Family", href: "/families/my-family", icon: UserCheck },
@@ -122,14 +142,20 @@ const Sidebar = () => {
   const { user } = useAuth();
 
   const isAdminNav = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  const isFcNav = !isAdminNav && hasRole(user, ROLE.FC);
+  const groupedNav = isAdminNav
+    ? adminNavigation
+    : isFcNav
+      ? fcNavigation
+      : null;
 
-  // Multi-role: merge nav sets; ADMIN/MAIN see full admin nav
+  // Multi-role: merge nav sets; ADMIN/MAIN full admin; FC family/member admin
   const navigation = (() => {
-    if (isAdminNav) {
-      return adminNavigation;
+    if (groupedNav) {
+      return groupedNav;
     }
     const items: NavItem[] = [];
-    if (hasAnyRole(user, [ROLE.FL, ROLE.FC])) {
+    if (hasRole(user, ROLE.FL)) {
       items.push(...flNavigation);
     }
     if (hasRole(user, ROLE.FUL)) {
@@ -154,10 +180,10 @@ const Sidebar = () => {
 
   // Keep the group that contains the current route expanded
   useEffect(() => {
-    if (!isAdminNav) return;
+    if (!groupedNav) return;
     setOpenGroups((prev) => {
       const next = { ...prev };
-      for (const entry of adminNavigation) {
+      for (const entry of groupedNav) {
         if (
           isNavGroup(entry) &&
           groupHasActiveChild(location.pathname, entry)
@@ -167,7 +193,7 @@ const Sidebar = () => {
       }
       return next;
     });
-  }, [isAdminNav, location.pathname]);
+  }, [groupedNav, location.pathname]);
 
   const toggleGroup = (name: string) => {
     setOpenGroups((prev) => ({ ...prev, [name]: !prev[name] }));

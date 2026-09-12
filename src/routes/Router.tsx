@@ -84,7 +84,7 @@ const Router = [
       {
         path: "/dashboard",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <Dashboard />
           </ProtectedRoute>
         ),
@@ -132,7 +132,7 @@ const Router = [
       {
         path: "/members",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <Members />
           </ProtectedRoute>
         ),
@@ -140,7 +140,7 @@ const Router = [
       {
         path: "/overview",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <OverviewPage />
           </ProtectedRoute>
         ),
@@ -148,7 +148,7 @@ const Router = [
       {
         path: "/families",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <FamiliesPage />
           </ProtectedRoute>
         ),
@@ -188,7 +188,7 @@ const Router = [
       {
         path: "/family-mapping",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <FamilyMemberMapping />
           </ProtectedRoute>
         ),
@@ -212,7 +212,7 @@ const Router = [
       {
         path: "/family-meetups",
         element: (
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <FamilyMeetupsManagement />
           </ProtectedRoute>
         ),

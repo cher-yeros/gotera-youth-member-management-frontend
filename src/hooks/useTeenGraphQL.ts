@@ -32,7 +32,10 @@ export const useGetTeenClasses = () =>
   useQuery(GET_TEEN_CLASSES, { errorPolicy: "all", fetchPolicy: "no-cache" });
 
 export const useGetMyTeenClasses = () =>
-  useQuery(GET_MY_TEEN_CLASSES, { errorPolicy: "all", fetchPolicy: "no-cache" });
+  useQuery(GET_MY_TEEN_CLASSES, {
+    errorPolicy: "all",
+    fetchPolicy: "no-cache",
+  });
 
 export const useGetTeenClass = (id: number) =>
   useQuery(GET_TEEN_CLASS, {
@@ -56,8 +59,11 @@ export const useGetTeenager = (id: number) =>
     errorPolicy: "all",
   });
 
-export const useGetTeenOverviewStats = () =>
-  useQuery(GET_TEEN_OVERVIEW_STATS, { errorPolicy: "all" });
+export const useGetTeenOverviewStats = (options?: { skip?: boolean }) =>
+  useQuery(GET_TEEN_OVERVIEW_STATS, {
+    errorPolicy: "all",
+    skip: options?.skip,
+  });
 
 export const useGetClassSessions = (filter?: any, pagination?: any) =>
   useQuery(GET_CLASS_SESSIONS, {

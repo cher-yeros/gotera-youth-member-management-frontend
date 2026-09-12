@@ -78,14 +78,13 @@ export function hasAnyRole(
 export function getDefaultPathForUser(
   user: UserLike | null | undefined,
 ): string {
-  if (hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN])) return "/dashboard";
+  if (hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC])) return "/dashboard";
   if (hasRole(user, ROLE.ML)) return "/ministry-dashboard";
   if (hasRole(user, ROLE.TT)) return "/teen-dashboard";
-  if (hasRole(user, ROLE.FUL) && !hasAnyRole(user, [ROLE.FL, ROLE.FC])) {
+  if (hasRole(user, ROLE.FUL) && !hasRole(user, ROLE.FL)) {
     return "/follow-up";
   }
-  if (hasAnyRole(user, [ROLE.FL, ROLE.FUL, ROLE.FC]))
-    return "/family-dashboard";
+  if (hasAnyRole(user, [ROLE.FL, ROLE.FUL])) return "/family-dashboard";
   return "/dashboard";
 }
 

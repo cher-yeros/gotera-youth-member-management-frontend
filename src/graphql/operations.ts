@@ -708,6 +708,32 @@ export const GET_INCOMPLETE_FAMILIES = gql`
   ${FAMILY_SUMMARY_FRAGMENT}
 `;
 
+export const GET_FAMILY_PLACEMENT_NEEDS = gql`
+  query GetFamilyPlacementNeeds {
+    familyPlacementNeeds {
+      id
+      name
+      activeMemberCount
+      maleCount
+      femaleCount
+      unknownGenderCount
+      averageActiveSize
+      sizeDeficit
+      genderSkew
+      needsMembers
+      needReasons
+      suggestedNewcomers {
+        followUpCaseId
+        memberId
+        fullName
+        gender
+        priority
+        reason
+      }
+    }
+  }
+`;
+
 export const GET_PROFESSION_SUMMARIES = gql`
   query GetProfessionSummaries($limit: Int) {
     professionSummaries(limit: $limit) {
