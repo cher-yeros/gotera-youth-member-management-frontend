@@ -33,7 +33,7 @@ const FamilyLeaderDashboard = () => {
   const { loading: statsLoading } = useGetFamilyStats(familyId || 0);
 
   const family = familyData?.family;
-  const members = family?.members || [];
+  const members: Member[] = family?.members || [];
   const isLoading = familyLoading || statsLoading;
 
   // Calculate family statistics

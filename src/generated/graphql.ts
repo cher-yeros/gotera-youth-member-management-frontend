@@ -607,11 +607,7 @@ export type Ministry = {
 };
 
 /** How often the ministry holds its regular program. */
-export enum MinistryProgramFrequency {
-  BiMonthly = "BI_MONTHLY",
-  Monthly = "MONTHLY",
-  Weekly = "WEEKLY",
-}
+export type MinistryProgramFrequency = "BI_MONTHLY" | "MONTHLY" | "WEEKLY";
 
 export type MinistryStats = {
   __typename?: "MinistryStats";
@@ -1484,11 +1480,7 @@ export type TeenOverviewStats = {
   totalTeenagers: Scalars["Int"]["output"];
 };
 
-export enum TeenStatus {
-  Active = "ACTIVE",
-  Inactive = "INACTIVE",
-  Promoted = "PROMOTED",
-}
+export type TeenStatus = "ACTIVE" | "INACTIVE" | "PROMOTED";
 
 export type Teenager = {
   __typename?: "Teenager";

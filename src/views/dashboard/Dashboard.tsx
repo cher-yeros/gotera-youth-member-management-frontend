@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import type { Member } from "@/generated/graphql";
+import type { Ministry } from "@/types/graphql";
 import {
   useGetIncompleteFamilies,
   useGetMinistries,
@@ -63,7 +64,7 @@ const Dashboard = () => {
   const recentMembers = recentMembersData?.recentMembers || [];
   const incompleteFamilies = incompleteFamiliesData?.incompleteFamilies || [];
   const followUpDash = (followUpDashData as any)?.followUpDashboard;
-  const ministries = ministriesData?.ministries || [];
+  const ministries: Ministry[] = ministriesData?.ministries || [];
   const dayUnassignedMinistries = ministries.filter(
     (ministry) => !ministry.program_day || !ministry.program_frequency,
   );

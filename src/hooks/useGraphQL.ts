@@ -237,7 +237,8 @@ export const usePromoteMember = () => {
 
   const handlePromoteMember = async (input: {
     member_id: number;
-    role: string;
+    role?: string;
+    roles?: string[];
   }) => {
     try {
       const result = await promoteMember({ variables: { input } });

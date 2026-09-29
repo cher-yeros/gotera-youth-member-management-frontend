@@ -11,6 +11,7 @@ const config: CodegenConfig = {
         withHooks: false,
         withComponent: false,
         withHOC: false,
+        enumsAsTypes: true,
         scalars: {
           DateTime: "string",
           Date: "string",
