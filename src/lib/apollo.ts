@@ -3,7 +3,7 @@ import { setContext } from "@apollo/client/link/context";
 import { store } from "@/redux/store";
 
 const DEV_BASE_URL = `http://${window.location.hostname}:4000/graphql`;
-const PROD_BASE_URL = "https://gyapi.shevadigitals.com/graphql";
+const PROD_BASE_URL = "https://gy.lelahub.com/graphql";
 
 // HTTP Link
 const httpLink = new HttpLink({
