@@ -481,6 +481,7 @@ export type IntakeNewcomerInput = {
   first_visit_date?: InputMaybe<Scalars["String"]["input"]>;
   full_name: Scalars["String"]["input"];
   gender?: InputMaybe<Scalars["String"]["input"]>;
+  location_id?: InputMaybe<Scalars["Int"]["input"]>;
   next_follow_up_at?: InputMaybe<Scalars["String"]["input"]>;
   notes?: InputMaybe<Scalars["String"]["input"]>;
   priority?: InputMaybe<Scalars["String"]["input"]>;
