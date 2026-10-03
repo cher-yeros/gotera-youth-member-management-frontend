@@ -21,6 +21,7 @@ import {
   GET_FAMILIES,
   GET_FOLLOW_UP_COORDINATORS,
   GET_FOLLOW_UP_DASHBOARD,
+  GET_LOCATIONS,
   INTAKE_NEWCOMER,
 } from "@/graphql/operations";
 import {
@@ -38,6 +39,20 @@ interface IntakeNewcomerModalProps {
   onSuccess?: () => void;
 }
 
+const emptyForm = {
+  full_name: "",
+  contact_no: "",
+  gender: "",
+  source: FOLLOW_UP_SOURCE.SUNDAY_SERVICE,
+  first_visit_date: "",
+  notes: "",
+  assigned_to: "",
+  priority: FOLLOW_UP_PRIORITY.NORMAL,
+  next_follow_up_at: "",
+  family_id: "",
+  location_id: "",
+};
+
 export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
   open,
   onOpenChange,
@@ -45,31 +60,10 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
 }) => {
   const { user } = useAuth();
   const isAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
-  const [form, setForm] = useState<{
-    full_name: string;
-    contact_no: string;
-    gender: string;
-    source: string;
-    first_visit_date: string;
-    notes: string;
-    assigned_to: string;
-    priority: string;
-    next_follow_up_at: string;
-    family_id: string;
-  }>({
-    full_name: "",
-    contact_no: "",
-    gender: "",
-    source: FOLLOW_UP_SOURCE.SUNDAY_SERVICE,
-    first_visit_date: "",
-    notes: "",
-    assigned_to: "",
-    priority: FOLLOW_UP_PRIORITY.NORMAL,
-    next_follow_up_at: "",
-    family_id: "",
-  });
+  const [form, setForm] = useState(emptyForm);
 
   const { data: familiesData } = useQuery(GET_FAMILIES, { skip: !open });
+  const { data: locationsData } = useQuery(GET_LOCATIONS, { skip: !open });
   const { data: coordinatorsData } = useQuery(GET_FOLLOW_UP_COORDINATORS, {
     skip: !open || !isAdmin,
     fetchPolicy: "network-only",
@@ -84,18 +78,7 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
     onCompleted: () => {
       toast.success("Newcomer intake created");
       onOpenChange(false);
-      setForm({
-        full_name: "",
-        contact_no: "",
-        gender: "",
-        source: FOLLOW_UP_SOURCE.SUNDAY_SERVICE,
-        first_visit_date: "",
-        notes: "",
-        assigned_to: "",
-        priority: FOLLOW_UP_PRIORITY.NORMAL,
-        next_follow_up_at: "",
-        family_id: "",
-      });
+      setForm(emptyForm);
       onSuccess?.();
     },
     onError: (error) => {
@@ -104,6 +87,7 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
   });
 
   const families = (familiesData as any)?.families || [];
+  const locations = (locationsData as any)?.locations || [];
   const members = (coordinatorsData as any)?.followUpCoordinators || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -130,6 +114,7 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
           priority: form.priority,
           next_follow_up_at: form.next_follow_up_at || null,
           family_id: form.family_id ? Number(form.family_id) : null,
+          location_id: form.location_id ? Number(form.location_id) : null,
         },
       },
     });
@@ -177,6 +162,24 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Location</Label>
+            <Select
+              value={form.location_id || undefined}
+              onValueChange={(v) => setForm({ ...form, location_id: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Optional" />
+              </SelectTrigger>
+              <SelectContent>
+                {locations.map((loc: any) => (
+                  <SelectItem key={loc.id} value={String(loc.id)}>
+                    {loc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">

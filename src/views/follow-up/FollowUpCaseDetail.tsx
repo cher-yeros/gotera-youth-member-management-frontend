@@ -197,6 +197,14 @@ const FollowUpCaseDetail: React.FC = () => {
               )}
             </div>
             <div>
+              <div className="text-muted-foreground">Location</div>
+              <div>
+                {item.member?.location?.name ||
+                  item.member?.location_name ||
+                  "—"}
+              </div>
+            </div>
+            <div>
               <div className="text-muted-foreground">Assignee</div>
               <div>{item.assignee?.full_name || "Unassigned"}</div>
             </div>

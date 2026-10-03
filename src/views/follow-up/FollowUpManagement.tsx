@@ -315,6 +315,13 @@ const FollowUpManagement: React.FC = () => {
                         ) : (
                           <span>No phone</span>
                         )}
+                        {(item.member?.location?.name ||
+                          item.member?.location_name) && (
+                          <span>
+                            {item.member?.location?.name ||
+                              item.member?.location_name}
+                          </span>
+                        )}
                         <span>
                           Assignee: {item.assignee?.full_name || "Unassigned"}
                         </span>

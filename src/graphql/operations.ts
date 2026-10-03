@@ -1438,11 +1438,17 @@ export const FOLLOW_UP_CASE_FRAGMENT = gql`
       gender
       status_id
       family_id
+      location_id
+      location_name
       status {
         id
         name
       }
       family {
+        id
+        name
+      }
+      location {
         id
         name
       }
