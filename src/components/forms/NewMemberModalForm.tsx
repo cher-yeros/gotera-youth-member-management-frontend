@@ -18,6 +18,7 @@ import {
   useGetMinistries,
   useUpdateMember,
 } from "@/hooks/useGraphQL";
+import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
 import React, { useEffect, useState } from "react";
 
 interface NewMemberModalFormProps {
@@ -65,6 +66,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     full_name: "",
     contact_no: "",
     gender: undefined,
+    photo_url: undefined,
     status_id: undefined,
     family_id: defaultFamilyId || undefined,
     ministry_ids: defaultMinistryId ? [defaultMinistryId] : [],
@@ -84,6 +86,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         full_name: member.full_name,
         contact_no: member.contact_no || "",
         gender: member.gender || undefined,
+        photo_url: member.photo_url || undefined,
         status_id: member.status_id || undefined,
         family_id: member.family_id || undefined,
         ministry_ids: member.ministries?.map((m) => m.id) || [],
@@ -134,7 +137,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle input changes
   const handleInputChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined | number[],
+    value: string | number | undefined | null | number[],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -195,6 +198,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           full_name: formData.full_name?.trim() || undefined,
           contact_no: formData.contact_no?.trim() || undefined,
           gender: formData.gender || undefined,
+          photo_url: formData.photo_url ?? null,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
           ministry_ids: formData.ministry_ids || [],
@@ -211,6 +215,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           full_name: formData.full_name?.trim() || "",
           contact_no: formData.contact_no?.trim() || undefined,
           gender: formData.gender || undefined,
+          photo_url: formData.photo_url || undefined,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
           ministry_ids:
@@ -259,6 +264,13 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           </h3>
 
           <div className="space-y-4">
+            <PhotoCaptureField
+              value={formData.photo_url}
+              onChange={(url) => handleInputChange("photo_url", url)}
+              disabled={isSubmitting || memberLoading}
+              name={formData.full_name || undefined}
+            />
+
             <div>
               <label
                 htmlFor="full_name"

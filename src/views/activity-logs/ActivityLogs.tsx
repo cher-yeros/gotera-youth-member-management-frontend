@@ -97,8 +97,10 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Activity Logs</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">
+              Activity Logs
+            </h1>
+            <p className="text-muted-foreground mt-2">
               Track all user activities in the system
             </p>
           </div>
@@ -126,8 +128,10 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Activity Logs</h1>
-            <p className="text-gray-600 mt-2">
+            <h1 className="text-3xl font-bold text-foreground">
+              Activity Logs
+            </h1>
+            <p className="text-muted-foreground mt-2">
               Track all user activities in the system
             </p>
           </div>
@@ -136,7 +140,9 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
         <Card>
           <CardContent className="p-6">
             <div className="text-center">
-              <p className="text-red-600 mb-4">Error loading activity logs</p>
+              <p className="text-red-600 dark:text-red-400 mb-4">
+                Error loading activity logs
+              </p>
               <Button onClick={handleRefresh} variant="outline">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Try Again
@@ -153,8 +159,8 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Activity Logs</h1>
-          <p className="text-gray-600 mt-2">
+          <h1 className="text-3xl font-bold text-foreground">Activity Logs</h1>
+          <p className="text-muted-foreground mt-2">
             Track all user activities in the system
           </p>
         </div>
@@ -175,7 +181,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
                 Action Type
               </label>
               <Select
@@ -200,7 +206,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
                 Entity Type
               </label>
               <Select
@@ -224,7 +230,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 mb-2 block">
+              <label className="text-sm font-medium text-foreground mb-2 block">
                 Page Size
               </label>
               <Select
@@ -252,10 +258,10 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             <div className="flex items-center">
               <Activity className="h-8 w-8 text-blue-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-medium text-muted-foreground">
                   Total Activities
                 </p>
-                <p className="text-2xl font-bold text-gray-900">{total}</p>
+                <p className="text-2xl font-bold text-foreground">{total}</p>
               </div>
             </div>
           </CardContent>
@@ -266,10 +272,10 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             <div className="flex items-center">
               <User className="h-8 w-8 text-green-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-sm font-medium text-muted-foreground">
                   Current Page
                 </p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-foreground">
                   {currentPage}
                 </p>
               </div>
@@ -282,8 +288,12 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             <div className="flex items-center">
               <Clock className="h-8 w-8 text-purple-600" />
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Pages</p>
-                <p className="text-2xl font-bold text-gray-900">{totalPages}</p>
+                <p className="text-sm font-medium text-muted-foreground">
+                  Total Pages
+                </p>
+                <p className="text-2xl font-bold text-foreground">
+                  {totalPages}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -296,8 +306,8 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
           <Card>
             <CardContent className="p-6">
               <div className="text-center">
-                <Activity className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">No activities found</p>
+                <Activity className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No activities found</p>
               </div>
             </CardContent>
           </Card>
@@ -320,11 +330,11 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
                       <Badge variant="outline">{activity.entity_type}</Badge>
                     </div>
 
-                    <p className="text-gray-900 font-medium mb-2">
+                    <p className="text-foreground font-medium mb-2">
                       {activity.description}
                     </p>
 
-                    <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <User className="h-4 w-4 mr-1" />
                         <span>
@@ -360,7 +370,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
                     </div>
                   </div>
 
-                  <div className="text-right text-sm text-gray-500">
+                  <div className="text-right text-sm text-muted-foreground">
                     <p>{new Date(activity.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
@@ -375,7 +385,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 Showing {(currentPage - 1) * pageSize + 1} to{" "}
                 {Math.min(currentPage * pageSize, total)} of {total} activities
               </div>

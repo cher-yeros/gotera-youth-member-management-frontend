@@ -60,7 +60,7 @@ interface ClassSessionBatch {
 const TeenSessionsManagement = () => {
   const [viewedBatchId, setViewedBatchId] = useState<number | null>(null);
   const [classSearchTerm, setClassSearchTerm] = useState("");
-  const { data, loading, refetch } = useGetClassSessionBatches(undefined, {
+  const { data, loading } = useGetClassSessionBatches(undefined, {
     page: 1,
     limit: 50,
   });
@@ -149,7 +149,6 @@ const TeenSessionsManagement = () => {
             <ThemeToggle variant="icon" />
             <EditClassSessionBatchModal
               batch={viewedBatch}
-              onSuccess={() => refetch()}
               trigger={
                 <Button variant="outline">
                   <Edit className="h-4 w-4 mr-2" />
@@ -290,7 +289,7 @@ const TeenSessionsManagement = () => {
         </div>
         <div className="flex gap-2">
           <ThemeToggle />
-          <CreateClassSessionBatchModal onSuccess={() => refetch()} />
+          <CreateClassSessionBatchModal />
         </div>
       </div>
 
@@ -338,7 +337,6 @@ const TeenSessionsManagement = () => {
                   </Button>
                   <EditClassSessionBatchModal
                     batch={b}
-                    onSuccess={() => refetch()}
                     trigger={
                       <Button size="sm" variant="outline">
                         <Edit className="h-4 w-4 mr-1" />
@@ -352,7 +350,6 @@ const TeenSessionsManagement = () => {
                     onClick={async () => {
                       if (confirm(`Delete batch "${b.title}"?`)) {
                         await deleteClassSessionBatch(b.id);
-                        refetch();
                       }
                     }}
                   >

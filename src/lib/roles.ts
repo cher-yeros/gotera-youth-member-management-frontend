@@ -8,6 +8,7 @@ export const ROLE = {
   TT: "TT",
   ADMIN: "ADMIN",
   FC: "FC",
+  FUC: "FUC",
 } as const;
 
 export type RoleCode = (typeof ROLE)[keyof typeof ROLE];
@@ -17,10 +18,11 @@ export const ROLE_LABELS: Record<RoleCode, string> = {
   FM: "Family Member",
   ML: "Ministry Leader",
   MAIN: "Main Leader",
-  FUL: "Follow-up Leader",
+  FUL: "Follow up",
   TT: "Teenager Teacher",
   ADMIN: "Admin",
   FC: "Family Coordinator",
+  FUC: "Follow Up Coordinator",
 };
 
 type UserLike = {
@@ -74,11 +76,19 @@ export function hasAnyRole(
   return roles.some((role) => hasRole(user, role));
 }
 
+/** Admin, Main, or Follow Up Coordinator — can view all cases and assign FULs. */
+export function isFollowUpCoordinator(
+  user: UserLike | null | undefined,
+): boolean {
+  return hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FUC]);
+}
+
 /** Default landing path when a user holds several roles. */
 export function getDefaultPathForUser(
   user: UserLike | null | undefined,
 ): string {
   if (hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC])) return "/dashboard";
+  if (hasRole(user, ROLE.FUC)) return "/follow-up";
   if (hasRole(user, ROLE.ML)) return "/ministry-dashboard";
   if (hasRole(user, ROLE.TT)) return "/teen-dashboard";
   if (hasRole(user, ROLE.FUL) && !hasRole(user, ROLE.FL)) {

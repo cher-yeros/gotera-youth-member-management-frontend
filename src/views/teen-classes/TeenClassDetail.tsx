@@ -38,7 +38,7 @@ const TeenClassDetail = () => {
       ? parseInt(classId)
       : 0;
 
-  const { data, loading, refetch } = useGetTeenClass(effectiveClassId);
+  const { data, loading } = useGetTeenClass(effectiveClassId);
   const teenClass = (data as any)?.teenClass;
   const { removeClassTeacher } = useRemoveClassTeacher();
 
@@ -137,7 +137,6 @@ const TeenClassDetail = () => {
                       class_id: effectiveClassId,
                       member_id: t.member_id,
                     });
-                    refetch();
                   }}
                 >
                   ×
@@ -335,7 +334,6 @@ const TeenClassDetail = () => {
           defaultClassId={effectiveClassId}
           onSuccess={() => {
             setIsCreateOpen(false);
-            refetch();
           }}
           onCancel={() => setIsCreateOpen(false)}
         />
@@ -353,9 +351,8 @@ const TeenClassDetail = () => {
             defaultClassId={effectiveClassId}
             initial={editTeen}
             onSuccess={() => {
-              setEditTeen(null);
-              refetch();
-            }}
+            setEditTeen(null);
+          }}
             onCancel={() => setEditTeen(null)}
           />
         )}
@@ -368,7 +365,6 @@ const TeenClassDetail = () => {
           existingTeacherIds={teachers.map((t: any) => t.member_id)}
           isOpen={assignOpen}
           onClose={() => setAssignOpen(false)}
-          onSuccess={() => refetch()}
         />
       )}
 
@@ -382,7 +378,6 @@ const TeenClassDetail = () => {
           }}
           isOpen={!!transferTeen}
           onClose={() => setTransferTeen(null)}
-          onSuccess={() => refetch()}
         />
       )}
 
@@ -391,7 +386,6 @@ const TeenClassDetail = () => {
           teenager={promoteTeen}
           isOpen={!!promoteTeen}
           onClose={() => setPromoteTeen(null)}
-          onSuccess={() => refetch()}
         />
       )}
     </div>

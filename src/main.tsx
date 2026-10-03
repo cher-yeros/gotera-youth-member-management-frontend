@@ -8,6 +8,7 @@ import { PersistGate } from "redux-persist/integration/react";
 import App from "./App.tsx";
 import { persistor, store } from "./redux/store";
 import apolloClient from "./lib/apollo";
+import { RealtimeProvider } from "./realtime/RealtimeProvider";
 import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
@@ -15,10 +16,12 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <Provider store={store}>
       <PersistGate persistor={persistor}>
         <ApolloProvider client={apolloClient}>
-          <ToastContainer theme="colored" autoClose={500} />
-          <App />
+          <RealtimeProvider>
+            <ToastContainer theme="colored" autoClose={500} />
+            <App />
+          </RealtimeProvider>
         </ApolloProvider>
       </PersistGate>
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

@@ -28,7 +28,7 @@ const ProtectedRoute = ({
     if (requiredRole.toLowerCase() === "admin") {
       accepted.push("main");
     }
-    // Family Coordinator / Follow-up Leader share family-leader routes
+    // Family Coordinator / Follow up share family-leader routes
     if (requiredRole.toLowerCase() === "fl") {
       accepted.push("fc", "ful");
     }

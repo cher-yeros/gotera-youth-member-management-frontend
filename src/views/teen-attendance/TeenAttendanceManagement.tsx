@@ -62,7 +62,7 @@ const TeenAttendanceManagement: React.FC = () => {
   const myClasses =
     (classesData as { myTeenClasses?: unknown[] })?.myTeenClasses || [];
 
-  const { data, loading, error, refetch } = useGetClassSessions(
+  const { data, loading, error } = useGetClassSessions(
     { is_active: true },
     { page: 1, limit: 200 },
   );
@@ -223,7 +223,6 @@ const TeenAttendanceManagement: React.FC = () => {
         <SessionTopicModal
           sessionId={session.id}
           currentTopic={session.topic}
-          onSuccess={() => refetch()}
           trigger={
             <Button
               variant="outline"

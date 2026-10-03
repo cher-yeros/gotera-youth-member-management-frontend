@@ -51,7 +51,7 @@ const FamiliesPage = () => {
     name: string;
   } | null>(null);
 
-  const { data, loading, refetch } = useGetFamilies();
+  const { data, loading } = useGetFamilies();
   const {
     data: placementData,
     loading: placementLoading,
@@ -137,8 +137,6 @@ const FamiliesPage = () => {
 
     try {
       await deleteFamily(familyToDelete.id);
-      refetch();
-      refetchPlacement();
       setFamilyToDelete(null);
     } catch (error) {
       console.error("Error deleting family:", error);
@@ -151,8 +149,6 @@ const FamiliesPage = () => {
 
   const handleNewFamilySuccess = () => {
     setIsNewFamilyModalOpen(false);
-    refetch();
-    refetchPlacement();
   };
 
   const handleNewFamilyCancel = () => {
@@ -167,8 +163,6 @@ const FamiliesPage = () => {
   const handleUpdateFamilySuccess = () => {
     setIsUpdateFamilyModalOpen(false);
     setSelectedFamilyId(null);
-    refetch();
-    refetchPlacement();
   };
 
   const handleUpdateFamilyCancel = () => {

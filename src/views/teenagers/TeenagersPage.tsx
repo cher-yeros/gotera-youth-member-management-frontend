@@ -7,6 +7,7 @@ import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenagerModalForm from "@/components/forms/NewTeenagerModalForm";
 import TransferTeenagerModal from "@/components/forms/TransferTeenagerModal";
 import PromoteTeenagerModal from "@/components/forms/PromoteTeenagerModal";
+import { PersonAvatar } from "@/components/shared/PersonAvatar";
 import { useDeleteTeenager, useGetTeenagers } from "@/hooks/useTeenGraphQL";
 import { getTeenCompleteness } from "@/lib/teenCompleteness";
 import { Input } from "@/components/ui/input";
@@ -27,7 +28,7 @@ const TeenagersPage = () => {
   const [transferTeen, setTransferTeen] = useState<any | null>(null);
   const [promoteTeen, setPromoteTeen] = useState<any | null>(null);
 
-  const { data, loading, refetch } = useGetTeenagers(
+  const { data, loading } = useGetTeenagers(
     {
       search: search || undefined,
       status: status || undefined,
@@ -108,6 +109,10 @@ const TeenagersPage = () => {
                         <div className="space-y-3">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center space-x-2 min-w-0">
+                              <PersonAvatar
+                                name={t.full_name}
+                                photoUrl={t.photo_url}
+                              />
                               <div
                                 className={`h-2 w-2 shrink-0 rounded-full ${
                                   t.status === "ACTIVE"
@@ -224,7 +229,6 @@ const TeenagersPage = () => {
                               onClick={async () => {
                                 if (confirm(`Delete ${t.full_name}?`)) {
                                   await deleteTeenager(t.id);
-                                  refetch();
                                 }
                               }}
                             >
@@ -257,7 +261,15 @@ const TeenagersPage = () => {
                       const completeness = getTeenCompleteness(t);
                       return (
                         <tr key={t.id} className="border-b">
-                          <td className="py-3 font-medium">{t.full_name}</td>
+                          <td className="py-3 font-medium">
+                            <div className="flex items-center gap-2">
+                              <PersonAvatar
+                                name={t.full_name}
+                                photoUrl={t.photo_url}
+                              />
+                              <span>{t.full_name}</span>
+                            </div>
+                          </td>
                           <td>{t.teenClass?.name || "—"}</td>
                           <td>{t.location?.name || "—"}</td>
                           <td>
@@ -309,7 +321,6 @@ const TeenagersPage = () => {
                               onClick={async () => {
                                 if (confirm(`Delete ${t.full_name}?`)) {
                                   await deleteTeenager(t.id);
-                                  refetch();
                                 }
                               }}
                             >
@@ -355,7 +366,6 @@ const TeenagersPage = () => {
         <NewTeenagerModalForm
           onSuccess={() => {
             setIsCreateOpen(false);
-            refetch();
           }}
           onCancel={() => setIsCreateOpen(false)}
         />
@@ -373,7 +383,6 @@ const TeenagersPage = () => {
             initial={editTeen}
             onSuccess={() => {
               setEditTeen(null);
-              refetch();
             }}
             onCancel={() => setEditTeen(null)}
           />
@@ -385,7 +394,6 @@ const TeenagersPage = () => {
           teenager={transferTeen}
           isOpen={!!transferTeen}
           onClose={() => setTransferTeen(null)}
-          onSuccess={() => refetch()}
         />
       )}
 
@@ -394,7 +402,6 @@ const TeenagersPage = () => {
           teenager={promoteTeen}
           isOpen={!!promoteTeen}
           onClose={() => setPromoteTeen(null)}
-          onSuccess={() => refetch()}
         />
       )}
     </div>

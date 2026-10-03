@@ -4,7 +4,7 @@ import Header from "./header/Header";
 
 const FullLayout = () => {
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Sidebar */}
       <Sidebar />
 

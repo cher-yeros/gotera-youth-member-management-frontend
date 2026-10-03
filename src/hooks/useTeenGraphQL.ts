@@ -29,12 +29,15 @@ import {
 } from "../graphql/operations";
 
 export const useGetTeenClasses = () =>
-  useQuery(GET_TEEN_CLASSES, { errorPolicy: "all", fetchPolicy: "no-cache" });
+  useQuery(GET_TEEN_CLASSES, {
+    errorPolicy: "all",
+    fetchPolicy: "cache-and-network",
+  });
 
 export const useGetMyTeenClasses = () =>
   useQuery(GET_MY_TEEN_CLASSES, {
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useGetTeenClass = (id: number) =>
@@ -42,14 +45,14 @@ export const useGetTeenClass = (id: number) =>
     variables: { id },
     skip: !id,
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useGetTeenagers = (filter?: any, pagination?: any) =>
   useQuery(GET_TEENAGERS, {
     variables: { filter, pagination },
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useGetTeenager = (id: number) =>
@@ -69,7 +72,7 @@ export const useGetClassSessions = (filter?: any, pagination?: any) =>
   useQuery(GET_CLASS_SESSIONS, {
     variables: { filter, pagination },
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useGetClassSession = (id: number) =>
@@ -77,28 +80,27 @@ export const useGetClassSession = (id: number) =>
     variables: { id },
     skip: !id,
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useGetClassSessionBatches = (filter?: any, pagination?: any) =>
   useQuery(GET_CLASS_SESSION_BATCHES, {
     variables: { filter, pagination },
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useGetTeenAttendances = (filter?: any, pagination?: any) =>
   useQuery(GET_TEEN_ATTENDANCES, {
     variables: { filter, pagination },
     errorPolicy: "all",
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
   });
 
 export const useCreateTeenClass = () => {
   const [mutate, { loading }] = useMutation(CREATE_TEEN_CLASS, {
     onCompleted: () => toast.success("Class created successfully"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenClasses", "GetMyTeenClasses"],
   });
   return {
     createTeenClass: async (input: any) => {
@@ -113,7 +115,6 @@ export const useUpdateTeenClass = () => {
   const [mutate, { loading }] = useMutation(UPDATE_TEEN_CLASS, {
     onCompleted: () => toast.success("Class updated successfully"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenClasses", "GetMyTeenClasses", "GetTeenClass"],
   });
   return {
     updateTeenClass: async (input: any) => {
@@ -128,7 +129,6 @@ export const useDeleteTeenClass = () => {
   const [mutate, { loading }] = useMutation(DELETE_TEEN_CLASS, {
     onCompleted: () => toast.success("Class deleted"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenClasses"],
   });
   return {
     deleteTeenClass: async (id: number) => {
@@ -143,7 +143,6 @@ export const useCreateTeenager = () => {
   const [mutate, { loading }] = useMutation(CREATE_TEENAGER, {
     onCompleted: () => toast.success("Teenager registered successfully"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenagers", "GetTeenClass", "GetMyTeenClasses"],
   });
   return {
     createTeenager: async (input: any) => {
@@ -158,7 +157,6 @@ export const useUpdateTeenager = () => {
   const [mutate, { loading }] = useMutation(UPDATE_TEENAGER, {
     onCompleted: () => toast.success("Teenager updated successfully"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenagers", "GetTeenClass", "GetTeenager"],
   });
   return {
     updateTeenager: async (input: any) => {
@@ -173,7 +171,6 @@ export const useDeleteTeenager = () => {
   const [mutate, { loading }] = useMutation(DELETE_TEENAGER, {
     onCompleted: () => toast.success("Teenager deleted"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenagers", "GetTeenClass"],
   });
   return {
     deleteTeenager: async (id: number) => {
@@ -189,7 +186,6 @@ export const useTransferTeenager = () => {
     onCompleted: (data: any) =>
       toast.success(data?.transferTeenager?.message || "Transferred"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenagers", "GetTeenClass", "GetMyTeenClasses"],
   });
   return {
     transferTeenager: async (input: any) => {
@@ -205,7 +201,6 @@ export const useAssignClassTeacher = () => {
     onCompleted: (data: any) =>
       toast.success(data?.assignClassTeacher?.message || "Teacher assigned"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenClass", "GetTeenClasses", "GetMyTeenClasses"],
   });
   return {
     assignClassTeacher: async (input: any) => {
@@ -220,7 +215,6 @@ export const useRemoveClassTeacher = () => {
   const [mutate, { loading }] = useMutation(REMOVE_CLASS_TEACHER, {
     onCompleted: () => toast.success("Teacher removed"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenClass", "GetTeenClasses"],
   });
   return {
     removeClassTeacher: async (input: any) => {
@@ -235,7 +229,6 @@ export const useCreateClassSessionBatch = () => {
   const [mutate, { loading }] = useMutation(CREATE_CLASS_SESSION_BATCH, {
     onCompleted: () => toast.success("Session batch created"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetClassSessionBatches", "GetClassSessions"],
   });
   return {
     createClassSessionBatch: async (input: any) => {
@@ -250,7 +243,6 @@ export const useUpdateClassSessionBatch = () => {
   const [mutate, { loading }] = useMutation(UPDATE_CLASS_SESSION_BATCH, {
     onCompleted: () => toast.success("Session batch updated"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetClassSessionBatches", "GetClassSessions"],
   });
   return {
     updateClassSessionBatch: async (input: any) => {
@@ -265,11 +257,6 @@ export const useUpdateClassSession = () => {
   const [mutate, { loading }] = useMutation(UPDATE_CLASS_SESSION, {
     onCompleted: () => toast.success("Session updated"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: [
-      "GetClassSessions",
-      "GetClassSession",
-      "GetClassSessionBatches",
-    ],
   });
   return {
     updateClassSession: async (input: any) => {
@@ -284,7 +271,6 @@ export const useDeleteClassSessionBatch = () => {
   const [mutate, { loading }] = useMutation(DELETE_CLASS_SESSION_BATCH, {
     onCompleted: () => toast.success("Session batch deleted"),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetClassSessionBatches", "GetClassSessions"],
   });
   return {
     deleteClassSessionBatch: async (id: number) => {
@@ -315,7 +301,6 @@ export const usePromoteTeenagerToMember = () => {
         data?.promoteTeenagerToMember?.message || "Promoted to youth member",
       ),
     onError: (e) => toast.error(e.message),
-    refetchQueries: ["GetTeenagers", "GetTeenClass", "GetMembers"],
   });
   return {
     promoteTeenagerToMember: async (input: any) => {

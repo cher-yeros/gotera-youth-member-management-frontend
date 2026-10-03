@@ -12,6 +12,7 @@ import {
   CloseFollowUpModal,
   GraduateFollowUpModal,
 } from "@/components/forms/GraduateFollowUpModal";
+import { PersonAvatar } from "@/components/shared/PersonAvatar";
 import { GET_FOLLOW_UP_CASE } from "@/graphql/operations";
 import {
   FOLLOW_UP_SOURCE_LABELS,
@@ -22,7 +23,7 @@ import {
   followUpStatusBadgeClass,
   isFollowUpOverdue,
 } from "@/lib/followUp";
-import { hasAnyRole, ROLE } from "@/lib/roles";
+import { hasAnyRole, isFollowUpCoordinator, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +31,11 @@ const FollowUpCaseDetail: React.FC = () => {
   const { id } = useParams();
   const caseId = Number(id);
   const { user } = useAuth();
-  const isAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  const canCoordinate = isFollowUpCoordinator(user);
+  // Only Follow Up Coordinators (Admin/Main/FUC) may assign or reassign cases
+  const canAssignFollowUp = canCoordinate;
+  // Promote to Family is admin/main only — not FUL or FUC
+  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
   const myMemberId = user?.member?.id;
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -39,7 +44,7 @@ const FollowUpCaseDetail: React.FC = () => {
   const [graduateOpen, setGraduateOpen] = useState(false);
   const [closeOpen, setCloseOpen] = useState(false);
 
-  const { data, loading, refetch } = useQuery(GET_FOLLOW_UP_CASE, {
+  const { data, loading } = useQuery(GET_FOLLOW_UP_CASE, {
     variables: { id: caseId },
     skip: !caseId,
     fetchPolicy: "cache-and-network",
@@ -86,6 +91,11 @@ const FollowUpCaseDetail: React.FC = () => {
             </Link>
           </Button>
           <div className="flex flex-wrap items-center gap-2">
+            <PersonAvatar
+              name={item.member?.full_name}
+              photoUrl={item.member?.photo_url}
+              className="size-12"
+            />
             <h1 className="text-3xl font-bold text-brand-gradient">
               {item.member?.full_name}
             </h1>
@@ -131,9 +141,9 @@ const FollowUpCaseDetail: React.FC = () => {
           </Button>
         )}
         {!isClosed &&
-          (isAdmin || !item.assigned_to || item.assigned_to === myMemberId) && (
+          (canAssignFollowUp || item.assigned_to === myMemberId) && (
             <>
-              {!item.assigned_to && (
+              {canAssignFollowUp && !item.assigned_to && (
                 <Button
                   variant="secondary"
                   onClick={() => {
@@ -141,30 +151,41 @@ const FollowUpCaseDetail: React.FC = () => {
                     setAssignOpen(true);
                   }}
                 >
-                  Claim / Assign
+                  Assign
                 </Button>
               )}
-              {(isAdmin || item.assigned_to === myMemberId) &&
-                item.assigned_to && (
+              {canAssignFollowUp && item.assigned_to && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setReassign(true);
+                    setAssignOpen(true);
+                  }}
+                >
+                  Reassign
+                </Button>
+              )}
+              {(canAssignFollowUp || item.assigned_to === myMemberId) && (
+                <>
                   <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setReassign(true);
-                      setAssignOpen(true);
-                    }}
+                    variant="outline"
+                    onClick={() => setContactOpen(true)}
                   >
-                    Reassign
+                    Log contact
                   </Button>
-                )}
-              <Button variant="outline" onClick={() => setContactOpen(true)}>
-                Log contact
-              </Button>
-              <Button variant="outline" onClick={() => setGraduateOpen(true)}>
-                Promote to Family
-              </Button>
-              <Button variant="ghost" onClick={() => setCloseOpen(true)}>
-                Close
-              </Button>
+                  {canPromoteToFamily && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setGraduateOpen(true)}
+                    >
+                      Promote to Family
+                    </Button>
+                  )}
+                  <Button variant="ghost" onClick={() => setCloseOpen(true)}>
+                    Close
+                  </Button>
+                </>
+              )}
             </>
           )}
       </div>
@@ -310,26 +331,22 @@ const FollowUpCaseDetail: React.FC = () => {
         onOpenChange={setAssignOpen}
         caseId={item.id}
         isReassign={reassign}
-        onSuccess={() => refetch()}
       />
       <LogFollowUpContactModal
         open={contactOpen}
         onOpenChange={setContactOpen}
         caseId={item.id}
-        onSuccess={() => refetch()}
       />
       <GraduateFollowUpModal
         open={graduateOpen}
         onOpenChange={setGraduateOpen}
         caseId={item.id}
         defaultFamilyId={item.family_id}
-        onSuccess={() => refetch()}
       />
       <CloseFollowUpModal
         open={closeOpen}
         onOpenChange={setCloseOpen}
         caseId={item.id}
-        onSuccess={() => refetch()}
       />
     </div>
   );

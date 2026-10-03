@@ -17,31 +17,29 @@ interface ThemeProviderProps {
   defaultTheme?: Theme;
 }
 
+function getStoredTheme(fallback: Theme): Theme {
+  if (typeof window === "undefined") return fallback;
+  const savedTheme = localStorage.getItem("gotera-theme");
+  return savedTheme === "light" || savedTheme === "dark"
+    ? savedTheme
+    : fallback;
+}
+
+function applyThemeClass(theme: Theme) {
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.style.colorScheme = theme;
+}
+
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   children,
   defaultTheme = "light",
 }) => {
-  const [theme, setTheme] = useState<Theme>(defaultTheme);
+  const [theme, setTheme] = useState<Theme>(() => getStoredTheme(defaultTheme));
 
   useEffect(() => {
-    // Check for saved theme preference or default to light mode
-    const savedTheme = localStorage.getItem("gotera-theme") as Theme;
-    if (savedTheme) {
-      setTheme(savedTheme);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Save theme preference
     localStorage.setItem("gotera-theme", theme);
-
-    // Apply theme to document
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    applyThemeClass(theme);
   }, [theme]);
 
   const toggleTheme = () => {

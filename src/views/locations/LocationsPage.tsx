@@ -26,7 +26,7 @@ const LocationsPage = () => {
   const [isUpdateLocationModalOpen, setIsUpdateLocationModalOpen] =
     useState(false);
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(
-    null
+    null,
   );
   const [searchFilters, setSearchFilters] = useState<{ search: string }>({
     search: "",
@@ -37,7 +37,7 @@ const LocationsPage = () => {
   } | null>(null);
 
   // Fetch locations data
-  const { data, loading, refetch } = useGetLocations();
+  const { data, loading } = useGetLocations();
   const { deleteLocation } = useDeleteLocation();
 
   const locations = data?.locations || [];
@@ -47,14 +47,14 @@ const LocationsPage = () => {
   const filteredLocations = locations.filter((location) =>
     location.name
       .toLowerCase()
-      .includes((searchFilters.search || "").toLowerCase())
+      .includes((searchFilters.search || "").toLowerCase()),
   );
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredLocations.length / pageSize);
   const paginatedLocations = filteredLocations.slice(
     (currentPage - 1) * pageSize,
-    currentPage * pageSize
+    currentPage * pageSize,
   );
 
   // Event handlers
@@ -83,7 +83,6 @@ const LocationsPage = () => {
 
     try {
       await deleteLocation(locationToDelete.id);
-      refetch();
       setLocationToDelete(null);
     } catch (error) {
       console.error("Error deleting location:", error);
@@ -96,7 +95,6 @@ const LocationsPage = () => {
 
   const handleNewLocationSuccess = () => {
     setIsNewLocationModalOpen(false);
-    refetch();
   };
 
   const handleNewLocationCancel = () => {
@@ -111,7 +109,6 @@ const LocationsPage = () => {
   const handleUpdateLocationSuccess = () => {
     setIsUpdateLocationModalOpen(false);
     setSelectedLocationId(null);
-    refetch();
   };
 
   const handleUpdateLocationCancel = () => {
@@ -216,7 +213,7 @@ const LocationsPage = () => {
                             </span>
                             <span>
                               {new Date(
-                                location.createdAt
+                                location.createdAt,
                               ).toLocaleDateString()}
                             </span>
                           </div>
@@ -334,7 +331,7 @@ const LocationsPage = () => {
                       Showing {(currentPage - 1) * pageSize + 1} to{" "}
                       {Math.min(
                         currentPage * pageSize,
-                        filteredLocations.length
+                        filteredLocations.length,
                       )}{" "}
                       of {filteredLocations.length} filtered locations
                     </>
@@ -343,7 +340,7 @@ const LocationsPage = () => {
                       Showing {(currentPage - 1) * pageSize + 1} to{" "}
                       {Math.min(
                         currentPage * pageSize,
-                        filteredLocations.length
+                        filteredLocations.length,
                       )}{" "}
                       of {filteredLocations.length} locations
                     </>
@@ -370,14 +367,14 @@ const LocationsPage = () => {
                         let startPage = Math.max(1, currentPage - halfVisible);
                         const endPage = Math.min(
                           totalPages,
-                          startPage + maxVisiblePages - 1
+                          startPage + maxVisiblePages - 1,
                         );
 
                         // Adjust start page if we're near the end
                         if (endPage - startPage + 1 < maxVisiblePages) {
                           startPage = Math.max(
                             1,
-                            endPage - maxVisiblePages + 1
+                            endPage - maxVisiblePages + 1,
                           );
                         }
 

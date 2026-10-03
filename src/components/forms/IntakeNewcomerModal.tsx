@@ -7,6 +7,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import type { ComboBoxOption } from "@/components/ui/combo-box";
+import { ComboBox } from "@/components/ui/combo-box";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,9 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  GET_FAMILIES,
   GET_FOLLOW_UP_COORDINATORS,
-  GET_FOLLOW_UP_DASHBOARD,
   GET_LOCATIONS,
   INTAKE_NEWCOMER,
 } from "@/graphql/operations";
@@ -29,9 +29,10 @@ import {
   FOLLOW_UP_SOURCE,
   FOLLOW_UP_SOURCE_LABELS,
 } from "@/lib/followUp";
-import { hasAnyRole, ROLE } from "@/lib/roles";
+import { isFollowUpCoordinator, ROLE_LABELS } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { toast } from "react-toastify";
+import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
 
 interface IntakeNewcomerModalProps {
   open: boolean;
@@ -43,14 +44,15 @@ const emptyForm = {
   full_name: "",
   contact_no: "",
   gender: "",
+  photo_url: null as string | null,
   source: FOLLOW_UP_SOURCE.SUNDAY_SERVICE,
   first_visit_date: "",
   notes: "",
   assigned_to: "",
   priority: FOLLOW_UP_PRIORITY.NORMAL,
   next_follow_up_at: "",
-  family_id: "",
   location_id: "",
+  location_name: "",
 };
 
 export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
@@ -59,22 +61,20 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
-  const isAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  // Admin / Main / FUC — only they may assign
+  const canAssign = isFollowUpCoordinator(user);
   const [form, setForm] = useState(emptyForm);
 
-  const { data: familiesData } = useQuery(GET_FAMILIES, { skip: !open });
-  const { data: locationsData } = useQuery(GET_LOCATIONS, { skip: !open });
+  const { data: locationsData, loading: locationsLoading } = useQuery(
+    GET_LOCATIONS,
+    { skip: !open },
+  );
   const { data: coordinatorsData } = useQuery(GET_FOLLOW_UP_COORDINATORS, {
-    skip: !open || !isAdmin,
+    skip: !open || !canAssign,
     fetchPolicy: "network-only",
   });
 
   const [intake, { loading }] = useMutation(INTAKE_NEWCOMER, {
-    refetchQueries: [
-      { query: GET_FOLLOW_UP_DASHBOARD },
-      "GetFollowUpCases",
-      "GetMyFollowUpCases",
-    ],
     onCompleted: () => {
       toast.success("Newcomer intake created");
       onOpenChange(false);
@@ -86,8 +86,12 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
     },
   });
 
-  const families = (familiesData as any)?.families || [];
-  const locations = (locationsData as any)?.locations || [];
+  const locationOptions: ComboBoxOption[] = (
+    (locationsData as any)?.locations || []
+  ).map((loc: { id: number; name: string }) => ({
+    value: loc.id,
+    label: loc.name,
+  }));
   const members = (coordinatorsData as any)?.followUpCoordinators || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,24 +101,30 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
       return;
     }
 
+    const locationName = form.location_name.trim();
+    if (!form.location_id && !locationName) {
+      toast.error("Location is required. Select one or type a custom name.");
+      return;
+    }
+
     await intake({
       variables: {
         input: {
           full_name: form.full_name.trim(),
           contact_no: form.contact_no || null,
           gender: form.gender || null,
+          photo_url: form.photo_url || null,
           source: form.source,
           first_visit_date: form.first_visit_date || null,
           notes: form.notes || null,
-          assigned_to: form.assigned_to
-            ? Number(form.assigned_to)
-            : isAdmin
-              ? null
-              : user?.member?.id || null,
+          // Only Follow Up Coordinators may assign; others leave unassigned
+          assigned_to:
+            canAssign && form.assigned_to ? Number(form.assigned_to) : null,
           priority: form.priority,
           next_follow_up_at: form.next_follow_up_at || null,
-          family_id: form.family_id ? Number(form.family_id) : null,
+          family_id: null,
           location_id: form.location_id ? Number(form.location_id) : null,
+          location_name: locationName || null,
         },
       },
     });
@@ -127,6 +137,12 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
           <DialogTitle>Intake Newcomer</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <PhotoCaptureField
+            value={form.photo_url}
+            onChange={(url) => setForm({ ...form, photo_url: url })}
+            disabled={loading}
+            name={form.full_name}
+          />
           <div className="space-y-2">
             <Label htmlFor="full_name">Full name *</Label>
             <Input
@@ -164,22 +180,42 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Location</Label>
-            <Select
-              value={form.location_id || undefined}
-              onValueChange={(v) => setForm({ ...form, location_id: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Optional" />
-              </SelectTrigger>
-              <SelectContent>
-                {locations.map((loc: any) => (
-                  <SelectItem key={loc.id} value={String(loc.id)}>
-                    {loc.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Location *</Label>
+            <ComboBox
+              options={locationOptions}
+              value={form.location_id ? Number(form.location_id) : undefined}
+              onValueChange={(value) =>
+                setForm({
+                  ...form,
+                  location_id: value != null ? String(value) : "",
+                  // Selecting from the list clears a typed custom name
+                  location_name: value != null ? "" : form.location_name,
+                })
+              }
+              placeholder="Search location"
+              searchPlaceholder="Search locations..."
+              emptyText="No location found. Type a custom name below."
+              loading={locationsLoading}
+              loadingText="Loading locations..."
+              disabled={loading}
+            />
+            <Input
+              id="location_name"
+              value={form.location_name}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  location_name: e.target.value,
+                  // Typing a custom name clears the list selection
+                  location_id: e.target.value.trim() ? "" : form.location_id,
+                })
+              }
+              placeholder="Or type location if not in the list"
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Select from the list, or type a custom location name.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
@@ -243,27 +279,9 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Suggested family</Label>
-            <Select
-              value={form.family_id || undefined}
-              onValueChange={(v) => setForm({ ...form, family_id: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Optional" />
-              </SelectTrigger>
-              <SelectContent>
-                {families.map((f: any) => (
-                  <SelectItem key={f.id} value={String(f.id)}>
-                    {f.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {isAdmin && (
+          {canAssign && (
             <div className="space-y-2">
-              <Label>Assign to FUL</Label>
+              <Label>Assign to {ROLE_LABELS.FUL}</Label>
               <Select
                 value={form.assigned_to || undefined}
                 onValueChange={(v) => setForm({ ...form, assigned_to: v })}

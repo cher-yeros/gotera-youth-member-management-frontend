@@ -126,7 +126,7 @@ export const useGetMembers = (
     variables: { filter, pagination },
     errorPolicy: "all",
     notifyOnNetworkStatusChange: true,
-    fetchPolicy: "no-cache",
+    fetchPolicy: "cache-and-network",
     skip: options?.skip,
     context: {
       queryKey: `members-${pagination?.page || 1}-${pagination?.limit || 10}`,
@@ -150,7 +150,6 @@ export const useCreateMember = () => {
       onError: (error) => {
         toast.error(`Failed to create member: ${error.message}`);
       },
-      refetchQueries: ["GetMembers"],
     },
   );
 
@@ -177,12 +176,6 @@ export const useUpdateMember = () => {
       onError: (error) => {
         toast.error(`Failed to update member: ${error.message}`);
       },
-      refetchQueries: [
-        "GetMembers",
-        "GetMember",
-        "GetIncompleteFamilies",
-        "GetOverviewStats",
-      ],
     },
   );
 
@@ -209,7 +202,6 @@ export const useDeleteMember = () => {
       onError: (error) => {
         toast.error(`Failed to delete member: ${error.message}`);
       },
-      refetchQueries: ["GetMembers"],
     },
   );
 
@@ -237,7 +229,6 @@ export const usePromoteMember = () => {
     onError: (error) => {
       toast.error(`Failed to promote member: ${error.message}`);
     },
-    refetchQueries: ["GetMembers"],
   });
 
   const handlePromoteMember = async (input: {
@@ -268,7 +259,6 @@ export const useResetPassword = () => {
     onError: (error) => {
       toast.error(`Failed to reset password: ${error.message}`);
     },
-    refetchQueries: ["GetMembers"],
   });
 
   const handleResetPassword = async (input: { member_id: number }) => {
@@ -295,7 +285,6 @@ export const useTransferMember = () => {
     onError: (error) => {
       toast.error(`Failed to transfer member: ${error.message}`);
     },
-    refetchQueries: ["GetMembers"],
   });
 
   const handleTransferMember = async (input: {
@@ -354,7 +343,6 @@ export const useCreateFamily = () => {
       onError: (error) => {
         toast.error(`Failed to create family: ${error.message}`);
       },
-      refetchQueries: ["GetFamilies"],
     },
   );
 
@@ -381,7 +369,6 @@ export const useUpdateFamily = () => {
       onError: (error) => {
         toast.error(`Failed to update family: ${error.message}`);
       },
-      refetchQueries: ["GetFamilies"],
     },
   );
 
@@ -408,7 +395,6 @@ export const useDeleteFamily = () => {
       onError: (error) => {
         toast.error(`Failed to delete family: ${error.message}`);
       },
-      refetchQueries: ["GetFamilies"],
     },
   );
 
@@ -442,7 +428,6 @@ export const useCreateRole = () => {
       onError: (error) => {
         toast.error(`Failed to create role: ${error.message}`);
       },
-      refetchQueries: ["GetRoles"],
     },
   );
 
@@ -469,7 +454,6 @@ export const useUpdateRole = () => {
       onError: (error) => {
         toast.error(`Failed to update role: ${error.message}`);
       },
-      refetchQueries: ["GetRoles"],
     },
   );
 
@@ -496,7 +480,6 @@ export const useDeleteRole = () => {
       onError: (error) => {
         toast.error(`Failed to delete role: ${error.message}`);
       },
-      refetchQueries: ["GetRoles"],
     },
   );
 
@@ -530,7 +513,6 @@ export const useCreateStatus = () => {
       onError: (error) => {
         toast.error(`Failed to create status: ${error.message}`);
       },
-      refetchQueries: ["GetStatuses"],
     },
   );
 
@@ -557,7 +539,6 @@ export const useUpdateStatus = () => {
       onError: (error) => {
         toast.error(`Failed to update status: ${error.message}`);
       },
-      refetchQueries: ["GetStatuses"],
     },
   );
 
@@ -584,7 +565,6 @@ export const useDeleteStatus = () => {
       onError: (error) => {
         toast.error(`Failed to delete status: ${error.message}`);
       },
-      refetchQueries: ["GetStatuses"],
     },
   );
 
@@ -626,7 +606,6 @@ export const useCreateProfession = () => {
       onError: (error) => {
         toast.error(`Failed to create profession: ${error.message}`);
       },
-      refetchQueries: ["GetProfessions"],
     },
   );
 
@@ -653,7 +632,6 @@ export const useUpdateProfession = () => {
       onError: (error) => {
         toast.error(`Failed to update profession: ${error.message}`);
       },
-      refetchQueries: ["GetProfessions"],
     },
   );
 
@@ -680,7 +658,6 @@ export const useDeleteProfession = () => {
       onError: (error) => {
         toast.error(`Failed to delete profession: ${error.message}`);
       },
-      refetchQueries: ["GetProfessions"],
     },
   );
 
@@ -722,7 +699,6 @@ export const useCreateLocation = () => {
       onError: (error) => {
         toast.error(`Failed to create location: ${error.message}`);
       },
-      refetchQueries: ["GetLocations"],
     },
   );
 
@@ -749,7 +725,6 @@ export const useUpdateLocation = () => {
       onError: (error) => {
         toast.error(`Failed to update location: ${error.message}`);
       },
-      refetchQueries: ["GetLocations"],
     },
   );
 
@@ -776,7 +751,6 @@ export const useDeleteLocation = () => {
       onError: (error) => {
         toast.error(`Failed to delete location: ${error.message}`);
       },
-      refetchQueries: ["GetLocations"],
     },
   );
 

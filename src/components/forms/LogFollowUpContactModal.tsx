@@ -49,12 +49,7 @@ export const LogFollowUpContactModal: React.FC<
   });
 
   const [logContact, { loading }] = useMutation(LOG_FOLLOW_UP_CONTACT, {
-    refetchQueries: [
-      "GetFollowUpCases",
-      "GetMyFollowUpCases",
-      "GetFollowUpCase",
-      "GetFollowUpDashboard",
-    ],
+
     onCompleted: () => {
       toast.success("Contact logged");
       onOpenChange(false);

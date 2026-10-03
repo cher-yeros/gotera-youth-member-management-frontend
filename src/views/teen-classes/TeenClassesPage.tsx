@@ -23,7 +23,7 @@ import {
 
 const TeenClassesPage = () => {
   const navigate = useNavigate();
-  const { data, loading, refetch } = useGetTeenClasses();
+  const { data, loading } = useGetTeenClasses();
   const { deleteTeenClass } = useDeleteTeenClass();
   const classes = (data as any)?.teenClasses || [];
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -129,7 +129,6 @@ const TeenClassesPage = () => {
         <NewTeenClassModalForm
           onSuccess={() => {
             setIsCreateOpen(false);
-            refetch();
           }}
           onCancel={() => setIsCreateOpen(false)}
         />
@@ -146,9 +145,8 @@ const TeenClassesPage = () => {
             classId={editClass.id}
             initial={editClass}
             onSuccess={() => {
-              setEditClass(null);
-              refetch();
-            }}
+            setEditClass(null);
+          }}
             onCancel={() => setEditClass(null)}
           />
         )}
@@ -173,7 +171,6 @@ const TeenClassesPage = () => {
                 if (deleteTarget) {
                   await deleteTeenClass(deleteTarget.id);
                   setDeleteTarget(null);
-                  refetch();
                 }
               }}
             >

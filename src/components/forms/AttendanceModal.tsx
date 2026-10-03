@@ -14,9 +14,8 @@ import {
   BULK_CREATE_ATTENDANCE,
   GET_FAMILY_MEMBERS,
   GET_FAMILY_MEMBER_ATTENDANCES,
-  GET_FAMILY_MEETUPS,
 } from "@/graphql/operations";
-import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { CheckCircle, Users, XCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -67,7 +66,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   >([]);
   const [notes, setNotes] = useState<{ [key: number]: string }>({});
   const [hydrated, setHydrated] = useState(false);
-  const client = useApolloClient();
 
   const { data: familyData, loading: familyLoading } = useQuery(
     GET_FAMILY_MEMBERS,
@@ -136,12 +134,6 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    // Refresh meetup list only after closing, without interrupting the modal
-    if (!nextOpen) {
-      client.refetchQueries({
-        include: [GET_FAMILY_MEETUPS],
-      });
-    }
   };
 
   const handleAttendanceChange = async (

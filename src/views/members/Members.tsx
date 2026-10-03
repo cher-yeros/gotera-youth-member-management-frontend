@@ -15,6 +15,7 @@ import ResetPasswordModal from "@/components/forms/ResetPasswordModal";
 import PasswordDisplayModal from "@/components/forms/PasswordDisplayModal";
 import TransferMemberModal from "@/components/forms/TransferMemberModal";
 import MemberSearch from "@/components/shared/MemberSearch";
+import { PersonAvatar } from "@/components/shared/PersonAvatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,10 +33,14 @@ import type { MemberFilterInput, GetMembersQuery } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "react-toastify";
+import { hasAnyRole, ROLE } from "@/lib/roles";
+import { useAuth } from "@/redux/useAuth";
 
 type MemberListItem = GetMembersQuery["members"]["members"][number];
 
 const Members = () => {
+  const { user } = useAuth();
+  const canResetPassword = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
@@ -159,7 +164,6 @@ const Members = () => {
 
     try {
       await deleteMember(memberToDelete.id);
-      refetch();
       setMemberToDelete(null);
     } catch (error) {
       console.error("Error deleting member:", error);
@@ -178,7 +182,6 @@ const Members = () => {
 
   const handleNewMemberSuccess = () => {
     setIsNewMemberModalOpen(false);
-    refetch(); // Refresh the members list
   };
 
   const handleNewMemberCancel = () => {
@@ -193,7 +196,6 @@ const Members = () => {
   const handleUpdateMemberSuccess = () => {
     setIsUpdateMemberModalOpen(false);
     setSelectedMemberId(null);
-    refetch(); // Refresh the members list
   };
 
   const handleUpdateMemberCancel = () => {
@@ -290,7 +292,6 @@ const Members = () => {
   const handleTransferSuccess = () => {
     setIsTransferModalOpen(false);
     setMemberToTransfer(null);
-    refetch(); // Refresh the members list
   };
 
   const handleTransferCancel = () => {
@@ -536,9 +537,13 @@ const Members = () => {
                       <div className="space-y-3">
                         {/* Header with name and role */}
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center space-x-2 min-w-0">
+                            <PersonAvatar
+                              name={member.full_name}
+                              photoUrl={member.photo_url}
+                            />
                             <div
-                              className={`h-2 w-2 rounded-full ${
+                              className={`h-2 w-2 shrink-0 rounded-full ${
                                 member.role?.name === "FL"
                                   ? "bg-green-600"
                                   : member.status?.name === "Not Active"
@@ -546,7 +551,7 @@ const Members = () => {
                                     : "bg-blue-500"
                               }`}
                             ></div>
-                            <div className="font-semibold text-lg">
+                            <div className="font-semibold text-lg truncate">
                               {member.full_name}
                             </div>
                           </div>
@@ -650,15 +655,17 @@ const Members = () => {
                           >
                             Promote
                           </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-orange-600 hover:bg-orange-50 min-w-[80px]"
-                            onClick={() => handleResetPassword(member)}
-                            disabled={!member.contact_no}
-                          >
-                            Reset PW
-                          </Button>
+                          {canResetPassword && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-orange-600 hover:bg-orange-50 min-w-[80px]"
+                              onClick={() => handleResetPassword(member)}
+                              disabled={!member.contact_no}
+                            >
+                              Reset PW
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -716,6 +723,10 @@ const Members = () => {
                           }`}
                         >
                           <td className="p-3 flex items-center space-x-2">
+                            <PersonAvatar
+                              name={member.full_name}
+                              photoUrl={member.photo_url}
+                            />
                             <div
                               className={`h-2 w-2 rounded-full ${
                                 member.role?.name === "FL"
@@ -816,15 +827,17 @@ const Members = () => {
                               >
                                 Promote
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-orange-600 hover:bg-orange-50"
-                                onClick={() => handleResetPassword(member)}
-                                disabled={!member.contact_no}
-                              >
-                                Reset PW
-                              </Button>
+                              {canResetPassword && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-orange-600 hover:bg-orange-50"
+                                  onClick={() => handleResetPassword(member)}
+                                  disabled={!member.contact_no}
+                                >
+                                  Reset PW
+                                </Button>
+                              )}
                               <Button
                                 variant="outline"
                                 size="sm"

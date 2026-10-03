@@ -48,12 +48,7 @@ export const GraduateFollowUpModal: React.FC<GraduateFollowUpModalProps> = ({
   const families = (familiesData as any)?.families || [];
 
   const [graduate, { loading }] = useMutation(GRADUATE_FOLLOW_UP_CASE, {
-    refetchQueries: [
-      "GetFollowUpCases",
-      "GetMyFollowUpCases",
-      "GetFollowUpCase",
-      "GetFollowUpDashboard",
-    ],
+
     onCompleted: () => {
       toast.success("Newcomer promoted to family");
       onOpenChange(false);
@@ -151,12 +146,7 @@ export const CloseFollowUpModal: React.FC<CloseFollowUpModalProps> = ({
   const [notes, setNotes] = useState("");
 
   const [closeCase, { loading }] = useMutation(CLOSE_FOLLOW_UP_CASE, {
-    refetchQueries: [
-      "GetFollowUpCases",
-      "GetMyFollowUpCases",
-      "GetFollowUpCase",
-      "GetFollowUpDashboard",
-    ],
+
     onCompleted: () => {
       toast.success("Case closed");
       onOpenChange(false);

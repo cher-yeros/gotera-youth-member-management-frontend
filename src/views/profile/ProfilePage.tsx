@@ -11,7 +11,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useMe, useUpdateProfile } from "@/hooks/useGraphQL";
-import { formatMemberRoles, getUserRoles } from "@/lib/roles";
+import {
+  formatMemberRoles,
+  getUserRoles,
+  ROLE_LABELS,
+  type RoleCode,
+} from "@/lib/roles";
 import { useAppDispatch } from "@/redux/hooks";
 import { updateUser, type User } from "@/redux/slices/authSlice";
 import { useAuth } from "@/redux/useAuth";
@@ -130,9 +135,13 @@ const ProfilePage = () => {
     );
   }
 
+  const roles = getUserRoles(user);
   const ministries = user.member?.ministries?.filter((m) => m.is_active) || [];
   const ledMinistries =
     user.member?.ledMinistries?.filter((m) => m.is_active) || [];
+
+  const roleDisplayLabel = (code: string) =>
+    ROLE_LABELS[code as RoleCode] || code;
 
   return (
     <div className="space-y-6 max-w-3xl">
@@ -172,6 +181,22 @@ const ProfilePage = () => {
               <p className="text-sm text-muted-foreground">Phone</p>
               <p className="font-medium">{user.phone || "—"}</p>
             </div>
+          </div>
+
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">Roles</p>
+            {roles.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {roles.map((code) => (
+                  <Badge key={code} variant="outline">
+                    {roleDisplayLabel(code)}
+                    <span className="ml-1 text-muted-foreground">({code})</span>
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <p className="font-medium">—</p>
+            )}
           </div>
 
           {(ministries.length > 0 || ledMinistries.length > 0) && (

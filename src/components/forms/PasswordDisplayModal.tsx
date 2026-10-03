@@ -47,8 +47,8 @@ const PasswordDisplayModal = ({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-center">
-            <div className="h-16 w-16 bg-green-100 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <span className="text-green-600 text-2xl">✓</span>
+            <div className="h-16 w-16 bg-green-100 dark:bg-green-900/40 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-green-600 dark:text-green-400 text-2xl">✓</span>
             </div>
             <h3 className="text-lg font-semibold mb-2">
               {memberName} has been promoted to {role}
@@ -58,19 +58,19 @@ const PasswordDisplayModal = ({
             </p>
           </div>
 
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3">
+          <div className="bg-muted border border-border rounded-lg p-4 space-y-3">
             <div>
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-muted-foreground">
                 Phone Number
               </label>
-              <p className="text-sm text-gray-900 font-mono">{memberName}</p>
+              <p className="text-sm text-foreground font-mono">{memberName}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700">
+              <label className="text-sm font-medium text-muted-foreground">
                 Password
               </label>
               <div className="flex items-center space-x-2">
-                <p className="text-sm text-gray-900 font-mono bg-white px-2 py-1 border rounded flex-1">
+                <p className="text-sm text-foreground font-mono bg-background px-2 py-1 border border-border rounded flex-1">
                   {password || "Password already provided !"}
                 </p>
 
@@ -99,8 +99,8 @@ const PasswordDisplayModal = ({
           </div>
 
           {password && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-sm text-yellow-800">
+            <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+              <p className="text-sm text-yellow-800 dark:text-yellow-200">
                 <strong>Important:</strong> Please save this password securely.
                 It will not be shown again.
               </p>

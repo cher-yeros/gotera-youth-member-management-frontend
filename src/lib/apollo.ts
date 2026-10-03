@@ -1,16 +1,35 @@
-import { ApolloClient, HttpLink, InMemoryCache, from } from "@apollo/client";
+import {
+  ApolloClient,
+  ApolloLink,
+  HttpLink,
+  InMemoryCache,
+  from,
+} from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
+import { GraphQLWsLink } from "@apollo/client/link/subscriptions";
+import { OperationTypeNode } from "graphql";
+import { createClient } from "graphql-ws";
 import { store } from "@/redux/store";
+import { getGraphqlHttpUrl, getGraphqlWsUrl } from "@/lib/apiOrigin";
 
-const DEV_BASE_URL = `http://${window.location.hostname}:4000/graphql`;
-const PROD_BASE_URL = "https://gy.lelahub.com/graphql";
-
-// HTTP Link
 const httpLink = new HttpLink({
-  uri: import.meta.env.PROD ? PROD_BASE_URL : DEV_BASE_URL,
+  uri: getGraphqlHttpUrl(),
 });
 
-// Auth Link
+const wsLink = new GraphQLWsLink(
+  createClient({
+    url: getGraphqlWsUrl(),
+    connectionParams: () => {
+      const token = store.getState().auth?.token;
+      return {
+        authorization: token ? `Bearer ${token}` : "",
+      };
+    },
+    lazy: true,
+    retryAttempts: Infinity,
+  }),
+);
+
 const authLink = setContext((_, { headers }) => {
   const state = store.getState();
   const token = state.auth?.token;
@@ -23,9 +42,14 @@ const authLink = setContext((_, { headers }) => {
   };
 });
 
-// Create Apollo Client
+const splitLink = ApolloLink.split(
+  ({ operationType }) => operationType === OperationTypeNode.SUBSCRIPTION,
+  wsLink,
+  authLink.concat(httpLink),
+);
+
 const client = new ApolloClient({
-  link: from([authLink, httpLink]),
+  link: from([splitLink]),
   cache: new InMemoryCache({
     typePolicies: {
       Query: {

@@ -128,11 +128,11 @@ const RecentActivitiesWidget: React.FC<RecentActivitiesWidgetProps> = ({
                     </Badge>
                   </div>
 
-                  <p className="text-sm text-gray-900 truncate">
+                  <p className="text-sm text-foreground truncate">
                     {activity.description}
                   </p>
 
-                  <div className="flex items-center space-x-3 text-xs text-gray-500 mt-1">
+                  <div className="flex items-center space-x-3 text-xs text-muted-foreground mt-1">
                     <div className="flex items-center">
                       <User className="h-3 w-3 mr-1" />
                       <span>

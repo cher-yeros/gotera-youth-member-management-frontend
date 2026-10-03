@@ -28,7 +28,7 @@ interface Family {
 
 const FamilyMemberMapping = () => {
   const { data, loading, error } = useQuery<{ families: Family[] }>(
-    GET_FAMILIES
+    GET_FAMILIES,
   );
 
   if (loading) {
@@ -112,7 +112,7 @@ const FamilyMemberMapping = () => {
           <span>
             {families.reduce(
               (total, family) => total + family.members.length,
-              0
+              0,
             )}{" "}
             Total Members
           </span>
@@ -135,11 +135,11 @@ const FamilyMemberMapping = () => {
 
       {families.length === 0 ? (
         <div className="text-center py-12">
-          <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             No families found
           </h3>
-          <p className="text-gray-500">
+          <p className="text-muted-foreground">
             There are no families in the system yet.
           </p>
         </div>
@@ -149,7 +149,7 @@ const FamilyMemberMapping = () => {
             <Card key={family.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-semibold text-gray-900">
+                  <CardTitle className="text-lg font-semibold text-foreground">
                     {family.name}
                   </CardTitle>
                   <Badge variant="secondary" className="text-xs">
@@ -157,19 +157,21 @@ const FamilyMemberMapping = () => {
                     {family.members.length !== 1 ? "s" : ""}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Created: {new Date(family.createdAt).toLocaleDateString()}
                 </p>
               </CardHeader>
               <CardContent>
                 {family.members.length === 0 ? (
                   <div className="text-center py-4">
-                    <User className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No members yet</p>
+                    <User className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      No members yet
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                    <h4 className="text-sm font-medium text-muted-foreground mb-2">
                       Family Members:
                     </h4>
                     <div className="space-y-2">
@@ -182,10 +184,10 @@ const FamilyMemberMapping = () => {
                             key={member.id}
                             className={`flex items-center justify-between p-2 rounded-lg ${
                               isFamilyLeader
-                                ? "bg-green-50 border border-green-200"
+                                ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
                                 : isInactive
-                                ? "bg-red-50 border border-red-200"
-                                : "bg-gray-50"
+                                  ? "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800"
+                                  : "bg-muted"
                             }`}
                           >
                             <div className="flex items-center gap-2">
@@ -194,29 +196,29 @@ const FamilyMemberMapping = () => {
                                   isFamilyLeader
                                     ? "bg-green-600"
                                     : isInactive
-                                    ? "bg-red-500"
-                                    : "bg-blue-500"
+                                      ? "bg-red-500"
+                                      : "bg-blue-500"
                                 }`}
                               ></div>
                               <div className="flex flex-col">
                                 <span
                                   className={`text-sm font-medium ${
                                     isFamilyLeader
-                                      ? "text-green-900"
+                                      ? "text-green-900 dark:text-green-100"
                                       : isInactive
-                                      ? "text-red-900"
-                                      : "text-gray-900"
+                                        ? "text-red-900 dark:text-red-100"
+                                        : "text-foreground"
                                   }`}
                                 >
                                   {member.full_name}
                                 </span>
                               </div>
                             </div>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-muted-foreground">
                               {member.contact_no ? (
                                 <a
                                   href={`tel:${member.contact_no}`}
-                                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                                  className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
                                 >
                                   {member.contact_no}
                                 </a>

@@ -22,7 +22,7 @@ import {
   GET_FOLLOW_UP_COORDINATORS,
   REASSIGN_FOLLOW_UP_CASE,
 } from "@/graphql/operations";
-import { hasAnyRole, ROLE } from "@/lib/roles";
+import { isFollowUpCoordinator, ROLE_LABELS } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { toast } from "react-toastify";
 
@@ -42,9 +42,7 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
-  const isAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
-  // FUL can pick another FUL when reassigning; claim still self-assigns
-  const canPickAssignee = isAdmin || isReassign;
+  const canAssign = isFollowUpCoordinator(user);
   const [assignedTo, setAssignedTo] = useState("");
   const [reason, setReason] = useState("");
   const [nextFollowUp, setNextFollowUp] = useState("");
@@ -52,7 +50,7 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
   const { data: coordinatorsData, loading: coordinatorsLoading } = useQuery(
     GET_FOLLOW_UP_COORDINATORS,
     {
-      skip: !open || !canPickAssignee,
+      skip: !open || !canAssign,
       fetchPolicy: "network-only",
     },
   );
@@ -62,12 +60,7 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
   const [assign, { loading }] = useMutation(
     isReassign ? REASSIGN_FOLLOW_UP_CASE : ASSIGN_FOLLOW_UP_CASE,
     {
-      refetchQueries: [
-        "GetFollowUpCases",
-        "GetMyFollowUpCases",
-        "GetFollowUpCase",
-        "GetFollowUpDashboard",
-      ],
+
       onCompleted: () => {
         toast.success(isReassign ? "Case reassigned" : "Case assigned");
         onOpenChange(false);
@@ -86,10 +79,14 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
     e.preventDefault();
     if (!caseId) return;
 
-    const targetId = canPickAssignee ? Number(assignedTo) : user?.member?.id;
+    if (!canAssign) {
+      toast.error("Only Follow Up Coordinators can assign cases");
+      return;
+    }
 
+    const targetId = Number(assignedTo);
     if (!targetId) {
-      toast.error("Select a coordinator");
+      toast.error(`Select a ${ROLE_LABELS.FUL}`);
       return;
     }
 
@@ -112,44 +109,40 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {isReassign ? "Reassign to another FUL" : "Assign / claim case"}
+            {isReassign
+              ? `Reassign to another ${ROLE_LABELS.FUL}`
+              : `Assign to ${ROLE_LABELS.FUL}`}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {canPickAssignee ? (
-            <div className="space-y-2">
-              <Label>Coordinator</Label>
-              <Select
-                value={assignedTo || undefined}
-                onValueChange={setAssignedTo}
-                disabled={coordinatorsLoading}
-              >
-                <SelectTrigger>
-                  <SelectValue
-                    placeholder={
-                      coordinatorsLoading
-                        ? "Loading coordinators..."
-                        : members.length
-                          ? "Select FUL"
-                          : "No coordinators found"
-                    }
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  {members.map((m: any) => (
-                    <SelectItem key={m.id} value={String(m.id)}>
-                      {m.full_name}
-                      {m.id === user?.member?.id ? " (you)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              This case will be assigned to you.
-            </p>
-          )}
+          <div className="space-y-2">
+            <Label>{ROLE_LABELS.FUL}</Label>
+            <Select
+              value={assignedTo || undefined}
+              onValueChange={setAssignedTo}
+              disabled={coordinatorsLoading || !canAssign}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={
+                    coordinatorsLoading
+                      ? `Loading ${ROLE_LABELS.FUL}...`
+                      : members.length
+                        ? `Select ${ROLE_LABELS.FUL}`
+                        : `No ${ROLE_LABELS.FUL} found`
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {members.map((m: any) => (
+                  <SelectItem key={m.id} value={String(m.id)}>
+                    {m.full_name}
+                    {m.id === user?.member?.id ? " (you)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="next">Next follow-up</Label>
             <Input
@@ -176,10 +169,7 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading || (canPickAssignee && !assignedTo)}
-            >
+            <Button type="submit" disabled={loading || !assignedTo}>
               {loading ? "Saving..." : isReassign ? "Reassign" : "Assign"}
             </Button>
           </div>

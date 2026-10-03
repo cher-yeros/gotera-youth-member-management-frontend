@@ -101,7 +101,6 @@ const MinistryMembers = () => {
         id: memberToRemove.id,
         ministry_ids: [],
       });
-      refetch();
       setMemberToRemove(null);
     } catch (error) {
       console.error("Error removing member from ministry:", error);
@@ -114,7 +113,6 @@ const MinistryMembers = () => {
 
   const handleNewMemberSuccess = () => {
     setIsNewMemberModalOpen(false);
-    refetch();
   };
 
   const handleNewMemberCancel = () => {
@@ -129,7 +127,6 @@ const MinistryMembers = () => {
   const handleUpdateMemberSuccess = () => {
     setIsUpdateMemberModalOpen(false);
     setSelectedMemberId(null);
-    refetch();
   };
 
   const handleUpdateMemberCancel = () => {

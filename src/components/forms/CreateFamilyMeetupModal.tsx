@@ -20,21 +20,18 @@ import {
 import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import {
-  CREATE_FAMILY_MEETUP_BATCH,
-  GET_FAMILY_MEETUPS,
-} from "@/graphql/operations";
+import { CREATE_FAMILY_MEETUP_BATCH } from "@/graphql/operations";
 import { toast } from "react-toastify";
 
 interface CreateFamilyMeetupModalProps {
-  /** Optional: used only to refetch this family's meetups after batch create */
+  /** @deprecated Kept for call-site compatibility; realtime subscriptions refresh lists. */
   familyId?: number;
   trigger?: React.ReactNode;
 }
 
 export const CreateFamilyMeetupModal: React.FC<
   CreateFamilyMeetupModalProps
-> = ({ familyId, trigger }) => {
+> = ({ trigger }) => {
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     title: "",
@@ -46,17 +43,6 @@ export const CreateFamilyMeetupModal: React.FC<
   const [createFamilyMeetupBatch, { loading }] = useMutation(
     CREATE_FAMILY_MEETUP_BATCH,
     {
-      refetchQueries: familyId
-        ? [
-            {
-              query: GET_FAMILY_MEETUPS,
-              variables: {
-                filter: { family_id: familyId },
-                pagination: { page: 1, limit: 50 },
-              },
-            },
-          ]
-        : [],
       onCompleted: () => {
         toast.success("Meetup batch created for all families!");
         setOpen(false);

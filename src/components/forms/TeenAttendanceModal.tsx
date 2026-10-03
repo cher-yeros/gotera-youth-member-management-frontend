@@ -13,10 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   BULK_CREATE_TEEN_ATTENDANCE,
   GET_CLASS_SESSION,
-  GET_CLASS_SESSIONS,
   GET_TEENAGERS,
 } from "@/graphql/operations";
-import { useApolloClient, useMutation, useQuery } from "@apollo/client/react";
+import { useMutation, useQuery } from "@apollo/client/react";
 import { CheckCircle, Users, XCircle } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
@@ -72,7 +71,6 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
   >([]);
   const [notes, setNotes] = useState<{ [key: number]: string }>({});
   const [hydrated, setHydrated] = useState(false);
-  const client = useApolloClient();
 
   const { data: teensData, loading: teensLoading } = useQuery(GET_TEENAGERS, {
     variables: {
@@ -169,11 +167,6 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
-    if (!nextOpen) {
-      client.refetchQueries({
-        include: [GET_CLASS_SESSIONS],
-      });
-    }
   };
 
   const handleAttendanceChange = async (

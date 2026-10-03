@@ -45,6 +45,15 @@ const FollowUpManagement = lazy(
 const FollowUpCaseDetail = lazy(
   () => import("../views/follow-up/FollowUpCaseDetail"),
 );
+const AnnouncementsFeed = lazy(
+  () => import("../views/announcements/AnnouncementsFeed"),
+);
+const AnnouncementDetail = lazy(
+  () => import("../views/announcements/AnnouncementDetail"),
+);
+const ManageAnnouncements = lazy(
+  () => import("../views/announcements/ManageAnnouncements"),
+);
 const TeenagersPage = lazy(() => import("../views/teenagers/TeenagersPage"));
 const TeenClassesPage = lazy(
   () => import("../views/teen-classes/TeenClassesPage"),
@@ -222,7 +231,7 @@ const Router = [
       {
         path: "/follow-up",
         element: (
-          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FUL"]}>
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FUC", "FUL"]}>
             <FollowUpManagement />
           </ProtectedRoute>
         ),
@@ -230,8 +239,32 @@ const Router = [
       {
         path: "/follow-up/:id",
         element: (
-          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FUL"]}>
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FUC", "FUL"]}>
             <FollowUpCaseDetail />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/announcements",
+        element: (
+          <ProtectedRoute>
+            <AnnouncementsFeed />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/announcements/manage",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN"]}>
+            <ManageAnnouncements />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/announcements/:id",
+        element: (
+          <ProtectedRoute>
+            <AnnouncementDetail />
           </ProtectedRoute>
         ),
       },

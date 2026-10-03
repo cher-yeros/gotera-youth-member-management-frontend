@@ -109,12 +109,12 @@
   --primary-foreground: #172554;
 
   /* Secondary Purple - Darker */
-  --secondary: #c084fc;
-  --secondary-foreground: #3b0764;
+  --secondary: #3b0764;
+  --secondary-foreground: #f3e8ff;
 
-  /* Accent Purple - Darker */
-  --accent: #6b21a8;
-  --accent-foreground: #f3e8ff;
+  /* Accent — muted surface for hovers (not a loud purple fill) */
+  --accent: #262626;
+  --accent-foreground: #fafafa;
 
   /* Muted Colors - Darker */
   --muted: #262626;
@@ -124,9 +124,9 @@
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Borders and Inputs - Darker */
-  --border: #262626;
-  --input: #262626;
+  /* Borders and Inputs — slightly lifted for contrast on dark surfaces */
+  --border: #404040;
+  --input: #404040;
   --ring: #60a5fa;
 
   /* Chart Colors - Darker */
@@ -137,13 +137,13 @@
   --chart-5: #ef4444;
 
   /* Sidebar Colors - Darker */
-  --sidebar: #171717;
+  --sidebar: #111111;
   --sidebar-foreground: #fafafa;
   --sidebar-primary: #60a5fa;
   --sidebar-primary-foreground: #172554;
-  --sidebar-accent: #6b21a8;
-  --sidebar-accent-foreground: #f3e8ff;
-  --sidebar-border: #262626;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #404040;
   --sidebar-ring: #60a5fa;
 }
 
@@ -195,6 +195,10 @@
     background: linear-gradient(135deg, #eff6ff 0%, #faf5ff 100%);
   }
 
+  .dark .bg-brand-subtle {
+    background: linear-gradient(135deg, #172554 0%, #3b0764 100%);
+  }
+
   .text-brand-gradient {
     background: linear-gradient(135deg, #3b82f6 0%, #a855f7 100%);
     -webkit-background-clip: text;
@@ -211,7 +215,8 @@
   }
 
   .shadow-brand-lg {
-    box-shadow: 0 10px 25px -3px rgba(59, 130, 246, 0.1),
+    box-shadow:
+      0 10px 25px -3px rgba(59, 130, 246, 0.1),
       0 4px 6px -2px rgba(59, 130, 246, 0.05);
   }
 

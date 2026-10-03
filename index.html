@@ -54,6 +54,17 @@
     <meta name="apple-mobile-web-app-title" content="Gotera Youth" />
   </head>
   <body>
+    <script>
+      (function () {
+        try {
+          var theme = localStorage.getItem("gotera-theme");
+          if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+            document.documentElement.style.colorScheme = "dark";
+          }
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

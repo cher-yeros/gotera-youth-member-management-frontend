@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -19,10 +19,12 @@ import {
   GraduationCap,
   BookOpen,
   ChevronDown,
+  Megaphone,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/redux/useAuth";
+import { useUnreadAnnouncementCount } from "@/hooks/useUnreadAnnouncementCount";
 import { hasAnyRole, hasRole, ROLE } from "@/lib/roles";
 
 type NavItem = {
@@ -47,6 +49,7 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
 const adminNavigation: NavEntry[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Overview", href: "/overview", icon: Home },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
   {
     name: "Members",
     icon: Users,
@@ -90,6 +93,7 @@ const adminNavigation: NavEntry[] = [
 const fcNavigation: NavEntry[] = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Overview", href: "/overview", icon: Home },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
   {
     name: "Members",
     icon: Users,
@@ -110,21 +114,29 @@ const flNavigation: NavItem[] = [
   { name: "Dashboard", href: "/family-dashboard", icon: LayoutDashboard },
   { name: "My Family", href: "/families/my-family", icon: UserCheck },
   { name: "Attendance", href: "/attendance", icon: Calendar },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 
 const fulNavigation: NavItem[] = [
   { name: "Follow-up", href: "/follow-up", icon: PhoneCall },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 
 const mlNavigation: NavItem[] = [
   { name: "Dashboard", href: "/ministry-dashboard", icon: LayoutDashboard },
   { name: "My Ministry", href: "/ministries/my-ministry", icon: UserCog },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 
 const ttNavigation: NavItem[] = [
   { name: "Dashboard", href: "/teen-dashboard", icon: LayoutDashboard },
   { name: "My Classes", href: "/teen-classes/my-classes", icon: BookOpen },
   { name: "Attendance", href: "/teen-attendance", icon: Calendar },
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
+];
+
+const memberNavigation: NavItem[] = [
+  { name: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 
 function isPathActive(pathname: string, href: string) {
@@ -135,30 +147,74 @@ function groupHasActiveChild(pathname: string, group: NavGroup) {
   return group.children.some((child) => isPathActive(pathname, child.href));
 }
 
+function collectHrefs(entries: NavEntry[]): Set<string> {
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    if (isNavGroup(entry)) {
+      for (const child of entry.children) seen.add(child.href);
+    } else {
+      seen.add(entry.href);
+    }
+  }
+  return seen;
+}
+
+/** FC nav omits Follow-up; inject it under Members when the user also has FUL/FUC. */
+function enrichFcNavigation(user: Parameters<typeof hasRole>[0]): NavEntry[] {
+  const hasFollowUpRole = hasAnyRole(user, [ROLE.FUL, ROLE.FUC]);
+  const entries: NavEntry[] = fcNavigation.map((entry) => {
+    if (
+      hasFollowUpRole &&
+      isNavGroup(entry) &&
+      entry.name === "Members" &&
+      !entry.children.some((c) => c.href === "/follow-up")
+    ) {
+      return {
+        ...entry,
+        children: [
+          ...entry.children,
+          { name: "Follow-up", href: "/follow-up", icon: PhoneCall },
+        ],
+      };
+    }
+    return entry;
+  });
+
+  const seen = collectHrefs(entries);
+  const extras: NavItem[] = [];
+  if (hasRole(user, ROLE.FL)) extras.push(...flNavigation);
+  if (hasRole(user, ROLE.ML)) extras.push(...mlNavigation);
+  if (hasRole(user, ROLE.TT)) extras.push(...ttNavigation);
+  for (const item of extras) {
+    if (!seen.has(item.href)) {
+      entries.push(item);
+      seen.add(item.href);
+    }
+  }
+  return entries;
+}
+
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const location = useLocation();
   const { user } = useAuth();
-
-  const isAdminNav = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
-  const isFcNav = !isAdminNav && hasRole(user, ROLE.FC);
-  const groupedNav = isAdminNav
-    ? adminNavigation
-    : isFcNav
-      ? fcNavigation
-      : null;
+  const { count: unreadAnnouncements } = useUnreadAnnouncementCount();
 
   // Multi-role: merge nav sets; ADMIN/MAIN full admin; FC family/member admin
-  const navigation = (() => {
-    if (groupedNav) {
-      return groupedNav;
+  // (FC+FUL must still surface Follow-up — FC nav alone used to hide it)
+  const navigation = useMemo((): NavEntry[] => {
+    if (hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN])) {
+      return adminNavigation;
+    }
+    if (hasRole(user, ROLE.FC)) {
+      return enrichFcNavigation(user);
     }
     const items: NavItem[] = [];
     if (hasRole(user, ROLE.FL)) {
       items.push(...flNavigation);
     }
-    if (hasRole(user, ROLE.FUL)) {
+    if (hasAnyRole(user, [ROLE.FUL, ROLE.FUC])) {
       items.push(...fulNavigation);
     }
     if (hasRole(user, ROLE.ML)) {
@@ -167,8 +223,11 @@ const Sidebar = () => {
     if (hasRole(user, ROLE.TT)) {
       items.push(...ttNavigation);
     }
+    if (hasRole(user, ROLE.FM)) {
+      items.push(...memberNavigation);
+    }
     if (items.length === 0) {
-      return fulNavigation;
+      return memberNavigation;
     }
     const seen = new Set<string>();
     return items.filter((item) => {
@@ -176,24 +235,29 @@ const Sidebar = () => {
       seen.add(item.href);
       return true;
     });
-  })();
+  }, [user]);
+
+  const hasGroupedNav = navigation.some(isNavGroup);
 
   // Keep the group that contains the current route expanded
   useEffect(() => {
-    if (!groupedNav) return;
+    if (!hasGroupedNav) return;
     setOpenGroups((prev) => {
       const next = { ...prev };
-      for (const entry of groupedNav) {
+      let changed = false;
+      for (const entry of navigation) {
         if (
           isNavGroup(entry) &&
-          groupHasActiveChild(location.pathname, entry)
+          groupHasActiveChild(location.pathname, entry) &&
+          !next[entry.name]
         ) {
           next[entry.name] = true;
+          changed = true;
         }
       }
-      return next;
+      return changed ? next : prev;
     });
-  }, [groupedNav, location.pathname]);
+  }, [hasGroupedNav, navigation, location.pathname]);
 
   const toggleGroup = (name: string) => {
     setOpenGroups((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -201,11 +265,25 @@ const Sidebar = () => {
 
   const linkClass = (active: boolean) =>
     cn(
-      "flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+      "flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
       active
         ? "bg-brand-gradient text-white"
-        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+        : "text-sidebar-foreground/80 hover:bg-muted hover:text-foreground",
     );
+
+  const renderUnreadBadge = (href: string, active: boolean) => {
+    if (href !== "/announcements" || unreadAnnouncements <= 0) return null;
+    return (
+      <span
+        className={cn(
+          "ml-auto min-w-[1.25rem] h-5 px-1.5 rounded-full text-[11px] font-semibold leading-5 text-center",
+          active ? "bg-white/20 text-white" : "bg-red-500 text-white",
+        )}
+      >
+        {unreadAnnouncements > 99 ? "99+" : unreadAnnouncements}
+      </span>
+    );
+  };
 
   return (
     <>
@@ -220,7 +298,7 @@ const Sidebar = () => {
           variant="outline"
           size="sm"
           onClick={() => setIsOpen(!isOpen)}
-          className="bg-white shadow-md"
+          className="bg-card text-card-foreground shadow-md"
         >
           {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
@@ -237,13 +315,13 @@ const Sidebar = () => {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
+          "fixed inset-y-0 left-0 z-40 w-64 bg-sidebar text-sidebar-foreground border-r border-sidebar-border shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center justify-center h-16 px-4 border-b">
+          <div className="flex items-center justify-center h-16 px-4 border-b border-sidebar-border">
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 bg-brand-gradient rounded-lg flex items-center justify-center">
                 <span className="text-white font-bold text-sm">GY</span>
@@ -272,8 +350,8 @@ const Sidebar = () => {
                       className={cn(
                         "flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                         groupActive && !isExpanded
-                          ? "text-brand-gradient bg-gray-50"
-                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900",
+                          ? "text-brand-gradient bg-muted"
+                          : "text-sidebar-foreground/80 hover:bg-muted hover:text-foreground",
                       )}
                     >
                       <span className="flex items-center space-x-3">
@@ -289,7 +367,7 @@ const Sidebar = () => {
                     </button>
 
                     {isExpanded && (
-                      <div className="ml-3 space-y-1 border-l border-gray-200 pl-2">
+                      <div className="ml-3 space-y-1 border-l border-sidebar-border pl-2">
                         {entry.children.map((child) => {
                           const isActive = isPathActive(
                             location.pathname,
@@ -302,8 +380,11 @@ const Sidebar = () => {
                               onClick={() => setIsOpen(false)}
                               className={linkClass(isActive)}
                             >
-                              <child.icon className="h-4 w-4" />
-                              <span>{child.name}</span>
+                              <span className="flex items-center space-x-3 min-w-0">
+                                <child.icon className="h-4 w-4 shrink-0" />
+                                <span>{child.name}</span>
+                              </span>
+                              {renderUnreadBadge(child.href, isActive)}
                             </Link>
                           );
                         })}
@@ -321,16 +402,19 @@ const Sidebar = () => {
                   onClick={() => setIsOpen(false)}
                   className={linkClass(isActive)}
                 >
-                  <entry.icon className="h-5 w-5" />
-                  <span>{entry.name}</span>
+                  <span className="flex items-center space-x-3 min-w-0">
+                    <entry.icon className="h-5 w-5 shrink-0" />
+                    <span>{entry.name}</span>
+                  </span>
+                  {renderUnreadBadge(entry.href, isActive)}
                 </Link>
               );
             })}
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t">
-            <div className="text-xs text-gray-500 text-center">
+          <div className="p-4 border-t border-sidebar-border">
+            <div className="text-xs text-muted-foreground text-center">
               Gotera Youth Management System
             </div>
           </div>

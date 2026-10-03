@@ -178,9 +178,9 @@ const LoginPage = () => {
                   Phone Number
                 </Label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <div className="relative">
-                    <span className="absolute left-10 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm font-medium pointer-events-none z-10">
+                    <span className="absolute left-10 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none z-10">
                       +251
                     </span>
                     <Input
@@ -214,7 +214,7 @@ const LoginPage = () => {
                   Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
@@ -233,7 +233,7 @@ const LoginPage = () => {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     disabled={loading}
                   >
                     {showPassword ? (

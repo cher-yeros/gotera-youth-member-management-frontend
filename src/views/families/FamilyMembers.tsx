@@ -154,7 +154,6 @@ const FamilyMembers = () => {
 
     try {
       await deleteMember(memberToDelete.id);
-      refetch();
       setMemberToDelete(null);
     } catch (error) {
       console.error("Error deleting member:", error);
@@ -173,7 +172,6 @@ const FamilyMembers = () => {
 
   const handleNewMemberSuccess = () => {
     setIsNewMemberModalOpen(false);
-    refetch(); // Refresh the members list
   };
 
   const handleNewMemberCancel = () => {
@@ -188,7 +186,6 @@ const FamilyMembers = () => {
   const handleUpdateMemberSuccess = () => {
     setIsUpdateMemberModalOpen(false);
     setSelectedMemberId(null);
-    refetch(); // Refresh the members list
   };
 
   const handleUpdateMemberCancel = () => {

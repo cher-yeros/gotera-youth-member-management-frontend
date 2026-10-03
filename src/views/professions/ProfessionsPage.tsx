@@ -37,7 +37,7 @@ const ProfessionsPage = () => {
   } | null>(null);
 
   // Fetch professions data
-  const { data, loading, refetch } = useGetProfessions();
+  const { data, loading } = useGetProfessions();
   const { deleteProfession } = useDeleteProfession();
 
   const professions = data?.professions || [];
@@ -83,7 +83,6 @@ const ProfessionsPage = () => {
 
     try {
       await deleteProfession(professionToDelete.id);
-      refetch();
       setProfessionToDelete(null);
     } catch (error) {
       console.error("Error deleting profession:", error);
@@ -96,7 +95,6 @@ const ProfessionsPage = () => {
 
   const handleNewProfessionSuccess = () => {
     setIsNewProfessionModalOpen(false);
-    refetch();
   };
 
   const handleNewProfessionCancel = () => {
@@ -111,7 +109,6 @@ const ProfessionsPage = () => {
   const handleUpdateProfessionSuccess = () => {
     setIsUpdateProfessionModalOpen(false);
     setSelectedProfessionId(null);
-    refetch();
   };
 
   const handleUpdateProfessionCancel = () => {

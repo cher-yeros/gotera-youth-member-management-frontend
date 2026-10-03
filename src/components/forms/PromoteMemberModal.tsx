@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -14,8 +14,11 @@ import {
   ROLE,
   ROLE_LABELS,
   getMemberRoleNames,
+  hasAnyRole,
+  hasRole,
   type RoleCode,
 } from "@/lib/roles";
+import { useAuth } from "@/redux/useAuth";
 
 interface PromoteMemberModalProps {
   member: {
@@ -34,6 +37,7 @@ interface PromoteMemberModalProps {
 const ASSIGNABLE_ROLES: RoleCode[] = [
   ROLE.ADMIN,
   ROLE.MAIN,
+  ROLE.FUC,
   ROLE.FC,
   ROLE.FL,
   ROLE.FUL,
@@ -50,6 +54,15 @@ const PromoteMemberModal = ({
   onClose,
   onSuccess,
 }: PromoteMemberModalProps) => {
+  const { user } = useAuth();
+  const isFullAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  // Family Coordinator (non-admin) may only promote/unpromote Family Leader
+  const isFcOnly = !isFullAdmin && hasRole(user, ROLE.FC);
+  const assignableRoles = useMemo(
+    () => (isFcOnly ? ([ROLE.FL] as RoleCode[]) : ASSIGNABLE_ROLES),
+    [isFcOnly],
+  );
+
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [selectedMinistryId, setSelectedMinistryId] = useState<number | null>(
     null,
@@ -59,18 +72,20 @@ const PromoteMemberModal = ({
   const { promoteMinistryLeader } = usePromoteMinistryLeader();
 
   const memberMinistries = member.ministries ?? [];
-  const needsMinistry = selectedRoles.includes(ROLE.ML);
+  const needsMinistry = !isFcOnly && selectedRoles.includes(ROLE.ML);
 
   // Auto-fill currently assigned roles when the modal opens
   useEffect(() => {
     if (!isOpen) return;
 
-    const existing = getMemberRoleNames(member).filter((role) =>
-      ASSIGNABLE_ROLE_SET.has(role),
-    );
-    setSelectedRoles(existing);
+    const existing = getMemberRoleNames(member);
+    if (isFcOnly) {
+      setSelectedRoles(existing.includes(ROLE.FL) ? [ROLE.FL] : []);
+    } else {
+      setSelectedRoles(existing.filter((role) => ASSIGNABLE_ROLE_SET.has(role)));
+    }
     setSelectedMinistryId(null);
-  }, [isOpen, member.id]);
+  }, [isOpen, member.id, isFcOnly]);
 
   // Keep ministry selection in sync with ML role; auto-pick if only one ministry
   useEffect(() => {
@@ -90,7 +105,8 @@ const PromoteMemberModal = ({
   };
 
   const handlePromote = async () => {
-    if (selectedRoles.length === 0) {
+    // FC may uncheck FL (empty selection) to unpromote; admins must pick ≥1 role
+    if (!isFcOnly && selectedRoles.length === 0) {
       toast.error("Please select at least one role");
       return;
     }
@@ -100,11 +116,22 @@ const PromoteMemberModal = ({
       return;
     }
 
+    // FC: keep every non-FL role; only toggle FL
+    let rolesToSend = selectedRoles;
+    if (isFcOnly) {
+      const others = getMemberRoleNames(member).filter((r) => r !== ROLE.FL);
+      rolesToSend = selectedRoles.includes(ROLE.FL)
+        ? [...others, ROLE.FL]
+        : others.length > 0
+          ? others
+          : [ROLE.FM];
+    }
+
     setIsPromoting(true);
     try {
       const result = await promoteMember({
         member_id: member.id,
-        roles: selectedRoles,
+        roles: rolesToSend,
       });
 
       if (!result?.success) {
@@ -123,7 +150,7 @@ const PromoteMemberModal = ({
         }
       }
 
-      onSuccess(result.password, selectedRoles.join(", "));
+      onSuccess(result.password, rolesToSend.join(", "));
       onClose();
       setSelectedRoles([]);
       setSelectedMinistryId(null);
@@ -156,7 +183,9 @@ const PromoteMemberModal = ({
         <CardContent className="space-y-4">
           <div>
             <p className="text-sm text-muted-foreground mb-2">
-              Assign roles for <strong>{member.full_name}</strong>
+              {isFcOnly ? "Promote or unpromote" : "Assign roles for"}{" "}
+              <strong>{member.full_name}</strong>
+              {isFcOnly ? " as Family Leader" : ""}
             </p>
             <p className="text-xs text-muted-foreground">
               Contact: {member.contact_no || "N/A"}
@@ -164,14 +193,22 @@ const PromoteMemberModal = ({
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">Select Role(s)</label>
-            {selectedRoles.length > 0 && (
+            <label className="text-sm font-medium">
+              {isFcOnly ? "Family Leader" : "Select Role(s)"}
+            </label>
+            {!isFcOnly && selectedRoles.length > 0 && (
               <p className="text-xs text-muted-foreground">
                 Existing roles are pre-selected. Uncheck to remove or add more.
               </p>
             )}
+            {isFcOnly && (
+              <p className="text-xs text-muted-foreground">
+                Check to promote to Family Leader, or uncheck to remove the
+                role. Other roles are left unchanged.
+              </p>
+            )}
             <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto border rounded-md p-3">
-              {ASSIGNABLE_ROLES.map((role) => (
+              {assignableRoles.map((role) => (
                 <label
                   key={role}
                   className="flex items-center gap-2 text-sm cursor-pointer"
@@ -250,13 +287,19 @@ const PromoteMemberModal = ({
             <Button
               onClick={handlePromote}
               disabled={
-                selectedRoles.length === 0 ||
+                (!isFcOnly && selectedRoles.length === 0) ||
                 isPromoting ||
                 (needsMinistry && !selectedMinistryId)
               }
               className="bg-brand-gradient hover:opacity-90 transition-opacity"
             >
-              {isPromoting ? "Promoting..." : "Promote Member"}
+              {isPromoting
+                ? "Saving..."
+                : isFcOnly
+                  ? selectedRoles.includes(ROLE.FL)
+                    ? "Promote to FL"
+                    : "Remove FL"
+                  : "Promote Member"}
             </Button>
           </div>
         </CardContent>

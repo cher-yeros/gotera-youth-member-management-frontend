@@ -19,6 +19,7 @@ import { useGetLocations } from "@/hooks/useGraphQL";
 import { useAuth } from "@/redux/useAuth";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { ComboBox } from "@/components/ui/combo-box";
+import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
 
 const GUARDIAN_RELATIONSHIPS = [
   "Father",
@@ -40,6 +41,7 @@ interface Props {
     full_name?: string;
     contact_no?: string | null;
     gender?: string | null;
+    photo_url?: string | null;
     birth_date?: string | null;
     location_id?: number | null;
     guardian_name?: string | null;
@@ -74,6 +76,7 @@ const NewTeenagerModalForm = ({
     full_name: initial?.full_name || "",
     contact_no: initial?.contact_no || "",
     gender: initial?.gender || "",
+    photo_url: (initial?.photo_url ?? null) as string | null,
     birth_date: initial?.birth_date || "",
     location_id: initial?.location_id || undefined,
     guardian_name: initial?.guardian_name || "",
@@ -99,6 +102,7 @@ const NewTeenagerModalForm = ({
       full_name: form.full_name.trim(),
       contact_no: form.contact_no || null,
       gender: form.gender || null,
+      photo_url: form.photo_url || null,
       birth_date: form.birth_date || null,
       location_id: form.location_id || null,
       guardian_name: form.guardian_name || null,
@@ -119,6 +123,12 @@ const NewTeenagerModalForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
+      <PhotoCaptureField
+        value={form.photo_url}
+        onChange={(url) => set("photo_url", url)}
+        disabled={loading}
+        name={form.full_name}
+      />
       <div>
         <Label>Full name *</Label>
         <Input

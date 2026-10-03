@@ -1,6 +1,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "../../theme/ThemeProvider";
+import { cn } from "@/lib/utils";
 import { Sun, Moon } from "lucide-react";
 
 interface ThemeToggleProps {
@@ -20,7 +21,10 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         variant="ghost"
         size="icon"
         onClick={toggleTheme}
-        className={className}
+        className={cn(
+          "text-foreground hover:bg-muted hover:text-foreground",
+          className,
+        )}
         aria-label="Toggle theme"
       >
         {theme === "light" ? (

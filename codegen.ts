@@ -2,7 +2,9 @@ import type { CodegenConfig } from "@graphql-codegen/cli";
 
 const config: CodegenConfig = {
   overwrite: true,
-  schema: "http://10.92.97.106:4000/graphql",
+  schema:
+    process.env.GRAPHQL_SCHEMA ||
+    "../gotera-youth-member-management-backend/src/generated/schema.graphql",
   documents: "src/**/*.{ts,tsx}",
   generates: {
     "src/generated/graphql.ts": {

@@ -285,6 +285,7 @@ export const MEMBER_FRAGMENT = gql`
     full_name
     contact_no
     gender
+    photo_url
     status_id
     family_id
     role_id
@@ -985,44 +986,47 @@ export const DELETE_LOCATION = gql`
 `;
 
 // AUTHENTICATION MUTATIONS
-const USER_INFO_FIELDS = `
-  id
-  phone
-  role
-  roles
-  member {
+export const USER_INFO_FRAGMENT = gql`
+  fragment UserInfoFragment on UserInfo {
     id
-    contact_no
-    full_name
-    family {
+    phone
+    role
+    roles
+    member {
       id
-      name
-    }
-    role {
-      id
-      name
-      description
-    }
-    roles {
-      id
-      name
-      description
-    }
-    status {
-      id
-      name
-    }
-    ministries {
-      id
-      name
-      description
-      is_active
-    }
-    ledMinistries {
-      id
-      name
-      description
-      is_active
+      contact_no
+      photo_url
+      full_name
+      family {
+        id
+        name
+      }
+      role {
+        id
+        name
+        description
+      }
+      roles {
+        id
+        name
+        description
+      }
+      status {
+        id
+        name
+      }
+      ministries {
+        id
+        name
+        description
+        is_active
+      }
+      ledMinistries {
+        id
+        name
+        description
+        is_active
+      }
     }
   }
 `;
@@ -1032,10 +1036,11 @@ export const LOGIN = gql`
     login(input: $input) {
       token
       user {
-        ${USER_INFO_FIELDS}
+        ...UserInfoFragment
       }
     }
   }
+  ${USER_INFO_FRAGMENT}
 `;
 
 export const LOGOUT = gql`
@@ -1047,17 +1052,19 @@ export const LOGOUT = gql`
 export const ME = gql`
   query Me {
     me {
-      ${USER_INFO_FIELDS}
+      ...UserInfoFragment
     }
   }
+  ${USER_INFO_FRAGMENT}
 `;
 
 export const UPDATE_PROFILE = gql`
   mutation UpdateProfile($input: UpdateProfileInput!) {
     updateProfile(input: $input) {
-      ${USER_INFO_FIELDS}
+      ...UserInfoFragment
     }
   }
+  ${USER_INFO_FRAGMENT}
 `;
 
 export const CHANGE_PASSWORD = gql`
@@ -1436,6 +1443,7 @@ export const FOLLOW_UP_CASE_FRAGMENT = gql`
       full_name
       contact_no
       gender
+      photo_url
       status_id
       family_id
       location_id
@@ -1678,6 +1686,7 @@ export const TEEN_CLASS_FRAGMENT = gql`
       full_name
       contact_no
       gender
+      photo_url
       birth_date
       location_id
       guardian_name
@@ -1714,6 +1723,7 @@ export const TEENAGER_FRAGMENT = gql`
     full_name
     contact_no
     gender
+    photo_url
     birth_date
     location_id
     guardian_name
@@ -2117,4 +2127,388 @@ export const PROMOTE_TEENAGER_TO_MEMBER = gql`
     }
   }
   ${TEENAGER_FRAGMENT}
+`;
+
+// =====================
+// Announcements
+// =====================
+
+export const ANNOUNCEMENT_FRAGMENT = gql`
+  fragment AnnouncementFragment on Announcement {
+    id
+    title
+    body
+    status
+    created_by
+    published_at
+    createdAt
+    updatedAt
+    seenByMe
+    seenAt
+    seenCount
+    expectedCount
+    creator {
+      id
+      full_name
+    }
+    targets {
+      id
+      announcement_id
+      target_type
+      target_value
+    }
+  }
+`;
+
+export const GET_MY_ANNOUNCEMENTS = gql`
+  query GetMyAnnouncements($pagination: PaginationInput) {
+    myAnnouncements(pagination: $pagination) {
+      items {
+        ...AnnouncementFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const GET_MY_UNREAD_ANNOUNCEMENT_COUNT = gql`
+  query GetMyUnreadAnnouncementCount {
+    myUnreadAnnouncementCount
+  }
+`;
+
+export const GET_ANNOUNCEMENT = gql`
+  query GetAnnouncement($id: Int!) {
+    announcement(id: $id) {
+      ...AnnouncementFragment
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const GET_MANAGED_ANNOUNCEMENTS = gql`
+  query GetManagedAnnouncements(
+    $filter: AnnouncementFilterInput
+    $pagination: PaginationInput
+  ) {
+    managedAnnouncements(filter: $filter, pagination: $pagination) {
+      items {
+        ...AnnouncementFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const GET_ANNOUNCEMENT_READS = gql`
+  query GetAnnouncementReads($announcementId: Int!) {
+    announcementReads(announcementId: $announcementId) {
+      announcement_id
+      seenCount
+      expectedCount
+      readers {
+        id
+        announcement_id
+        member_id
+        read_at
+        member {
+          id
+          full_name
+          contact_no
+        }
+      }
+    }
+  }
+`;
+
+export const CREATE_ANNOUNCEMENT = gql`
+  mutation CreateAnnouncement($input: CreateAnnouncementInput!) {
+    createAnnouncement(input: $input) {
+      ...AnnouncementFragment
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const UPDATE_ANNOUNCEMENT = gql`
+  mutation UpdateAnnouncement($id: Int!, $input: UpdateAnnouncementInput!) {
+    updateAnnouncement(id: $id, input: $input) {
+      ...AnnouncementFragment
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const PUBLISH_ANNOUNCEMENT = gql`
+  mutation PublishAnnouncement($id: Int!) {
+    publishAnnouncement(id: $id) {
+      ...AnnouncementFragment
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const ARCHIVE_ANNOUNCEMENT = gql`
+  mutation ArchiveAnnouncement($id: Int!) {
+    archiveAnnouncement(id: $id) {
+      ...AnnouncementFragment
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const MARK_ANNOUNCEMENT_SEEN = gql`
+  mutation MarkAnnouncementSeen($id: Int!) {
+    markAnnouncementSeen(id: $id) {
+      ...AnnouncementFragment
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+// ─── Subscriptions (realtime cache sync) ───────────────────────────────────
+
+export const MEMBER_CHANGED_SUB = gql`
+  subscription MemberChanged {
+    memberChanged {
+      action
+      id
+      member {
+        ...MemberFragment
+      }
+    }
+  }
+  ${MEMBER_FRAGMENT}
+`;
+
+export const FAMILY_CHANGED_SUB = gql`
+  subscription FamilyChanged {
+    familyChanged {
+      action
+      id
+      family {
+        ...FamilyFragment
+      }
+    }
+  }
+  ${FAMILY_FRAGMENT}
+`;
+
+export const ANNOUNCEMENT_CHANGED_SUB = gql`
+  subscription AnnouncementChanged {
+    announcementChanged {
+      action
+      id
+      announcement {
+        ...AnnouncementFragment
+      }
+    }
+  }
+  ${ANNOUNCEMENT_FRAGMENT}
+`;
+
+export const MY_UNREAD_ANNOUNCEMENT_COUNT_SUB = gql`
+  subscription MyUnreadAnnouncementCount {
+    myUnreadAnnouncementCount {
+      memberId
+      count
+    }
+  }
+`;
+
+export const FOLLOW_UP_CASE_CHANGED_SUB = gql`
+  subscription FollowUpCaseChanged($id: Int) {
+    followUpCaseChanged(id: $id) {
+      action
+      id
+      followUpCase {
+        ...FollowUpCaseFragment
+      }
+    }
+  }
+  ${FOLLOW_UP_CASE_FRAGMENT}
+`;
+
+export const FOLLOW_UP_CONTACT_CHANGED_SUB = gql`
+  subscription FollowUpContactChanged($caseId: Int) {
+    followUpContactChanged(caseId: $caseId) {
+      action
+      id
+      contact {
+        id
+        case_id
+        contact_type
+        outcome
+        notes
+        contacted_at
+        next_follow_up_at
+        recorded_by
+        createdAt
+        recorder {
+          id
+          full_name
+        }
+      }
+    }
+  }
+`;
+
+export const ACTIVITY_CREATED_SUB = gql`
+  subscription ActivityCreated {
+    activityCreated {
+      ...ActivityFragment
+    }
+  }
+  ${ACTIVITY_FRAGMENT}
+`;
+
+export const TEENAGER_CHANGED_SUB = gql`
+  subscription TeenagerChanged {
+    teenagerChanged {
+      action
+      id
+      teenager {
+        ...TeenagerFragment
+      }
+    }
+  }
+  ${TEENAGER_FRAGMENT}
+`;
+
+export const TEEN_CLASS_CHANGED_SUB = gql`
+  subscription TeenClassChanged {
+    teenClassChanged {
+      action
+      id
+      teenClass {
+        ...TeenClassFragment
+      }
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
+`;
+
+export const CLASS_SESSION_CHANGED_SUB = gql`
+  subscription ClassSessionChanged($classId: Int) {
+    classSessionChanged(classId: $classId) {
+      action
+      id
+      classSession {
+        ...ClassSessionFragment
+      }
+    }
+  }
+  ${CLASS_SESSION_FRAGMENT}
+`;
+
+export const FAMILY_MEETUP_CHANGED_SUB = gql`
+  subscription FamilyMeetupChanged {
+    familyMeetupChanged {
+      action
+      id
+      familyMeetup {
+        ...FamilyMeetupFragment
+      }
+    }
+  }
+  ${FAMILY_MEETUP_FRAGMENT}
+`;
+
+export const ATTENDANCE_CHANGED_SUB = gql`
+  subscription AttendanceChanged {
+    attendanceChanged {
+      action
+      id
+      attendance {
+        ...FamilyMemberAttendanceFragment
+      }
+    }
+  }
+  ${FAMILY_MEMBER_ATTENDANCE_FRAGMENT}
+`;
+
+export const TEEN_ATTENDANCE_CHANGED_SUB = gql`
+  subscription TeenAttendanceChanged {
+    teenAttendanceChanged {
+      action
+      id
+      attendance {
+        ...TeenAttendanceFragment
+      }
+    }
+  }
+  ${TEEN_ATTENDANCE_FRAGMENT}
+`;
+
+export const MINISTRY_CHANGED_SUB = gql`
+  subscription MinistryChanged {
+    ministryChanged {
+      action
+      id
+      ministry {
+        ...MinistryFragment
+      }
+    }
+  }
+  ${MINISTRY_FRAGMENT}
+`;
+
+export const LOCATION_CHANGED_SUB = gql`
+  subscription LocationChanged {
+    locationChanged {
+      action
+      id
+      location {
+        ...LocationFragment
+      }
+    }
+  }
+  ${LOCATION_FRAGMENT}
+`;
+
+export const PROFESSION_CHANGED_SUB = gql`
+  subscription ProfessionChanged {
+    professionChanged {
+      action
+      id
+      profession {
+        ...ProfessionFragment
+      }
+    }
+  }
+  ${PROFESSION_FRAGMENT}
+`;
+
+export const ROLE_CHANGED_SUB = gql`
+  subscription RoleChanged {
+    roleChanged {
+      action
+      id
+      role {
+        ...RoleFragment
+      }
+    }
+  }
+  ${ROLE_FRAGMENT}
+`;
+
+export const STATUS_CHANGED_SUB = gql`
+  subscription StatusChanged {
+    statusChanged {
+      action
+      id
+      status {
+        ...StatusFragment
+      }
+    }
+  }
+  ${STATUS_FRAGMENT}
 `;

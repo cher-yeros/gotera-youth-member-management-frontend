@@ -36,7 +36,7 @@ import {
   followUpStatusBadgeClass,
   isFollowUpOverdue,
 } from "@/lib/followUp";
-import { hasAnyRole, ROLE } from "@/lib/roles";
+import { hasAnyRole, isFollowUpCoordinator, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -44,7 +44,11 @@ type TabKey = "all" | "unassigned" | "mine" | "overdue" | "closed";
 
 const FollowUpManagement: React.FC = () => {
   const { user } = useAuth();
-  const isAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  const canCoordinate = isFollowUpCoordinator(user);
+  // Only Follow Up Coordinators (Admin/Main/FUC) may assign or reassign cases
+  const canAssignFollowUp = canCoordinate;
+  // Promote to Family is admin/main only — not FUL or FUC
+  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
   const myMemberId = user?.member?.id;
   const [tab, setTab] = useState<TabKey>("mine");
   const [search, setSearch] = useState("");
@@ -79,7 +83,7 @@ const FollowUpManagement: React.FC = () => {
   }, [tab, search]);
 
   const useMineQuery = tab === "mine";
-  const { data, loading, refetch } = useQuery(
+  const { data, loading } = useQuery(
     useMineQuery ? GET_MY_FOLLOW_UP_CASES : GET_FOLLOW_UP_CASES,
     {
       variables: {
@@ -353,30 +357,29 @@ const FollowUpManagement: React.FC = () => {
                         ].includes(item.status) &&
                         (() => {
                           const canManage =
-                            isAdmin ||
-                            !item.assigned_to ||
-                            item.assigned_to === myMemberId;
+                            canCoordinate ||
+                            (!!item.assigned_to &&
+                              item.assigned_to === myMemberId);
                           return (
                             <>
-                              {!item.assigned_to && (
+                              {canAssignFollowUp && !item.assigned_to && (
                                 <Button
                                   size="sm"
                                   variant="secondary"
                                   onClick={() => openAssign(item.id, false)}
                                 >
-                                  Claim / Assign
+                                  Assign
                                 </Button>
                               )}
-                              {(isAdmin || item.assigned_to === myMemberId) &&
-                                item.assigned_to && (
-                                  <Button
-                                    size="sm"
-                                    variant="secondary"
-                                    onClick={() => openAssign(item.id, true)}
-                                  >
-                                    Reassign
-                                  </Button>
-                                )}
+                              {canAssignFollowUp && item.assigned_to && (
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => openAssign(item.id, true)}
+                                >
+                                  Reassign
+                                </Button>
+                              )}
                               {canManage && (
                                 <>
                                   <Button
@@ -388,21 +391,23 @@ const FollowUpManagement: React.FC = () => {
                                   >
                                     Log contact
                                   </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setSelectedCaseId(item.id);
-                                      setSelectedFamilyId(
-                                        item.family_id ||
-                                          item.family?.id ||
-                                          null,
-                                      );
-                                      setGraduateOpen(true);
-                                    }}
-                                  >
-                                    Promote to Family
-                                  </Button>
+                                  {canPromoteToFamily && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => {
+                                        setSelectedCaseId(item.id);
+                                        setSelectedFamilyId(
+                                          item.family_id ||
+                                            item.family?.id ||
+                                            null,
+                                        );
+                                        setGraduateOpen(true);
+                                      }}
+                                    >
+                                      Promote to Family
+                                    </Button>
+                                  )}
                                   <Button
                                     size="sm"
                                     variant="ghost"
@@ -454,33 +459,28 @@ const FollowUpManagement: React.FC = () => {
       <IntakeNewcomerModal
         open={intakeOpen}
         onOpenChange={setIntakeOpen}
-        onSuccess={() => refetch()}
       />
       <AssignFollowUpModal
         open={assignOpen}
         onOpenChange={setAssignOpen}
         caseId={selectedCaseId}
         isReassign={reassign}
-        onSuccess={() => refetch()}
       />
       <LogFollowUpContactModal
         open={contactOpen}
         onOpenChange={setContactOpen}
         caseId={selectedCaseId}
-        onSuccess={() => refetch()}
       />
       <GraduateFollowUpModal
         open={graduateOpen}
         onOpenChange={setGraduateOpen}
         caseId={selectedCaseId}
         defaultFamilyId={selectedFamilyId}
-        onSuccess={() => refetch()}
       />
       <CloseFollowUpModal
         open={closeOpen}
         onOpenChange={setCloseOpen}
         caseId={selectedCaseId}
-        onSuccess={() => refetch()}
       />
     </div>
   );

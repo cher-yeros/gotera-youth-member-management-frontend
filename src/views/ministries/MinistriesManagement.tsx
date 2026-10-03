@@ -57,7 +57,6 @@ const MinistriesManagement = () => {
 
   const handleNewMinistrySuccess = () => {
     setIsNewMinistryModalOpen(false);
-    refetch();
     refetchStats();
   };
 
@@ -73,7 +72,6 @@ const MinistriesManagement = () => {
   const handleUpdateMinistrySuccess = () => {
     setIsUpdateMinistryModalOpen(false);
     setSelectedMinistryId(null);
-    refetch();
     refetchStats();
   };
 
@@ -91,7 +89,6 @@ const MinistriesManagement = () => {
 
     try {
       await deleteMinistry(ministryToDelete.id);
-      refetch();
       refetchStats();
       setMinistryToDelete(null);
     } catch (error) {
@@ -118,7 +115,6 @@ const MinistriesManagement = () => {
   const handlePromoteSuccess = () => {
     setIsPromoteModalOpen(false);
     setMinistryToPromote(null);
-    refetch();
     refetchStats();
   };
 

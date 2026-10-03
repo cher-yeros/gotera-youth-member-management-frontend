@@ -112,7 +112,7 @@ const FamilyMeetupsManagement: React.FC = () => {
     meetup_date: new Date(),
   });
 
-  const { data, loading, error, refetch } = useQuery(
+  const { data, loading, error } = useQuery(
     GET_FAMILY_MEETUP_BATCHES,
     {
       variables: {
@@ -129,7 +129,6 @@ const FamilyMeetupsManagement: React.FC = () => {
         toast.success("Meetup batch created for all families!");
         setIsCreateModalOpen(false);
         resetForm();
-        refetch();
       },
       onError: (err: {
         message?: string;
@@ -149,7 +148,6 @@ const FamilyMeetupsManagement: React.FC = () => {
         setIsEditModalOpen(false);
         setBatchPendingAction(null);
         resetForm();
-        refetch();
       },
       onError: (err: {
         message?: string;
@@ -169,7 +167,6 @@ const FamilyMeetupsManagement: React.FC = () => {
         setIsDeleteDialogOpen(false);
         setBatchPendingAction(null);
         setViewedBatchId(null);
-        refetch();
       },
       onError: (err: {
         message?: string;
