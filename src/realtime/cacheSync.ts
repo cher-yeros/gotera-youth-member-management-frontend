@@ -270,9 +270,12 @@ export function appendFollowUpContact(
   cache.modify({
     id: caseCacheId,
     fields: {
-      contacts(existing: readonly Reference[] = [], { readField }) {
-        if (refsIncludeId(existing, contact.id, readField)) return existing;
-        return [...existing, contactRef as Reference];
+      contacts(existing: unknown, { readField }) {
+        const list = (
+          Array.isArray(existing) ? existing : []
+        ) as readonly Reference[];
+        if (refsIncludeId(list, contact.id, readField)) return list;
+        return [...list, contactRef as Reference];
       },
     },
   });
