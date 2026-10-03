@@ -10,13 +10,20 @@ import {
 } from "@/components/ui/select";
 import { usePromoteMember, usePromoteMinistryLeader } from "@/hooks/useGraphQL";
 import { toast } from "react-toastify";
-import { ROLE, ROLE_LABELS, type RoleCode } from "@/lib/roles";
+import {
+  ROLE,
+  ROLE_LABELS,
+  getMemberRoleNames,
+  type RoleCode,
+} from "@/lib/roles";
 
 interface PromoteMemberModalProps {
   member: {
     id: number;
     full_name: string;
     contact_no: string;
+    role?: { name?: string | null } | null;
+    roles?: Array<{ name?: string | null }> | null;
     ministries?: Array<{ id: number; name: string }> | null;
   };
   isOpen: boolean;
@@ -35,6 +42,8 @@ const ASSIGNABLE_ROLES: RoleCode[] = [
   ROLE.FM,
 ];
 
+const ASSIGNABLE_ROLE_SET = new Set<string>(ASSIGNABLE_ROLES);
+
 const PromoteMemberModal = ({
   member,
   isOpen,
@@ -52,11 +61,27 @@ const PromoteMemberModal = ({
   const memberMinistries = member.ministries ?? [];
   const needsMinistry = selectedRoles.includes(ROLE.ML);
 
+  // Auto-fill currently assigned roles when the modal opens
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const existing = getMemberRoleNames(member).filter((role) =>
+      ASSIGNABLE_ROLE_SET.has(role),
+    );
+    setSelectedRoles(existing);
+    setSelectedMinistryId(null);
+  }, [isOpen, member.id]);
+
+  // Keep ministry selection in sync with ML role; auto-pick if only one ministry
   useEffect(() => {
     if (!needsMinistry) {
       setSelectedMinistryId(null);
+      return;
     }
-  }, [needsMinistry]);
+    if (memberMinistries.length === 1) {
+      setSelectedMinistryId(memberMinistries[0].id);
+    }
+  }, [needsMinistry, member.id]);
 
   const toggleRole = (role: string) => {
     setSelectedRoles((prev) =>
@@ -140,6 +165,11 @@ const PromoteMemberModal = ({
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Select Role(s)</label>
+            {selectedRoles.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Existing roles are pre-selected. Uncheck to remove or add more.
+              </p>
+            )}
             <div className="grid grid-cols-1 gap-2 max-h-56 overflow-y-auto border rounded-md p-3">
               {ASSIGNABLE_ROLES.map((role) => (
                 <label

@@ -103,7 +103,7 @@ export const logoutUser = createAsyncThunk(
         error instanceof Error ? error.message : "Logout failed";
       return rejectWithValue(errorMessage);
     }
-  }
+  },
 );
 
 // Auth slice
@@ -133,6 +133,11 @@ const authSlice = createSlice({
       // Clear localStorage
       localStorage.removeItem("authToken");
       localStorage.removeItem("user");
+    },
+
+    updateUser: (state, action: PayloadAction<User>) => {
+      state.user = action.payload;
+      localStorage.setItem("user", JSON.stringify(action.payload));
     },
 
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -204,6 +209,7 @@ const authSlice = createSlice({
 export const {
   setCredentials,
   clearCredentials,
+  updateUser,
   setLoading,
   setError,
   initializeAuth,

@@ -10,58 +10,60 @@ const BlankLayout = lazy(() => import("../layouts/blank/BlankLayout"));
 // Pages
 const Dashboard = lazy(() => import("../views/dashboard/Dashboard"));
 const FamilyLeaderDashboard = lazy(
-  () => import("../views/dashboard/FamilyLeaderDashboard")
+  () => import("../views/dashboard/FamilyLeaderDashboard"),
 );
 const MinistryLeaderDashboard = lazy(
-  () => import("../views/dashboard/MinistryLeaderDashboard")
+  () => import("../views/dashboard/MinistryLeaderDashboard"),
 );
 const Members = lazy(() => import("../views/members/Members"));
 const OverviewPage = lazy(() => import("../views/overview/OverviewPage"));
 const FamiliesPage = lazy(() => import("../views/families/FamiliesPage"));
 const FamilyMembers = lazy(() => import("../views/families/FamilyMembers"));
 const ProfessionsPage = lazy(
-  () => import("../views/professions/ProfessionsPage")
+  () => import("../views/professions/ProfessionsPage"),
 );
 const LocationsPage = lazy(() => import("../views/locations/LocationsPage"));
 const FamilyMemberMapping = lazy(
-  () => import("../views/family-mapping/FamilyMemberMapping")
+  () => import("../views/family-mapping/FamilyMemberMapping"),
 );
 const ActivityLogs = lazy(() => import("../views/activity-logs/ActivityLogs"));
 const AttendanceManagement = lazy(
-  () => import("../views/attendance/AttendanceManagement")
+  () => import("../views/attendance/AttendanceManagement"),
 );
 const FamilyMeetupsManagement = lazy(
-  () => import("../views/family-meetups/FamilyMeetupsManagement")
+  () => import("../views/family-meetups/FamilyMeetupsManagement"),
 );
 const MinistriesManagement = lazy(
-  () => import("../views/ministries/MinistriesManagement")
+  () => import("../views/ministries/MinistriesManagement"),
 );
 const MinistryMembers = lazy(
-  () => import("../views/ministries/MinistryMembers")
+  () => import("../views/ministries/MinistryMembers"),
 );
 const FollowUpManagement = lazy(
-  () => import("../views/follow-up/FollowUpManagement")
+  () => import("../views/follow-up/FollowUpManagement"),
 );
 const FollowUpCaseDetail = lazy(
-  () => import("../views/follow-up/FollowUpCaseDetail")
+  () => import("../views/follow-up/FollowUpCaseDetail"),
 );
 const TeenagersPage = lazy(() => import("../views/teenagers/TeenagersPage"));
 const TeenClassesPage = lazy(
-  () => import("../views/teen-classes/TeenClassesPage")
+  () => import("../views/teen-classes/TeenClassesPage"),
 );
 const TeenClassDetail = lazy(
-  () => import("../views/teen-classes/TeenClassDetail")
+  () => import("../views/teen-classes/TeenClassDetail"),
 );
 const TeenSessionsManagement = lazy(
-  () => import("../views/teen-classes/TeenSessionsManagement")
+  () => import("../views/teen-classes/TeenSessionsManagement"),
 );
 const TeenAttendanceManagement = lazy(
-  () => import("../views/teen-attendance/TeenAttendanceManagement")
+  () => import("../views/teen-attendance/TeenAttendanceManagement"),
 );
 const TeenTeacherDashboard = lazy(
-  () => import("../views/dashboard/TeenTeacherDashboard")
+  () => import("../views/dashboard/TeenTeacherDashboard"),
 );
 const Login = lazy(() => import("../views/authentication/Login"));
+const ProfilePage = lazy(() => import("../views/profile/ProfilePage"));
+const SettingsPage = lazy(() => import("../views/settings/SettingsPage"));
 const ComboBoxTest = lazy(() => import("../components/test/ComboBoxTest"));
 
 const Router = [
@@ -294,6 +296,22 @@ const Router = [
         element: (
           <ProtectedRoute requiredRole="admin">
             <ComboBoxTest />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/profile",
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/settings",
+        element: (
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         ),
       },

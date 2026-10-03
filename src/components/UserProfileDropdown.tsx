@@ -33,7 +33,7 @@ const UserProfileDropdown = () => {
       await logout();
       dispatch(clearCredentials());
       setIsOpen(false);
-      navigate("/login");
+      navigate("/auth/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -41,14 +41,12 @@ const UserProfileDropdown = () => {
 
   const handleProfileClick = () => {
     setIsOpen(false);
-    // Navigate to profile page if it exists
-    // navigate("/profile");
+    navigate("/profile");
   };
 
   const handleSettingsClick = () => {
     setIsOpen(false);
-    // Navigate to settings page if it exists
-    // navigate("/settings");
+    navigate("/settings");
   };
 
   // Get user initials for avatar fallback

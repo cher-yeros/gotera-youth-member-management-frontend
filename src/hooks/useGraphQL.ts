@@ -5,7 +5,9 @@ import {
   setCredentials,
   clearCredentials,
   setError,
+  updateUser,
 } from "@/redux/slices/authSlice";
+import type { User } from "@/redux/slices/authSlice";
 import {
   CREATE_FAMILY,
   CREATE_LOCATION,
@@ -14,6 +16,7 @@ import {
   CREATE_ROLE,
   CREATE_STATUS,
   CREATE_MINISTRY,
+  CHANGE_PASSWORD,
   DELETE_FAMILY,
   DELETE_LOCATION,
   DELETE_MEMBER,
@@ -47,6 +50,7 @@ import {
   GET_LOCATION_SUMMARIES,
   LOGIN,
   LOGOUT,
+  ME,
   PROMOTE_MEMBER,
   PROMOTE_MINISTRY_LEADER,
   RESET_PASSWORD,
@@ -55,6 +59,7 @@ import {
   UPDATE_LOCATION,
   UPDATE_MEMBER,
   UPDATE_PROFESSION,
+  UPDATE_PROFILE,
   UPDATE_ROLE,
   UPDATE_STATUS,
   UPDATE_MINISTRY,
@@ -904,6 +909,65 @@ export const useLogout = () => {
   };
 
   return { logout: handleLogout, loading };
+};
+
+export const useMe = () => {
+  return useQuery<{ me: User }>(ME, {
+    errorPolicy: "all",
+    fetchPolicy: "cache-and-network",
+  });
+};
+
+export const useUpdateProfile = () => {
+  const dispatch = useAppDispatch();
+  const [updateProfile, { loading }] = useMutation<{
+    updateProfile: User;
+  }>(UPDATE_PROFILE, {
+    onCompleted: (data) => {
+      if (data?.updateProfile) {
+        dispatch(updateUser(data.updateProfile));
+        toast.success("Profile updated successfully");
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to update profile: ${error.message}`);
+    },
+  });
+
+  const handleUpdateProfile = async (input: {
+    full_name: string;
+    contact_no: string;
+  }) => {
+    const result = await updateProfile({ variables: { input } });
+    return result.data?.updateProfile;
+  };
+
+  return { updateProfile: handleUpdateProfile, loading };
+};
+
+export const useChangePassword = () => {
+  const [changePassword, { loading }] = useMutation<{
+    changePassword: boolean;
+  }>(CHANGE_PASSWORD, {
+    onCompleted: (data) => {
+      if (data?.changePassword) {
+        toast.success("Password changed successfully");
+      }
+    },
+    onError: (error) => {
+      toast.error(`Failed to change password: ${error.message}`);
+    },
+  });
+
+  const handleChangePassword = async (input: {
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    const result = await changePassword({ variables: { input } });
+    return result.data?.changePassword;
+  };
+
+  return { changePassword: handleChangePassword, loading };
 };
 
 // FAMILY LEADER SPECIFIC HOOKS

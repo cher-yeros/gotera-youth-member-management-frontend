@@ -985,50 +985,54 @@ export const DELETE_LOCATION = gql`
 `;
 
 // AUTHENTICATION MUTATIONS
+const USER_INFO_FIELDS = `
+  id
+  phone
+  role
+  roles
+  member {
+    id
+    contact_no
+    full_name
+    family {
+      id
+      name
+    }
+    role {
+      id
+      name
+      description
+    }
+    roles {
+      id
+      name
+      description
+    }
+    status {
+      id
+      name
+    }
+    ministries {
+      id
+      name
+      description
+      is_active
+    }
+    ledMinistries {
+      id
+      name
+      description
+      is_active
+    }
+  }
+`;
+
 export const LOGIN = gql`
   mutation Login($input: LoginInput!) {
     login(input: $input) {
       token
       user {
-        id
-        phone
-        role
-        roles
-        member {
-          id
-          contact_no
-          full_name
-          family {
-            id
-            name
-          }
-          role {
-            id
-            name
-            description
-          }
-          roles {
-            id
-            name
-            description
-          }
-          status {
-            id
-            name
-          }
-          ministries {
-            id
-            name
-            description
-            is_active
-          }
-          ledMinistries {
-            id
-            name
-            description
-            is_active
-          }
-        }
+        ${USER_INFO_FIELDS}
       }
     }
   }
@@ -1037,6 +1041,28 @@ export const LOGIN = gql`
 export const LOGOUT = gql`
   mutation Logout {
     logout
+  }
+`;
+
+export const ME = gql`
+  query Me {
+    me {
+      ${USER_INFO_FIELDS}
+    }
+  }
+`;
+
+export const UPDATE_PROFILE = gql`
+  mutation UpdateProfile($input: UpdateProfileInput!) {
+    updateProfile(input: $input) {
+      ${USER_INFO_FIELDS}
+    }
+  }
+`;
+
+export const CHANGE_PASSWORD = gql`
+  mutation ChangePassword($input: ChangePasswordInput!) {
+    changePassword(input: $input)
   }
 `;
 

@@ -33,6 +33,8 @@ import { Badge } from "@/components/ui/badge";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "react-toastify";
 
+type MemberListItem = GetMembersQuery["members"]["members"][number];
+
 const Members = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -48,6 +50,8 @@ const Members = () => {
     id: number;
     full_name: string;
     contact_no: string;
+    role?: { name?: string | null } | null;
+    roles?: Array<{ name?: string | null }> | null;
     ministries?: Array<{ id: number; name: string }> | null;
   } | null>(null);
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
@@ -197,12 +201,7 @@ const Members = () => {
     setSelectedMemberId(null);
   };
 
-  const handlePromoteMember = (member: {
-    id: number;
-    full_name: string;
-    contact_no?: string | null | undefined;
-    ministries?: Array<{ id: number; name: string }> | null;
-  }) => {
+  const handlePromoteMember = (member: MemberListItem) => {
     if (!member.contact_no) {
       return; // This shouldn't happen since the button is disabled when contact_no is null/undefined
     }
@@ -210,6 +209,8 @@ const Members = () => {
       id: member.id,
       full_name: member.full_name,
       contact_no: member.contact_no,
+      role: member.role,
+      roles: member.roles,
       ministries: member.ministries ?? [],
     });
     setIsPromoteModalOpen(true);
