@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenagerModalForm from "@/components/forms/NewTeenagerModalForm";
+import TeenagerViewModal from "@/components/forms/TeenagerViewModal";
 import TransferTeenagerModal from "@/components/forms/TransferTeenagerModal";
 import PromoteTeenagerModal from "@/components/forms/PromoteTeenagerModal";
 import { PersonAvatar } from "@/components/shared/PersonAvatar";
@@ -24,6 +25,7 @@ const TeenagersPage = () => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [viewTeen, setViewTeen] = useState<any | null>(null);
   const [editTeen, setEditTeen] = useState<any | null>(null);
   const [transferTeen, setTransferTeen] = useState<any | null>(null);
   const [promoteTeen, setPromoteTeen] = useState<any | null>(null);
@@ -197,6 +199,14 @@ const TeenagersPage = () => {
                             <Button
                               variant="outline"
                               size="sm"
+                              className="flex-1 text-slate-700 hover:bg-slate-50 min-w-[80px]"
+                              onClick={() => setViewTeen(t)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               className="flex-1 text-blue-600 hover:bg-blue-50 min-w-[80px]"
                               onClick={() => setEditTeen(t)}
                             >
@@ -293,6 +303,13 @@ const TeenagersPage = () => {
                           <td className="space-x-1">
                             <Button
                               size="sm"
+                              variant="outline"
+                              onClick={() => setViewTeen(t)}
+                            >
+                              View
+                            </Button>
+                            <Button
+                              size="sm"
                               variant="ghost"
                               onClick={() => setEditTeen(t)}
                             >
@@ -370,6 +387,12 @@ const TeenagersPage = () => {
           onCancel={() => setIsCreateOpen(false)}
         />
       </FullscreenModal>
+
+      <TeenagerViewModal
+        isOpen={!!viewTeen}
+        onClose={() => setViewTeen(null)}
+        teenager={viewTeen}
+      />
 
       <FullscreenModal
         isOpen={!!editTeen}

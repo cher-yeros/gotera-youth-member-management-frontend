@@ -2776,7 +2776,7 @@ export type ClassSessionFragmentFragment = { __typename?: 'ClassSession', id: nu
 
 export type ClassSessionBatchFragmentFragment = { __typename?: 'ClassSessionBatch', id: number, title: string, description?: string | null, session_date: string, location?: string | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator?: { __typename?: 'Member', id: number, full_name: string } | null, sessions?: Array<{ __typename?: 'ClassSession', id: number, batch_id?: number | null, class_id: number, title: string, description?: string | null, topic?: string | null, session_date: string, location?: string | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null, creator?: { __typename?: 'Member', id: number, full_name: string } | null, attendanceStats?: { __typename?: 'TeenAttendanceStats', total: number, present: number, absent: number, attendanceRate: number } | null }> | null };
 
-export type TeenAttendanceFragmentFragment = { __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null };
+export type TeenAttendanceFragmentFragment = { __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, session?: { __typename?: 'ClassSession', id: number, title: string, session_date: string, class_id: number, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null } | null, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null };
 
 export type GetTeenClassesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -2828,7 +2828,7 @@ export type GetClassSessionQueryVariables = Exact<{
 }>;
 
 
-export type GetClassSessionQuery = { __typename?: 'Query', classSession?: { __typename?: 'ClassSession', id: number, batch_id?: number | null, class_id: number, title: string, description?: string | null, topic?: string | null, session_date: string, location?: string | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, attendances?: Array<{ __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null }> | null, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null, creator?: { __typename?: 'Member', id: number, full_name: string } | null, attendanceStats?: { __typename?: 'TeenAttendanceStats', total: number, present: number, absent: number, attendanceRate: number } | null } | null };
+export type GetClassSessionQuery = { __typename?: 'Query', classSession?: { __typename?: 'ClassSession', id: number, batch_id?: number | null, class_id: number, title: string, description?: string | null, topic?: string | null, session_date: string, location?: string | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, attendances?: Array<{ __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, session?: { __typename?: 'ClassSession', id: number, title: string, session_date: string, class_id: number, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null } | null, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null }> | null, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null, creator?: { __typename?: 'Member', id: number, full_name: string } | null, attendanceStats?: { __typename?: 'TeenAttendanceStats', total: number, present: number, absent: number, attendanceRate: number } | null } | null };
 
 export type GetClassSessionBatchesQueryVariables = Exact<{
   filter?: InputMaybe<ClassSessionFilterInput>;
@@ -2844,7 +2844,7 @@ export type GetTeenAttendancesQueryVariables = Exact<{
 }>;
 
 
-export type GetTeenAttendancesQuery = { __typename?: 'Query', teenAttendances: { __typename?: 'PaginatedTeenAttendances', total: number, page: number, limit: number, totalPages: number, attendances: Array<{ __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null }> } };
+export type GetTeenAttendancesQuery = { __typename?: 'Query', teenAttendances: { __typename?: 'PaginatedTeenAttendances', total: number, page: number, limit: number, totalPages: number, attendances: Array<{ __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, session?: { __typename?: 'ClassSession', id: number, title: string, session_date: string, class_id: number, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null } | null, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null }> } };
 
 export type CreateTeenClassMutationVariables = Exact<{
   input: CreateTeenClassInput;
@@ -2942,7 +2942,7 @@ export type BulkCreateTeenAttendanceMutationVariables = Exact<{
 }>;
 
 
-export type BulkCreateTeenAttendanceMutation = { __typename?: 'Mutation', bulkCreateTeenAttendance: Array<{ __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null }> };
+export type BulkCreateTeenAttendanceMutation = { __typename?: 'Mutation', bulkCreateTeenAttendance: Array<{ __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, session?: { __typename?: 'ClassSession', id: number, title: string, session_date: string, class_id: number, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null } | null, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null }> };
 
 export type PromoteTeenagerToMemberMutationVariables = Exact<{
   input: PromoteTeenagerToMemberInput;
@@ -3092,7 +3092,7 @@ export type AttendanceChangedSubscription = { __typename?: 'Subscription', atten
 export type TeenAttendanceChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type TeenAttendanceChangedSubscription = { __typename?: 'Subscription', teenAttendanceChanged: { __typename?: 'TeenAttendanceChangePayload', action: ChangeAction, id: number, attendance?: { __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null } | null } };
+export type TeenAttendanceChangedSubscription = { __typename?: 'Subscription', teenAttendanceChanged: { __typename?: 'TeenAttendanceChangePayload', action: ChangeAction, id: number, attendance?: { __typename?: 'TeenAttendance', id: number, session_id: number, teenager_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, session?: { __typename?: 'ClassSession', id: number, title: string, session_date: string, class_id: number, teenClass?: { __typename?: 'TeenClass', id: number, name: string } | null } | null, teenager?: { __typename?: 'Teenager', id: number, full_name: string, contact_no?: string | null } | null, recorder?: { __typename?: 'Member', id: number, full_name: string } | null } | null } };
 
 export type MinistryChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
@@ -3118,3 +3118,5 @@ export type StatusChangedSubscriptionVariables = Exact<{ [key: string]: never; }
 
 
 export type StatusChangedSubscription = { __typename?: 'Subscription', statusChanged: { __typename?: 'StatusChangePayload', action: ChangeAction, id: number, status?: { __typename?: 'Status', id: number, name: string, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null }> } | null } };
+
+export type FollowUpContactMiniFragment = { __typename?: 'FollowUpContact', id: number, case_id: number, contact_type: string, outcome: string, notes?: string | null, contacted_at: string, next_follow_up_at?: string | null, recorded_by: number, createdAt: string };

@@ -40,16 +40,20 @@ interface IntakeNewcomerModalProps {
   onSuccess?: () => void;
 }
 
+type FollowUpSource = (typeof FOLLOW_UP_SOURCE)[keyof typeof FOLLOW_UP_SOURCE];
+type FollowUpPriority =
+  (typeof FOLLOW_UP_PRIORITY)[keyof typeof FOLLOW_UP_PRIORITY];
+
 const emptyForm = {
   full_name: "",
   contact_no: "",
   gender: "",
   photo_url: null as string | null,
-  source: FOLLOW_UP_SOURCE.SUNDAY_SERVICE,
+  source: FOLLOW_UP_SOURCE.SUNDAY_SERVICE as FollowUpSource,
   first_visit_date: "",
   notes: "",
   assigned_to: "",
-  priority: FOLLOW_UP_PRIORITY.NORMAL,
+  priority: FOLLOW_UP_PRIORITY.NORMAL as FollowUpPriority,
   next_follow_up_at: "",
   location_id: "",
   location_name: "",
@@ -222,7 +226,9 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
               <Label>Source</Label>
               <Select
                 value={form.source}
-                onValueChange={(v) => setForm({ ...form, source: v })}
+                onValueChange={(v) =>
+                  setForm({ ...form, source: v as FollowUpSource })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -240,7 +246,9 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
               <Label>Priority</Label>
               <Select
                 value={form.priority}
-                onValueChange={(v) => setForm({ ...form, priority: v })}
+                onValueChange={(v) =>
+                  setForm({ ...form, priority: v as FollowUpPriority })
+                }
               >
                 <SelectTrigger>
                   <SelectValue />

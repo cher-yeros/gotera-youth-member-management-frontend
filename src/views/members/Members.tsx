@@ -10,6 +10,7 @@ import {
 import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
+import MemberViewModal from "@/components/forms/MemberViewModal";
 import PromoteMemberModal from "@/components/forms/PromoteMemberModal";
 import ResetPasswordModal from "@/components/forms/ResetPasswordModal";
 import PasswordDisplayModal from "@/components/forms/PasswordDisplayModal";
@@ -46,6 +47,7 @@ const Members = () => {
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
   const [isUpdateMemberModalOpen, setIsUpdateMemberModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [viewMember, setViewMember] = useState<MemberListItem | null>(null);
   const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
   const [memberToDelete, setMemberToDelete] = useState<{
     id: number;
@@ -186,6 +188,10 @@ const Members = () => {
 
   const handleNewMemberCancel = () => {
     setIsNewMemberModalOpen(false);
+  };
+
+  const handleViewMember = (member: MemberListItem) => {
+    setViewMember(member);
   };
 
   const handleUpdateMember = (memberId: number) => {
@@ -641,6 +647,14 @@ const Members = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            className="flex-1 text-slate-700 hover:bg-slate-50 min-w-[80px]"
+                            onClick={() => handleViewMember(member)}
+                          >
+                            View
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             className="flex-1 text-blue-600 hover:bg-blue-50 min-w-[80px]"
                             onClick={() => handleUpdateMember(member.id)}
                           >
@@ -810,6 +824,14 @@ const Members = () => {
                           </td>
                           <td className="p-3">
                             <div className="flex space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-slate-700 hover:bg-slate-50"
+                                onClick={() => handleViewMember(member)}
+                              >
+                                View
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1018,6 +1040,12 @@ const Members = () => {
           mode="update"
         />
       </FullscreenModal>
+
+      <MemberViewModal
+        isOpen={!!viewMember}
+        onClose={() => setViewMember(null)}
+        member={viewMember}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

@@ -81,7 +81,7 @@ const client = new ApolloClient({
     query: {
       errorPolicy: "all",
     },
-  },
+  } as ApolloClient.DefaultOptions,
 });
 
 export default client;

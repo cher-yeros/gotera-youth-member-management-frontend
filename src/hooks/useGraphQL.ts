@@ -48,6 +48,7 @@ import {
   GET_FAMILY_PLACEMENT_NEEDS,
   GET_PROFESSION_SUMMARIES,
   GET_LOCATION_SUMMARIES,
+  GET_FAMILY_MEMBER_ATTENDANCES,
   LOGIN,
   LOGOUT,
   ME,
@@ -131,6 +132,26 @@ export const useGetMembers = (
     context: {
       queryKey: `members-${pagination?.page || 1}-${pagination?.limit || 10}`,
     },
+  });
+};
+
+export const useGetFamilyMemberAttendances = (
+  filter?: {
+    meetup_id?: number;
+    member_id?: number;
+    recorded_by?: number;
+    is_present?: boolean;
+    dateFrom?: string;
+    dateTo?: string;
+  },
+  pagination?: PaginationInput,
+  options?: { skip?: boolean },
+) => {
+  return useQuery(GET_FAMILY_MEMBER_ATTENDANCES, {
+    variables: { filter, pagination },
+    errorPolicy: "all",
+    fetchPolicy: "cache-and-network",
+    skip: options?.skip,
   });
 };
 

@@ -84,9 +84,11 @@ const TeenClassDetail = () => {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
-            ← Back
-          </Button>
+          {!isMyClasses && (
+            <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
+              ← Back
+            </Button>
+          )}
           <h1 className="text-2xl font-bold">
             {teenClass?.name || "Class"} Roster
           </h1>
@@ -351,8 +353,8 @@ const TeenClassDetail = () => {
             defaultClassId={effectiveClassId}
             initial={editTeen}
             onSuccess={() => {
-            setEditTeen(null);
-          }}
+              setEditTeen(null);
+            }}
             onCancel={() => setEditTeen(null)}
           />
         )}

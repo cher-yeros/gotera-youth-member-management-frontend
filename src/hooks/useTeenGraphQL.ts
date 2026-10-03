@@ -90,11 +90,16 @@ export const useGetClassSessionBatches = (filter?: any, pagination?: any) =>
     fetchPolicy: "cache-and-network",
   });
 
-export const useGetTeenAttendances = (filter?: any, pagination?: any) =>
+export const useGetTeenAttendances = (
+  filter?: any,
+  pagination?: any,
+  options?: { skip?: boolean },
+) =>
   useQuery(GET_TEEN_ATTENDANCES, {
     variables: { filter, pagination },
     errorPolicy: "all",
     fetchPolicy: "cache-and-network",
+    skip: options?.skip,
   });
 
 export const useCreateTeenClass = () => {

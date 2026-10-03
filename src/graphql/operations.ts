@@ -1812,6 +1812,16 @@ export const TEEN_ATTENDANCE_FRAGMENT = gql`
     recorded_by
     createdAt
     updatedAt
+    session {
+      id
+      title
+      session_date
+      class_id
+      teenClass {
+        id
+        name
+      }
+    }
     teenager {
       id
       full_name
