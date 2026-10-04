@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenagerModalForm from "@/components/forms/NewTeenagerModalForm";
 import TeenagerViewModal from "@/components/forms/TeenagerViewModal";
@@ -19,11 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Filter } from "lucide-react";
 
 const TeenagersPage = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<string | undefined>();
+  const [showFilters, setShowFilters] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [viewTeen, setViewTeen] = useState<any | null>(null);
   const [editTeen, setEditTeen] = useState<any | null>(null);
@@ -49,11 +50,12 @@ const TeenagersPage = () => {
         <div>
           <h1 className="text-2xl font-bold">Teenagers</h1>
           <p className="text-sm text-muted-foreground">
-            Register and manage teenagers
+            {payload?.total != null
+              ? `${payload.total} teenagers`
+              : "Teen registry"}
           </p>
         </div>
         <div className="flex gap-2">
-          <ThemeToggle />
           <Button onClick={() => setIsCreateOpen(true)}>
             Register Teenager
           </Button>
@@ -63,33 +65,56 @@ const TeenagersPage = () => {
       <Card>
         <CardHeader className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <CardTitle>All Teenagers ({payload?.total || 0})</CardTitle>
-          <div className="flex gap-2 flex-wrap">
-            <Input
-              placeholder="Search..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-48"
-            />
-            <Select
-              value={status || "ALL"}
-              onValueChange={(v) => {
-                setStatus(v === "ALL" ? undefined : v);
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All statuses</SelectItem>
-                <SelectItem value="ACTIVE">ACTIVE</SelectItem>
-                <SelectItem value="PROMOTED">PROMOTED</SelectItem>
-                <SelectItem value="INACTIVE">INACTIVE</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col gap-2 items-stretch md:items-end">
+            <div className="flex gap-2 flex-wrap">
+              <Input
+                placeholder="Search..."
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                className="w-48"
+              />
+              <Button
+                type="button"
+                variant={showFilters ? "default" : "outline"}
+                size="icon"
+                onClick={() => setShowFilters((prev) => !prev)}
+                aria-label={showFilters ? "Hide filters" : "Show filters"}
+                aria-expanded={showFilters}
+                className="relative shrink-0"
+              >
+                <Filter className="h-4 w-4" />
+                {status && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -right-1.5 -top-1.5 h-5 min-w-5 rounded-full px-1"
+                  >
+                    1
+                  </Badge>
+                )}
+              </Button>
+            </div>
+            {showFilters && (
+              <Select
+                value={status || "ALL"}
+                onValueChange={(v) => {
+                  setStatus(v === "ALL" ? undefined : v);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ALL">All statuses</SelectItem>
+                  <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+                  <SelectItem value="PROMOTED">PROMOTED</SelectItem>
+                  <SelectItem value="INACTIVE">INACTIVE</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </CardHeader>
         <CardContent>

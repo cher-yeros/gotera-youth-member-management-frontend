@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   useGetMyTeenClasses,
   useGetClassSessions,
@@ -34,10 +33,12 @@ const TeenTeacherDashboard = () => {
         <div>
           <h1 className="text-2xl font-bold">Teen Teacher Dashboard</h1>
           <p className="text-sm text-muted-foreground">
-            Your classes and today&apos;s sessions
+            {classes.length} classes
+            {todaySessions.length > 0
+              ? ` · ${todaySessions.length} today`
+              : ""}
           </p>
         </div>
-        <ThemeToggle />
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

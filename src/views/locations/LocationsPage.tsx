@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewLocationModalForm from "@/components/forms/NewLocationModalForm";
 import LocationSearch from "@/components/shared/LocationSearch";
@@ -121,14 +120,9 @@ const LocationsPage = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">Locations</h1>
-          <p className="text-muted-foreground">
-            Manage regional locations and coverage areas ({totalLocations}{" "}
-            total)
-          </p>
+          <p className="text-muted-foreground">{totalLocations} locations</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
-          <Button
+        <div className="flex items-center space-x-4">          <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewLocationModalOpen(true)}
           >

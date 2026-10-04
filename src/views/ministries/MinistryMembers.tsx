@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import type { MemberFilterInput, Member } from "@/generated/graphql";
 import {
   useGetMinistry,
@@ -184,14 +183,10 @@ const MinistryMembers = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              {ministry.name} Ministry Members
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
+              {ministry.name}
             </h1>
-            <p className="text-muted-foreground">
-              Members of the {ministry.name} ministry
-            </p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -220,18 +215,12 @@ const MinistryMembers = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            {isMinistryLeaderView
-              ? `${ministry.name} Ministry Members`
-              : `${ministry.name} Ministry Members`}
+      <div className="flex justify-between items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
+            {ministry.name}
           </h1>
-          <p className="text-muted-foreground">
-            {isMinistryLeaderView
-              ? `Members of your ministry (${members.length} total)`
-              : `Members of the ${ministry.name} ministry (${members.length} total)`}
-          </p>
+          <p className="text-muted-foreground">{members.length} members</p>
           {programLabel && (
             <Badge className="mt-2 w-fit bg-indigo-100 text-indigo-800">
               <CalendarClock className="mr-1 h-3 w-3" />
@@ -253,7 +242,6 @@ const MinistryMembers = () => {
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMemberModalOpen(true)}

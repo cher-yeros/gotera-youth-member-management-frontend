@@ -15,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { IntakeNewcomerModal } from "@/components/forms/IntakeNewcomerModal";
 import { AssignFollowUpModal } from "@/components/forms/AssignFollowUpModal";
 import { LogFollowUpContactModal } from "@/components/forms/LogFollowUpContactModal";
@@ -47,8 +46,8 @@ const FollowUpManagement: React.FC = () => {
   const canCoordinate = isFollowUpCoordinator(user);
   // Only Follow Up Coordinators (Admin/Main/FUC) may assign or reassign cases
   const canAssignFollowUp = canCoordinate;
-  // Promote to Family is admin/main only — not FUL or FUC
-  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  // Promote to Family: admin/main/FC — not FUL or FUC alone
+  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
   const myMemberId = user?.member?.id;
   const [tab, setTab] = useState<TabKey>("mine");
   const [search, setSearch] = useState("");
@@ -104,6 +103,12 @@ const FollowUpManagement: React.FC = () => {
   const items = payload?.items || [];
   const totalPages = payload?.totalPages || 1;
   const dashboard = (dashData as any)?.followUpDashboard;
+  const openFollowUpCount = dashboard
+    ? dashboard.newCount +
+      dashboard.assignedCount +
+      dashboard.inProgressCount +
+      dashboard.overdueCount
+    : null;
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "mine", label: "My cases" },
@@ -125,11 +130,12 @@ const FollowUpManagement: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">Follow-up</h1>
           <p className="text-muted-foreground">
-            Intake newcomers, assign coordinators, and track calls
+            {openFollowUpCount != null
+              ? `${openFollowUpCount} open cases`
+              : "Follow-up cases"}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ThemeToggle variant="icon" />
           <Button onClick={() => setIntakeOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Intake newcomer
@@ -456,10 +462,7 @@ const FollowUpManagement: React.FC = () => {
         </div>
       )}
 
-      <IntakeNewcomerModal
-        open={intakeOpen}
-        onOpenChange={setIntakeOpen}
-      />
+      <IntakeNewcomerModal open={intakeOpen} onOpenChange={setIntakeOpen} />
       <AssignFollowUpModal
         open={assignOpen}
         onOpenChange={setAssignOpen}

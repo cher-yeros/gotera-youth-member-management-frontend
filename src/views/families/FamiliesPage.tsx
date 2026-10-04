@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewFamilyModalForm from "@/components/forms/NewFamilyModalForm";
 import FamilySearch from "@/components/shared/FamilySearch";
@@ -123,6 +122,7 @@ const FamiliesPage = () => {
 
   const handleClearSearch = useCallback(() => {
     setSearchFilters({ search: "" });
+    setNeedsMembersOnly(false);
     setCurrentPage(1);
   }, []);
 
@@ -272,15 +272,13 @@ const FamiliesPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">Families</h1>
           <p className="text-muted-foreground">
-            Manage family registrations and information ({totalFamilies} total
+            {totalFamilies} families
             {needsMembersCount > 0
               ? ` · ${needsMembersCount} need members`
               : ""}
-            )
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewFamilyModalOpen(true)}
@@ -294,21 +292,23 @@ const FamiliesPage = () => {
         onSearch={handleSearch}
         onClear={handleClearSearch}
         isLoading={isLoading}
+        extraFiltersActive={needsMembersOnly}
+        extraFilters={
+          <div className="flex items-center gap-3">
+            <Switch
+              id="needs-members-only"
+              checked={needsMembersOnly}
+              onCheckedChange={(checked) => {
+                setNeedsMembersOnly(checked);
+                setCurrentPage(1);
+              }}
+            />
+            <Label htmlFor="needs-members-only" className="cursor-pointer">
+              Needs members only
+            </Label>
+          </div>
+        }
       />
-
-      <div className="flex items-center gap-3">
-        <Switch
-          id="needs-members-only"
-          checked={needsMembersOnly}
-          onCheckedChange={(checked) => {
-            setNeedsMembersOnly(checked);
-            setCurrentPage(1);
-          }}
-        />
-        <Label htmlFor="needs-members-only" className="cursor-pointer">
-          Needs members only
-        </Label>
-      </div>
 
       <Card className="shadow-brand">
         <CardHeader>
@@ -339,10 +339,7 @@ const FamiliesPage = () => {
               </p>
               {searchFilters.search || needsMembersOnly ? (
                 <Button
-                  onClick={() => {
-                    handleClearSearch();
-                    setNeedsMembersOnly(false);
-                  }}
+                  onClick={handleClearSearch}
                   variant="outline"
                   className="border-primary hover:bg-primary hover:text-primary-foreground"
                 >

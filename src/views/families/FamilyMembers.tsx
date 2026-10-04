@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select } from "@/components/ui/select";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import MemberSearch from "@/components/shared/MemberSearch";
@@ -19,11 +18,17 @@ import {
   useDeleteMember,
   useGetMembers,
   useGetFamily,
+  useGetStatuses,
 } from "@/hooks/useGraphQL";
-import { getMemberCompleteness } from "@/lib/memberCompleteness";
-import { useState, useCallback, useEffect } from "react";
+import {
+  ACTIVE_STATUS_NAME,
+  getMemberCompleteness,
+} from "@/lib/memberCompleteness";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type { MemberFilterInput } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/redux/useAuth";
 
@@ -37,6 +42,7 @@ const FamilyMembers = () => {
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
   const [isUpdateMemberModalOpen, setIsUpdateMemberModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [includeNonActive, setIncludeNonActive] = useState(false);
   const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
   const [memberToDelete, setMemberToDelete] = useState<{
     id: number;
@@ -51,21 +57,27 @@ const FamilyMembers = () => {
       ? parseInt(familyId)
       : 0;
 
+  const { data: statusesData } = useGetStatuses();
+  const activeStatusId = useMemo(
+    () =>
+      statusesData?.statuses?.find((s) => s.name === ACTIVE_STATUS_NAME)?.id,
+    [statusesData],
+  );
+
   // Fetch family data
   const { data: familyData, loading: familyLoading } = useGetFamily(
     effectiveFamilyId || 0,
   );
 
-  // console.log({ familyData });
-
-  // Initialize filters with family filter
+  // Initialize filters with family + Active (unless include non-active)
   useEffect(() => {
-    if (effectiveFamilyId) {
-      setSearchFilters({
-        family_id: effectiveFamilyId,
-      });
-    }
-  }, [effectiveFamilyId]);
+    if (!effectiveFamilyId) return;
+    setSearchFilters({
+      family_id: effectiveFamilyId,
+      status_id:
+        !includeNonActive && activeStatusId ? activeStatusId : undefined,
+    });
+  }, [effectiveFamilyId, activeStatusId, includeNonActive]);
 
   // Fetch members with pagination and filters
   const { data, loading, error, refetch } = useGetMembers(searchFilters, {
@@ -132,18 +144,33 @@ const FamilyMembers = () => {
       setSearchFilters({
         ...filters,
         family_id: effectiveFamilyId || undefined,
+        status_id: includeNonActive
+          ? filters.status_id
+          : activeStatusId || filters.status_id,
       });
-      setCurrentPage(1); // Reset to first page when searching
+      setCurrentPage(1);
     },
-    [effectiveFamilyId],
+    [effectiveFamilyId, includeNonActive, activeStatusId],
   );
 
   const handleClearSearch = useCallback(() => {
+    setIncludeNonActive(false);
     setSearchFilters({
       family_id: effectiveFamilyId || undefined,
+      status_id: activeStatusId,
     });
     setCurrentPage(1);
-  }, [effectiveFamilyId]);
+  }, [effectiveFamilyId, activeStatusId]);
+
+  const applyIncludeNonActive = (checked: boolean) => {
+    setIncludeNonActive(checked);
+    setSearchFilters((prev) => ({
+      ...prev,
+      family_id: effectiveFamilyId || undefined,
+      status_id: checked ? undefined : activeStatusId,
+    }));
+    setCurrentPage(1);
+  };
 
   // const handleDeleteMember = (member: { id: number; full_name: string }) => {
   //   setMemberToDelete({ id: member.id, name: member.full_name });
@@ -243,14 +270,10 @@ const FamilyMembers = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              {family.name} Family Members
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
+              {family.name}
             </h1>
-            <p className="text-muted-foreground">
-              Members of the {family.name} family
-            </p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -279,18 +302,12 @@ const FamilyMembers = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            {isFamilyLeaderView
-              ? `${family.name} Family Members`
-              : `${family.name} Family Members`}
+      <div className="flex justify-between items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
+            {family.name}
           </h1>
-          <p className="text-muted-foreground">
-            {isFamilyLeaderView
-              ? `Members of your family (${total} total)`
-              : `Members of the ${family.name} family (${total} total)`}
-          </p>
+          <p className="text-muted-foreground">{total} members</p>
           <div className="mt-2">
             <Button
               variant="outline"
@@ -303,7 +320,6 @@ const FamilyMembers = () => {
           </div>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMemberModalOpen(true)}
@@ -317,6 +333,21 @@ const FamilyMembers = () => {
         onSearch={handleSearch}
         onClear={handleClearSearch}
         isLoading={loading}
+        hideFamilyFilter
+        extraFiltersActive={includeNonActive}
+        extraFiltersLabel="Include non-active"
+        extraFilters={
+          <div className="flex items-center gap-3">
+            <Switch
+              id="include-non-active"
+              checked={includeNonActive}
+              onCheckedChange={applyIncludeNonActive}
+            />
+            <Label htmlFor="include-non-active" className="cursor-pointer">
+              Include non-active
+            </Label>
+          </div>
+        }
       />
 
       <Card className="shadow-brand">

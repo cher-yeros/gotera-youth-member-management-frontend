@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   Users,
   Briefcase,
@@ -67,11 +66,8 @@ const OverviewPage = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Gotera Youth Overview
             </h1>
-            <p className="text-muted-foreground">
-              Manage families, professions, members, and locations
-            </p>
+            <p className="text-muted-foreground">Overview</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -96,11 +92,12 @@ const OverviewPage = () => {
             Gotera Youth Overview
           </h1>
           <p className="text-muted-foreground">
-            Manage families, professions, members, and locations
+            {stats
+              ? `${stats.totalMembers || 0} members · ${stats.totalFamilies || 0} families · ${stats.totalProfessions || 0} professions · ${stats.totalLocations || 0} locations`
+              : "Overview"}
           </p>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => handleNavigateTo("/members")}

@@ -430,6 +430,8 @@ export const OVERVIEW_STATS_FRAGMENT = gql`
     ministryUnallocatedMembers
     incompleteFamiliesCount
     fullyIncompleteFamiliesCount
+    unassignedMembers
+    openNewcomers
   }
 `;
 

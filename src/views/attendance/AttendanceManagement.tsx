@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { GET_FAMILY_MEETUPS } from "@/graphql/operations";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
@@ -188,11 +187,8 @@ const AttendanceManagement: React.FC = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Attendance Management
             </h1>
-            <p className="text-muted-foreground">
-              Manage family meetups and track member attendance
-            </p>
+            <p className="text-muted-foreground">Family meetups</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -221,15 +217,11 @@ const AttendanceManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             Attendance Management
           </h1>
-          <p className="text-muted-foreground">
-            Manage family meetups and track member attendance ({meetups.length}{" "}
-            total)
-          </p>
+          <p className="text-muted-foreground">{meetups.length} meetups</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
-          {canCreateMeetup && <CreateFamilyMeetupModal familyId={familyId} />}
-        </div>
+        {canCreateMeetup && (
+          <CreateFamilyMeetupModal familyId={familyId} />
+        )}
       </div>
 
       {/* Search */}

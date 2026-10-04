@@ -5,6 +5,7 @@ import {
   Archive,
   ArrowLeft,
   Eye,
+  Filter,
   Megaphone,
   Plus,
   Send,
@@ -15,7 +16,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   ARCHIVE_ANNOUNCEMENT,
   CREATE_ANNOUNCEMENT,
@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 type StatusFilter = "all" | "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 const ManageAnnouncements: React.FC = () => {
+  const [showFilters, setShowFilters] = useState(false);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search, setSearch] = useState("");
@@ -165,7 +166,7 @@ const ManageAnnouncements: React.FC = () => {
             Manage Announcements
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Publish to role groups or everyone, and track who has seen them
+            {payload?.total ?? items.length} announcements
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -173,7 +174,6 @@ const ManageAnnouncements: React.FC = () => {
             <Plus className="h-4 w-4 mr-2" />
             {showCreate ? "Close form" : "New announcement"}
           </Button>
-          <ThemeToggle />
         </div>
       </div>
 
@@ -251,33 +251,56 @@ const ManageAnnouncements: React.FC = () => {
         </Card>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Input
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          placeholder="Search announcements..."
-          className="sm:max-w-xs"
-        />
-        <div className="flex flex-wrap gap-2">
-          {(["all", "PUBLISHED", "DRAFT", "ARCHIVED"] as StatusFilter[]).map(
-            (key) => (
-              <Button
-                key={key}
-                size="sm"
-                variant={statusFilter === key ? "default" : "outline"}
-                onClick={() => {
-                  setStatusFilter(key);
-                  setPage(1);
-                }}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Input
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Search announcements..."
+            className="sm:max-w-xs"
+          />
+          <Button
+            type="button"
+            variant={showFilters ? "default" : "outline"}
+            size="icon"
+            onClick={() => setShowFilters((prev) => !prev)}
+            aria-label={showFilters ? "Hide filters" : "Show filters"}
+            aria-expanded={showFilters}
+            className="relative shrink-0"
+          >
+            <Filter className="h-4 w-4" />
+            {statusFilter !== "all" && (
+              <Badge
+                variant="destructive"
+                className="absolute -right-1.5 -top-1.5 h-5 min-w-5 rounded-full px-1"
               >
-                {key === "all" ? "All" : ANNOUNCEMENT_STATUS_LABELS[key]}
-              </Button>
-            ),
-          )}
+                1
+              </Badge>
+            )}
+          </Button>
         </div>
+        {showFilters && (
+          <div className="flex flex-wrap gap-2">
+            {(["all", "PUBLISHED", "DRAFT", "ARCHIVED"] as StatusFilter[]).map(
+              (key) => (
+                <Button
+                  key={key}
+                  size="sm"
+                  variant={statusFilter === key ? "default" : "outline"}
+                  onClick={() => {
+                    setStatusFilter(key);
+                    setPage(1);
+                  }}
+                >
+                  {key === "all" ? "All" : ANNOUNCEMENT_STATUS_LABELS[key]}
+                </Button>
+              ),
+            )}
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">

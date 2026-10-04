@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import type { Member } from "@/generated/graphql";
 import type { Ministry } from "@/types/graphql";
 import {
@@ -109,11 +108,8 @@ const Dashboard = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Gotera Youth Dashboard
             </h1>
-            <p className="text-muted-foreground">
-              Welcome to Gotera Youth Member Management System
-            </p>
+            <p className="text-muted-foreground">Overview</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
 
         {/* Statistics Cards Skeleton */}
@@ -175,11 +171,12 @@ const Dashboard = () => {
           </h1>
           <p className="text-muted-foreground">
             {isFamilyCoordinator
-              ? "Family and member issues at a glance"
-              : "Welcome to Gotera Youth Member Management System"}
+              ? "Family coordinator view"
+              : stats
+                ? `${stats.totalMembers || 0} members · ${stats.totalFamilies || 0} families`
+                : "Overview"}
           </p>
         </div>
-        <ThemeToggle variant="icon" />
       </div>
 
       {/* Statistics Cards */}
@@ -202,25 +199,33 @@ const Dashboard = () => {
         </Card>
 
         {isFamilyCoordinator ? (
-          <Card className="hover-brand-glow transition-all duration-300">
+          <Card
+            className={`hover-brand-glow transition-all duration-300 ${
+              (stats?.unassignedMembers || 0) > 0
+                ? "border-2 border-amber-500/40"
+                : ""
+            }`}
+          >
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">
-                  New Members
+                  Unassigned members
                 </CardTitle>
-                <TrendingUp className="h-4 w-4 text-primary" />
+                <UserCheck className="h-4 w-4 text-amber-600" />
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold">{stats?.newMembers || 0}</div>
+              <div className="text-2xl font-bold">
+                {stats?.unassignedMembers || 0}
+              </div>
               <p className="text-xs text-muted-foreground">
-                Added in last 30 days
+                Members with no family
               </p>
               <Link
-                to="/members"
+                to="/members?unassigned=1"
                 className="text-xs text-primary hover:underline"
               >
-                View members
+                View unassigned
               </Link>
             </CardContent>
           </Card>
@@ -282,26 +287,32 @@ const Dashboard = () => {
         {isFamilyCoordinator ? (
           <Card
             className={`hover-brand-glow transition-all duration-300 ${
-              (stats?.locationUnallocatedMembers || 0) > 0
-                ? "border-2 border-yellow-500/40"
+              (stats?.openNewcomers || 0) > 0
+                ? "border-2 border-amber-500/40"
                 : ""
             }`}
           >
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">
-                  Needs Location
+                  Open newcomers
                 </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <PhoneCall className="h-4 w-4 text-amber-600" />
               </div>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="text-2xl font-bold">
-                {stats?.locationUnallocatedMembers || 0}
+                {stats?.openNewcomers || 0}
               </div>
               <p className="text-xs text-muted-foreground">
-                Members without location
+                Awaiting family placement
               </p>
+              <Link
+                to="/newcomers"
+                className="text-xs text-primary hover:underline"
+              >
+                View newcomers
+              </Link>
             </CardContent>
           </Card>
         ) : (

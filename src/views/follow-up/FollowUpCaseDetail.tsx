@@ -5,7 +5,6 @@ import { ArrowLeft, Phone } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { AssignFollowUpModal } from "@/components/forms/AssignFollowUpModal";
 import { LogFollowUpContactModal } from "@/components/forms/LogFollowUpContactModal";
 import {
@@ -35,7 +34,7 @@ const FollowUpCaseDetail: React.FC = () => {
   // Only Follow Up Coordinators (Admin/Main/FUC) may assign or reassign cases
   const canAssignFollowUp = canCoordinate;
   // Promote to Family is admin/main only — not FUL or FUC
-  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
   const myMemberId = user?.member?.id;
 
   const [assignOpen, setAssignOpen] = useState(false);
@@ -96,7 +95,7 @@ const FollowUpCaseDetail: React.FC = () => {
               photoUrl={item.member?.photo_url}
               className="size-12"
             />
-            <h1 className="text-3xl font-bold text-brand-gradient">
+            <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate max-w-full">
               {item.member?.full_name}
             </h1>
             <Badge className={cn(followUpStatusBadgeClass(item.status))}>
@@ -128,7 +127,6 @@ const FollowUpCaseDetail: React.FC = () => {
             </span>
           </p>
         </div>
-        <ThemeToggle variant="icon" />
       </div>
 
       <div className="flex flex-wrap gap-2">

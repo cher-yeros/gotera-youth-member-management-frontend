@@ -85,9 +85,7 @@ const SettingsPage = () => {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold text-brand-gradient">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your account security and appearance preferences
-        </p>
+        <p className="text-muted-foreground">Account & appearance</p>
       </div>
 
       <Card>

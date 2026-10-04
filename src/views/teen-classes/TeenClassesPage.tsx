@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenClassModalForm from "@/components/forms/NewTeenClassModalForm";
 import {
@@ -41,11 +40,10 @@ const TeenClassesPage = () => {
         <div>
           <h1 className="text-2xl font-bold">Teen Classes</h1>
           <p className="text-muted-foreground text-sm">
-            Manage teenager classes and teachers
+            {classes.length} classes
           </p>
         </div>
         <div className="flex gap-2">
-          <ThemeToggle />
           <Button onClick={() => setIsCreateOpen(true)}>New Class</Button>
         </div>
       </div>

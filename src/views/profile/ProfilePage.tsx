@@ -106,9 +106,7 @@ const ProfilePage = () => {
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">Profile</h1>
-          <p className="text-muted-foreground">
-            Manage your personal information
-          </p>
+          <p className="text-muted-foreground">Your account</p>
         </div>
         <Card>
           <CardContent className="py-12 text-center">
@@ -147,9 +145,7 @@ const ProfilePage = () => {
     <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="text-3xl font-bold text-brand-gradient">Profile</h1>
-        <p className="text-muted-foreground">
-          View your membership details and update your contact information
-        </p>
+        <p className="text-muted-foreground">Your account</p>
       </div>
 
       <Card>

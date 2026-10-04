@@ -5,7 +5,6 @@ import { Bell, CheckCircle2, Megaphone, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { GET_MY_ANNOUNCEMENTS } from "@/graphql/operations";
 import {
   formatAnnouncementDate,
@@ -28,6 +27,7 @@ const AnnouncementsFeed: React.FC = () => {
   const payload = (data as any)?.myAnnouncements;
   const items = payload?.items || [];
   const totalPages = payload?.totalPages || 0;
+  const total = payload?.total ?? items.length;
   const unreadCount = items.filter((a: any) => !a.seenByMe).length;
 
   return (
@@ -39,8 +39,8 @@ const AnnouncementsFeed: React.FC = () => {
             Announcements
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Messages from main leaders for your role
-            {unreadCount > 0 ? ` · ${unreadCount} unseen on this page` : ""}
+            {total} announcements
+            {unreadCount > 0 ? ` · ${unreadCount} unseen` : ""}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -52,7 +52,6 @@ const AnnouncementsFeed: React.FC = () => {
               </Link>
             </Button>
           )}
-          <ThemeToggle />
         </div>
       </div>
 

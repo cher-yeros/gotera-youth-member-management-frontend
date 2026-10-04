@@ -7,7 +7,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import MemberViewModal from "@/components/forms/MemberViewModal";
@@ -29,26 +28,40 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeleteMember, useGetMembers } from "@/hooks/useGraphQL";
 import { getMemberCompleteness } from "@/lib/memberCompleteness";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { MemberFilterInput, GetMembersQuery } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { toast } from "react-toastify";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
+import { useSearchParams } from "react-router-dom";
 
 type MemberListItem = GetMembersQuery["members"]["members"][number];
 
 const Members = () => {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const canResetPassword = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
+  const canFilterUnassigned = hasAnyRole(user, [
+    ROLE.ADMIN,
+    ROLE.MAIN,
+    ROLE.FC,
+  ]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
   const [isUpdateMemberModalOpen, setIsUpdateMemberModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [viewMember, setViewMember] = useState<MemberListItem | null>(null);
-  const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
+  const [unassignedOnly, setUnassignedOnly] = useState(
+    () => searchParams.get("unassigned") === "1",
+  );
+  const [searchFilters, setSearchFilters] = useState<MemberFilterInput>(() =>
+    searchParams.get("unassigned") === "1" ? { unassigned: true } : {},
+  );
   const [memberToDelete, setMemberToDelete] = useState<{
     id: number;
     name: string;
@@ -147,15 +160,68 @@ const Members = () => {
     (member) => getMemberCompleteness(member).isIncomplete,
   ).length;
 
-  const handleSearch = useCallback((filters: MemberFilterInput) => {
-    setSearchFilters(filters);
-    setCurrentPage(1); // Reset to first page when searching
-  }, []);
+  useEffect(() => {
+    const fromUrl = searchParams.get("unassigned") === "1";
+    if (fromUrl !== unassignedOnly && canFilterUnassigned) {
+      setUnassignedOnly(fromUrl);
+      setSearchFilters((prev) => ({
+        ...prev,
+        unassigned: fromUrl || undefined,
+        family_id: fromUrl ? undefined : prev.family_id,
+      }));
+      setCurrentPage(1);
+    }
+    // Only sync when the URL changes, not when local toggle flips (handled below)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, canFilterUnassigned]);
+
+  const applyUnassignedOnly = useCallback(
+    (checked: boolean) => {
+      setUnassignedOnly(checked);
+      setSearchFilters((prev) => ({
+        ...prev,
+        unassigned: checked || undefined,
+        family_id: checked ? undefined : prev.family_id,
+      }));
+      setCurrentPage(1);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (checked) next.set("unassigned", "1");
+          else next.delete("unassigned");
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const handleSearch = useCallback(
+    (filters: MemberFilterInput) => {
+      setSearchFilters({
+        ...filters,
+        unassigned: unassignedOnly || undefined,
+        family_id: unassignedOnly ? undefined : filters.family_id,
+      });
+      setCurrentPage(1);
+    },
+    [unassignedOnly],
+  );
 
   const handleClearSearch = useCallback(() => {
+    setUnassignedOnly(false);
     setSearchFilters({});
     setCurrentPage(1);
-  }, []);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("unassigned");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setSearchParams]);
 
   // const handleDeleteMember = (member: { id: number; full_name: string }) => {
   //   setMemberToDelete({ id: member.id, name: member.full_name });
@@ -411,11 +477,7 @@ const Members = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">Members</h1>
-            <p className="text-muted-foreground">
-              Manage youth members and their information
-            </p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -447,12 +509,9 @@ const Members = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-brand-gradient">Members</h1>
-          <p className="text-muted-foreground">
-            Manage youth members and their information ({total} total)
-          </p>
+          <p className="text-muted-foreground">{total} members</p>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button
             variant="outline"
             className="border-primary hover:bg-primary hover:text-primary-foreground"
@@ -475,6 +534,23 @@ const Members = () => {
         onSearch={handleSearch}
         onClear={handleClearSearch}
         isLoading={loading}
+        hideFamilyFilter={unassignedOnly}
+        extraFiltersActive={unassignedOnly}
+        extraFiltersLabel="Unassigned only"
+        extraFilters={
+          canFilterUnassigned ? (
+            <div className="flex items-center gap-3">
+              <Switch
+                id="unassigned-only"
+                checked={unassignedOnly}
+                onCheckedChange={applyUnassignedOnly}
+              />
+              <Label htmlFor="unassigned-only" className="cursor-pointer">
+                Unassigned only
+              </Label>
+            </div>
+          ) : undefined
+        }
       />
 
       <Card className="shadow-brand">

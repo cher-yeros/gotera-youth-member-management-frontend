@@ -5,7 +5,6 @@ import { ArrowLeft, CheckCircle2, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { GET_ANNOUNCEMENT, MARK_ANNOUNCEMENT_SEEN } from "@/graphql/operations";
 import {
   formatAnnouncementDate,
@@ -68,9 +67,7 @@ const AnnouncementDetail: React.FC = () => {
             <Button variant="secondary" asChild>
               <Link to="/announcements/manage">Manage</Link>
             </Button>
-          )}
-          <ThemeToggle />
-        </div>
+          )}        </div>
       </div>
 
       <Card>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_ACTIVITIES } from "@/graphql/operations";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -29,6 +29,7 @@ type ActivityLogsProps = Record<string, never>;
 const ActivityLogs: React.FC<ActivityLogsProps> = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
+  const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     action: "all",
     entity_type: "all",
@@ -100,9 +101,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             <h1 className="text-3xl font-bold text-foreground">
               Activity Logs
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Track all user activities in the system
-            </p>
+            <p className="text-muted-foreground mt-2">Activity history</p>
           </div>
         </div>
 
@@ -131,9 +130,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
             <h1 className="text-3xl font-bold text-foreground">
               Activity Logs
             </h1>
-            <p className="text-muted-foreground mt-2">
-              Track all user activities in the system
-            </p>
+            <p className="text-muted-foreground mt-2">Activity history</p>
           </div>
         </div>
 
@@ -161,7 +158,7 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
         <div>
           <h1 className="text-3xl font-bold text-foreground">Activity Logs</h1>
           <p className="text-muted-foreground mt-2">
-            Track all user activities in the system
+            {total > 0 ? `${total} activities` : "Activity history"}
           </p>
         </div>
         <Button onClick={handleRefresh} variant="outline">
@@ -171,85 +168,104 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Filter className="h-5 w-5 mr-2" />
-            Filters
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Action Type
-              </label>
-              <Select
-                value={filters.action}
-                onValueChange={(value) => handleFilterChange("action", value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All actions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All actions</SelectItem>
-                  <SelectItem value="CREATE_MEMBER">Create Member</SelectItem>
-                  <SelectItem value="UPDATE_MEMBER">Update Member</SelectItem>
-                  <SelectItem value="DELETE_MEMBER">Delete Member</SelectItem>
-                  <SelectItem value="CREATE_FAMILY">Create Family</SelectItem>
-                  <SelectItem value="UPDATE_FAMILY">Update Family</SelectItem>
-                  <SelectItem value="DELETE_FAMILY">Delete Family</SelectItem>
-                  <SelectItem value="LOGIN">Login</SelectItem>
-                  <SelectItem value="LOGOUT">Logout</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="flex items-center gap-2">
+        <Button
+          type="button"
+          variant={showFilters ? "default" : "outline"}
+          onClick={() => setShowFilters((prev) => !prev)}
+          aria-label={showFilters ? "Hide filters" : "Show filters"}
+          aria-expanded={showFilters}
+          className="relative"
+        >
+          <Filter className="h-4 w-4 mr-2" />
+          Filters
+          {(filters.action !== "all" || filters.entity_type !== "all") && (
+            <Badge
+              variant="destructive"
+              className="ml-2 h-5 min-w-5 rounded-full px-1"
+            >
+              {(filters.action !== "all" ? 1 : 0) +
+                (filters.entity_type !== "all" ? 1 : 0)}
+            </Badge>
+          )}
+        </Button>
+      </div>
 
-            <div>
-              <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                Entity Type
-              </label>
-              <Select
-                value={filters.entity_type}
-                onValueChange={(value) =>
-                  handleFilterChange("entity_type", value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="All entities" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All entities</SelectItem>
-                  <SelectItem value="MEMBER">Member</SelectItem>
-                  <SelectItem value="FAMILY">Family</SelectItem>
-                  <SelectItem value="PROFESSION">Profession</SelectItem>
-                  <SelectItem value="LOCATION">Location</SelectItem>
-                  <SelectItem value="USER">User</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {showFilters && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Action Type
+                </label>
+                <Select
+                  value={filters.action}
+                  onValueChange={(value) => handleFilterChange("action", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All actions" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All actions</SelectItem>
+                    <SelectItem value="CREATE_MEMBER">Create Member</SelectItem>
+                    <SelectItem value="UPDATE_MEMBER">Update Member</SelectItem>
+                    <SelectItem value="DELETE_MEMBER">Delete Member</SelectItem>
+                    <SelectItem value="CREATE_FAMILY">Create Family</SelectItem>
+                    <SelectItem value="UPDATE_FAMILY">Update Family</SelectItem>
+                    <SelectItem value="DELETE_FAMILY">Delete Family</SelectItem>
+                    <SelectItem value="LOGIN">Login</SelectItem>
+                    <SelectItem value="LOGOUT">Logout</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div>
-              <label className="text-sm font-medium text-foreground mb-2 block">
-                Page Size
-              </label>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => setPageSize(parseInt(value))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10">10 per page</SelectItem>
-                  <SelectItem value="20">20 per page</SelectItem>
-                  <SelectItem value="50">50 per page</SelectItem>
-                </SelectContent>
-              </Select>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Entity Type
+                </label>
+                <Select
+                  value={filters.entity_type}
+                  onValueChange={(value) =>
+                    handleFilterChange("entity_type", value)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="All entities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All entities</SelectItem>
+                    <SelectItem value="MEMBER">Member</SelectItem>
+                    <SelectItem value="FAMILY">Family</SelectItem>
+                    <SelectItem value="PROFESSION">Profession</SelectItem>
+                    <SelectItem value="LOCATION">Location</SelectItem>
+                    <SelectItem value="USER">User</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Page Size
+                </label>
+                <Select
+                  value={pageSize.toString()}
+                  onValueChange={(value) => setPageSize(parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10">10 per page</SelectItem>
+                    <SelectItem value="20">20 per page</SelectItem>
+                    <SelectItem value="50">50 per page</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

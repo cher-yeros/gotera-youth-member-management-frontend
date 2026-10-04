@@ -3,7 +3,6 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenagerModalForm from "@/components/forms/NewTeenagerModalForm";
 import AssignClassTeacherModal from "@/components/forms/AssignClassTeacherModal";
@@ -89,17 +88,15 @@ const TeenClassDetail = () => {
               ← Back
             </Button>
           )}
-          <h1 className="text-2xl font-bold">
-            {teenClass?.name || "Class"} Roster
+          <h1 className="text-2xl sm:text-3xl font-bold truncate">
+            {teenClass?.name || "Class"}
           </h1>
           <p className="text-sm text-muted-foreground">
             {teens.length} teenagers
             {incompleteCount > 0 ? ` · ${incompleteCount} incomplete` : ""}
           </p>
         </div>
-        <div className="flex gap-2">
-          <ThemeToggle />
-          <Button onClick={() => setIsCreateOpen(true)}>Add Teenager</Button>
+        <div className="flex gap-2">          <Button onClick={() => setIsCreateOpen(true)}>Add Teenager</Button>
           {isAdmin && (
             <Button variant="outline" onClick={() => setAssignOpen(true)}>
               Assign Teacher

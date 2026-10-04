@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   useGetClassSessions,
   useGetMyTeenClasses,
@@ -515,13 +514,8 @@ const TeenAttendanceManagement: React.FC = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Attendance Management
             </h1>
-            <p className="text-muted-foreground">
-              {isAdmin
-                ? "Review attendance recorded by teen class teachers"
-                : "Manage class sessions and track teenager attendance"}
-            </p>
+            <p className="text-muted-foreground">Class sessions</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -551,14 +545,7 @@ const TeenAttendanceManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             Attendance Management
           </h1>
-          <p className="text-muted-foreground">
-            {isAdmin
-              ? `Review attendance recorded by teachers (${sessions.length} sessions)`
-              : `Manage class sessions and track teenager attendance (${sessions.length} total)`}
-          </p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
+          <p className="text-muted-foreground">{sessions.length} sessions</p>
         </div>
       </div>
 

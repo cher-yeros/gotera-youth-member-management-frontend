@@ -55,6 +55,7 @@ const adminNavigation: NavEntry[] = [
     icon: Users,
     children: [
       { name: "All Members", href: "/members", icon: Users },
+      { name: "Newcomers", href: "/newcomers", icon: UserCheck },
       { name: "Follow-up", href: "/follow-up", icon: PhoneCall },
     ],
   },
@@ -97,7 +98,10 @@ const fcNavigation: NavEntry[] = [
   {
     name: "Members",
     icon: Users,
-    children: [{ name: "All Members", href: "/members", icon: Users }],
+    children: [
+      { name: "All Members", href: "/members", icon: Users },
+      { name: "Newcomers", href: "/newcomers", icon: UserCheck },
+    ],
   },
   {
     name: "Families",

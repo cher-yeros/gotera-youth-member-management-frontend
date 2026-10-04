@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import { useGetFamilyMembers, useGetFamilyStats } from "@/hooks/useGraphQL";
 import { getMemberCompleteness } from "@/lib/memberCompleteness";
 import { useAuth } from "@/redux/useAuth";
@@ -158,11 +157,8 @@ const FamilyLeaderDashboard = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Family Dashboard
             </h1>
-            <p className="text-muted-foreground">
-              Welcome to your family management dashboard
-            </p>
+            <p className="text-muted-foreground">Family dashboard</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
 
         {/* Statistics Cards Skeleton */}
@@ -214,11 +210,8 @@ const FamilyLeaderDashboard = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Family Dashboard
             </h1>
-            <p className="text-muted-foreground">
-              Welcome to your family management dashboard
-            </p>
+            <p className="text-muted-foreground">Family dashboard</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
 
         <Card className="shadow-brand">
@@ -245,11 +238,8 @@ const FamilyLeaderDashboard = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             {family.name} Dashboard
           </h1>
-          <p className="text-muted-foreground">
-            Welcome to your family management dashboard
-          </p>
+          <p className="text-muted-foreground">{totalMembers} members</p>
         </div>
-        <ThemeToggle variant="icon" />
       </div>
 
       {/* Data completeness alert */}

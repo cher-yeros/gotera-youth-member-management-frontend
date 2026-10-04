@@ -552,6 +552,8 @@ export type FollowUpCaseChangePayload = {
 
 export type FollowUpCaseFilterInput = {
   assignedTo?: InputMaybe<Scalars['Int']['input']>;
+  /** When true, only cases with no suggested family_id. */
+  noFamilySuggested?: InputMaybe<Scalars['Boolean']['input']>;
   openOnly?: InputMaybe<Scalars['Boolean']['input']>;
   overdue?: InputMaybe<Scalars['Boolean']['input']>;
   priority?: InputMaybe<Scalars['String']['input']>;
@@ -731,6 +733,8 @@ export type MemberFilterInput = {
   role_name?: InputMaybe<Scalars['String']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   status_id?: InputMaybe<Scalars['Int']['input']>;
+  /** When true, only members with no family_id. */
+  unassigned?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type MemberInfo = {
@@ -1242,12 +1246,16 @@ export type OverviewStats = {
   movedOutMembers: Scalars['Int']['output'];
   newMembers: Scalars['Int']['output'];
   notActiveMembers: Scalars['Int']['output'];
+  /** Open follow-up newcomers not yet graduated into a family. */
+  openNewcomers: Scalars['Int']['output'];
   professionAllocatedMembers: Scalars['Int']['output'];
   professionUnallocatedMembers: Scalars['Int']['output'];
   totalFamilies: Scalars['Int']['output'];
   totalLocations: Scalars['Int']['output'];
   totalMembers: Scalars['Int']['output'];
   totalProfessions: Scalars['Int']['output'];
+  /** Members with no family assignment (excludes Moved out). */
+  unassignedMembers: Scalars['Int']['output'];
 };
 
 export type PaginatedActivities = {
@@ -2169,7 +2177,7 @@ export type ProfessionFragmentFragment = { __typename?: 'Profession', id: number
 
 export type LocationFragmentFragment = { __typename?: 'Location', id: number, name: string, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null }> };
 
-export type OverviewStatsFragmentFragment = { __typename?: 'OverviewStats', totalMembers: number, totalFamilies: number, totalProfessions: number, totalLocations: number, activeMembers: number, inactiveMembers: number, notActiveMembers: number, movedOutMembers: number, newMembers: number, locationAllocatedMembers: number, locationUnallocatedMembers: number, professionAllocatedMembers: number, professionUnallocatedMembers: number, ministryAllocatedMembers: number, ministryUnallocatedMembers: number, incompleteFamiliesCount: number, fullyIncompleteFamiliesCount: number };
+export type OverviewStatsFragmentFragment = { __typename?: 'OverviewStats', totalMembers: number, totalFamilies: number, totalProfessions: number, totalLocations: number, activeMembers: number, inactiveMembers: number, notActiveMembers: number, movedOutMembers: number, newMembers: number, locationAllocatedMembers: number, locationUnallocatedMembers: number, professionAllocatedMembers: number, professionUnallocatedMembers: number, ministryAllocatedMembers: number, ministryUnallocatedMembers: number, incompleteFamiliesCount: number, fullyIncompleteFamiliesCount: number, unassignedMembers: number, openNewcomers: number };
 
 export type RecentMemberFragmentFragment = { __typename?: 'RecentMember', id: number, full_name: string, createdAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null };
 
@@ -2274,7 +2282,7 @@ export type GetLocationsQuery = { __typename?: 'Query', locations: Array<{ __typ
 export type GetOverviewStatsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetOverviewStatsQuery = { __typename?: 'Query', overviewStats: { __typename?: 'OverviewStats', totalMembers: number, totalFamilies: number, totalProfessions: number, totalLocations: number, activeMembers: number, inactiveMembers: number, notActiveMembers: number, movedOutMembers: number, newMembers: number, locationAllocatedMembers: number, locationUnallocatedMembers: number, professionAllocatedMembers: number, professionUnallocatedMembers: number, ministryAllocatedMembers: number, ministryUnallocatedMembers: number, incompleteFamiliesCount: number, fullyIncompleteFamiliesCount: number } };
+export type GetOverviewStatsQuery = { __typename?: 'Query', overviewStats: { __typename?: 'OverviewStats', totalMembers: number, totalFamilies: number, totalProfessions: number, totalLocations: number, activeMembers: number, inactiveMembers: number, notActiveMembers: number, movedOutMembers: number, newMembers: number, locationAllocatedMembers: number, locationUnallocatedMembers: number, professionAllocatedMembers: number, professionUnallocatedMembers: number, ministryAllocatedMembers: number, ministryUnallocatedMembers: number, incompleteFamiliesCount: number, fullyIncompleteFamiliesCount: number, unassignedMembers: number, openNewcomers: number } };
 
 export type GetRecentMembersQueryVariables = Exact<{
   limit?: InputMaybe<Scalars['Int']['input']>;

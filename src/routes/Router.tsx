@@ -45,6 +45,7 @@ const FollowUpManagement = lazy(
 const FollowUpCaseDetail = lazy(
   () => import("../views/follow-up/FollowUpCaseDetail"),
 );
+const NewcomersPage = lazy(() => import("../views/newcomers/NewcomersPage"));
 const AnnouncementsFeed = lazy(
   () => import("../views/announcements/AnnouncementsFeed"),
 );
@@ -225,6 +226,14 @@ const Router = [
         element: (
           <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
             <FamilyMeetupsManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/newcomers",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN", "FC"]}>
+            <NewcomersPage />
           </ProtectedRoute>
         ),
       },

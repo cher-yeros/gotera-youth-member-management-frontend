@@ -39,9 +39,7 @@ const FamilyMemberMapping = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Family Member Mapping
             </h1>
-            <p className="text-muted-foreground">
-              View all families and their corresponding members
-            </p>
+            <p className="text-muted-foreground">Family mapping</p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,9 +71,7 @@ const FamilyMemberMapping = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Family Member Mapping
             </h1>
-            <p className="text-muted-foreground">
-              View all families and their corresponding members
-            </p>
+            <p className="text-muted-foreground">Family mapping</p>
           </div>
         </div>
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -96,9 +92,7 @@ const FamilyMemberMapping = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             Family Member Mapping
           </h1>
-          <p className="text-muted-foreground">
-            View all families and their corresponding members
-          </p>
+          <p className="text-muted-foreground">{families.length} families</p>
         </div>
       </div>
 

@@ -2,7 +2,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import SetMinistryProgramModal from "@/components/forms/SetMinistryProgramModal";
 import { useGetMinistry, useGetMinistryMembers } from "@/hooks/useGraphQL";
 import { formatMinistryProgram } from "@/lib/ministryProgram";
@@ -109,11 +108,8 @@ const MinistryLeaderDashboard = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Ministry Dashboard
             </h1>
-            <p className="text-muted-foreground">
-              Welcome to your ministry management dashboard
-            </p>
+            <p className="text-muted-foreground">Ministry dashboard</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
 
         {/* Statistics Cards Skeleton */}
@@ -155,11 +151,8 @@ const MinistryLeaderDashboard = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Ministry Dashboard
             </h1>
-            <p className="text-muted-foreground">
-              Welcome to your ministry management dashboard
-            </p>
+            <p className="text-muted-foreground">Ministry dashboard</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
 
         <Card className="shadow-brand">
@@ -189,9 +182,7 @@ const MinistryLeaderDashboard = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             {ministry.name} Dashboard
           </h1>
-          <p className="text-muted-foreground">
-            Welcome to your ministry management dashboard
-          </p>
+          <p className="text-muted-foreground">{totalMembers} members</p>
           <div className="mt-2">
             <Badge className="bg-purple-100 text-purple-800">
               <Crown className="mr-1 h-3 w-3" />
@@ -199,7 +190,6 @@ const MinistryLeaderDashboard = () => {
             </Badge>
           </div>
         </div>
-        <ThemeToggle variant="icon" />
       </div>
 
       {/* Statistics Cards */}

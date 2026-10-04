@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ComboBox } from "@/components/ui/combo-box";
 import type { ComboBoxOption } from "@/components/ui/combo-box";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Filter, Search } from "lucide-react";
 import {
   useGetFamilies,
   useGetStatuses,
@@ -24,16 +25,29 @@ interface MemberSearchProps {
   onSearch: (filters: SearchFilters) => void;
   onClear: () => void;
   isLoading?: boolean;
+  extraFilters?: ReactNode;
+  extraFiltersActive?: boolean;
+  /** Label shown in the active-filters summary when extraFiltersActive. */
+  extraFiltersLabel?: string;
+  /** Hide family combo when filtering unassigned-only externally. */
+  hideFamilyFilter?: boolean;
 }
 
 const MemberSearch = ({
   onSearch,
   onClear,
   isLoading = false,
+  extraFilters,
+  extraFiltersActive = false,
+  extraFiltersLabel = "Extra filter",
+  hideFamilyFilter = false,
 }: MemberSearchProps) => {
   const [filters, setFilters] = useState<SearchFilters>({
     search: "",
   });
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(
+    Boolean(extraFilters),
+  );
 
   // Fetch lookup data
   const { data: familiesData } = useGetFamilies();
@@ -75,7 +89,7 @@ const MemberSearch = ({
   useEffect(() => {
     onSearch({
       status_id: filters.status_id,
-      family_id: filters.family_id,
+      family_id: hideFamilyFilter ? undefined : filters.family_id,
       profession_id: filters.profession_id,
       location_id: filters.location_id,
       search: "",
@@ -85,12 +99,13 @@ const MemberSearch = ({
     filters.family_id,
     filters.profession_id,
     filters.location_id,
+    hideFamilyFilter,
     onSearch,
   ]);
 
   const handleInputChange = (
     field: keyof SearchFilters,
-    value: string | number
+    value: string | number,
   ) => {
     setFilters((prev) => ({
       ...prev,
@@ -100,7 +115,7 @@ const MemberSearch = ({
 
   const handleComboBoxChange = (
     field: keyof SearchFilters,
-    value: string | number | undefined
+    value: string | number | undefined,
   ) => {
     setFilters((prev) => ({
       ...prev,
@@ -109,7 +124,10 @@ const MemberSearch = ({
   };
 
   const handleSearch = () => {
-    onSearch(filters);
+    onSearch({
+      ...filters,
+      family_id: hideFamilyFilter ? undefined : filters.family_id,
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -123,9 +141,21 @@ const MemberSearch = ({
     onClear();
   };
 
-  const hasActiveFilters = Object.values(filters).some(
-    (value) => value !== undefined && value !== ""
-  );
+  const hasActiveFilters =
+    Boolean(filters.search.trim()) ||
+    filters.status_id != null ||
+    (!hideFamilyFilter && filters.family_id != null) ||
+    filters.profession_id != null ||
+    filters.location_id != null ||
+    extraFiltersActive;
+
+  const advancedFilterCount =
+    [
+      filters.status_id,
+      hideFamilyFilter ? undefined : filters.family_id,
+      filters.profession_id,
+      filters.location_id,
+    ].filter((value) => value != null).length + (extraFiltersActive ? 1 : 0);
 
   return (
     <Card className="shadow-brand">
@@ -154,6 +184,26 @@ const MemberSearch = ({
               <Search className="h-4 w-4" />
             </Button>
           </div>
+          <Button
+            type="button"
+            variant={showAdvancedFilters ? "default" : "outline"}
+            size="icon"
+            onClick={() => setShowAdvancedFilters((prev) => !prev)}
+            disabled={isLoading}
+            aria-label={showAdvancedFilters ? "Hide filters" : "Show filters"}
+            aria-expanded={showAdvancedFilters}
+            className="relative shrink-0"
+          >
+            <Filter className="h-4 w-4" />
+            {advancedFilterCount > 0 && (
+              <Badge
+                variant="destructive"
+                className="absolute -right-1.5 -top-1.5 h-5 min-w-5 rounded-full px-1"
+              >
+                {advancedFilterCount}
+              </Badge>
+            )}
+          </Button>
           {hasActiveFilters && (
             <Button
               variant="outline"
@@ -167,71 +217,80 @@ const MemberSearch = ({
         </div>
 
         {/* Advanced Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Status Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Status
-            </label>
-            <ComboBox
-              options={getStatusOptions()}
-              value={filters.status_id ?? undefined}
-              onValueChange={(value) =>
-                handleComboBoxChange("status_id", value)
-              }
-              placeholder="All Statuses"
-              disabled={isLoading}
-            />
-          </div>
+        {showAdvancedFilters && (
+          <div className="space-y-4">
+            {extraFilters && (
+              <div className="rounded-md border p-3">{extraFilters}</div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Status Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Status
+                </label>
+                <ComboBox
+                  options={getStatusOptions()}
+                  value={filters.status_id ?? undefined}
+                  onValueChange={(value) =>
+                    handleComboBoxChange("status_id", value)
+                  }
+                  placeholder="All Statuses"
+                  disabled={isLoading}
+                />
+              </div>
 
-          {/* Family Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Family
-            </label>
-            <ComboBox
-              options={getFamilyOptions()}
-              value={filters.family_id ?? undefined}
-              onValueChange={(value) =>
-                handleComboBoxChange("family_id", value)
-              }
-              placeholder="All Families"
-              disabled={isLoading}
-            />
-          </div>
+              {/* Family Filter */}
+              {!hideFamilyFilter && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Family
+                  </label>
+                  <ComboBox
+                    options={getFamilyOptions()}
+                    value={filters.family_id ?? undefined}
+                    onValueChange={(value) =>
+                      handleComboBoxChange("family_id", value)
+                    }
+                    placeholder="All Families"
+                    disabled={isLoading}
+                  />
+                </div>
+              )}
 
-          {/* Profession Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Profession
-            </label>
-            <ComboBox
-              options={getProfessionOptions()}
-              value={filters.profession_id ?? undefined}
-              onValueChange={(value) =>
-                handleComboBoxChange("profession_id", value)
-              }
-              placeholder="All Professions"
-              disabled={isLoading}
-            />
-          </div>
+              {/* Profession Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Profession
+                </label>
+                <ComboBox
+                  options={getProfessionOptions()}
+                  value={filters.profession_id ?? undefined}
+                  onValueChange={(value) =>
+                    handleComboBoxChange("profession_id", value)
+                  }
+                  placeholder="All Professions"
+                  disabled={isLoading}
+                />
+              </div>
 
-          {/* Location Filter */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted-foreground">
-              Location
-            </label>
-            <ComboBox
-              options={getLocationOptions()}
-              value={filters.location_id ?? undefined}
-              onValueChange={(value) =>
-                handleComboBoxChange("location_id", value)
-              }
-              placeholder="All Locations"
-              disabled={isLoading}
-            />
+              {/* Location Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">
+                  Location
+                </label>
+                <ComboBox
+                  options={getLocationOptions()}
+                  value={filters.location_id ?? undefined}
+                  onValueChange={(value) =>
+                    handleComboBoxChange("location_id", value)
+                  }
+                  placeholder="All Locations"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Search Info */}
         {hasActiveFilters && (
@@ -239,13 +298,14 @@ const MemberSearch = ({
             <p>Active filters:</p>
             <ul className="list-disc list-inside space-y-1 mt-1">
               {filters.search && <li>Search: "{filters.search}"</li>}
+              {extraFiltersActive && <li>{extraFiltersLabel}</li>}
               {filters.status_id && (
                 <li>
                   Status:{" "}
                   {statuses.find((s) => s.id === filters.status_id)?.name}
                 </li>
               )}
-              {filters.family_id && (
+              {!hideFamilyFilter && filters.family_id && (
                 <li>
                   Family:{" "}
                   {families.find((f) => f.id === filters.family_id)?.name}

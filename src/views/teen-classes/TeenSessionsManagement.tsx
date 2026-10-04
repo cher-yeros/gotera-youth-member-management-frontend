@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   useDeleteClassSessionBatch,
   useGetClassSessionBatches,
@@ -133,9 +132,6 @@ const TeenSessionsManagement = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               {viewedBatch.title}
             </h1>
-            {viewedBatch.description && (
-              <p className="text-muted-foreground">{viewedBatch.description}</p>
-            )}
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <span>{formatSessionDate(viewedBatch.session_date)}</span>
               {viewedBatch.location && <span>· {viewedBatch.location}</span>}
@@ -146,7 +142,6 @@ const TeenSessionsManagement = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2 shrink-0">
-            <ThemeToggle variant="icon" />
             <EditClassSessionBatchModal
               batch={viewedBatch}
               trigger={
@@ -284,11 +279,10 @@ const TeenSessionsManagement = () => {
             Teen Sessions
           </h1>
           <p className="text-sm text-muted-foreground">
-            Create attendance days and review teacher-filled attendance
+            {batches.length} batches
           </p>
         </div>
         <div className="flex gap-2">
-          <ThemeToggle />
           <CreateClassSessionBatchModal />
         </div>
       </div>

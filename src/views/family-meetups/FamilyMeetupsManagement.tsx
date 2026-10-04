@@ -33,7 +33,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import {
   CREATE_FAMILY_MEETUP_BATCH,
   DELETE_FAMILY_MEETUP_BATCH,
@@ -389,7 +388,6 @@ const FamilyMeetupsManagement: React.FC = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               {viewedBatch.title}
             </h1>
-            <p className="text-muted-foreground">{viewedBatch.description}</p>
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -404,7 +402,6 @@ const FamilyMeetupsManagement: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center space-x-2 shrink-0">
-            <ThemeToggle variant="icon" />
             <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit Batch
@@ -655,13 +652,9 @@ const FamilyMeetupsManagement: React.FC = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             Family Meetups Management
           </h1>
-          <p className="text-muted-foreground">
-            Day batches for all families — click a batch to see each family (
-            {batches.length} total)
-          </p>
+          <p className="text-muted-foreground">{batches.length} batches</p>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button onClick={handleCreate} className="bg-brand-gradient">
             <Plus className="h-4 w-4 mr-2" />
             Create Meetup Batch

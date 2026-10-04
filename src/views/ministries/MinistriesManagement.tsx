@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import ThemeToggle from "@/components/ui/theme-toggle";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMinistryModalForm from "@/components/forms/NewMinistryModalForm";
 import PromoteMinistryLeaderModal from "@/components/forms/PromoteMinistryLeaderModal";
@@ -147,11 +146,8 @@ const MinistriesManagement = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Ministries Management
             </h1>
-            <p className="text-muted-foreground">
-              Manage ministries and ministry leaders
-            </p>
+            <p className="text-muted-foreground">Ministries</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -169,11 +165,8 @@ const MinistriesManagement = () => {
             <h1 className="text-3xl font-bold text-brand-gradient">
               Ministries Management
             </h1>
-            <p className="text-muted-foreground">
-              Manage ministries and ministry leaders
-            </p>
+            <p className="text-muted-foreground">Ministries</p>
           </div>
-          <ThemeToggle variant="icon" />
         </div>
         <Card className="shadow-brand">
           <CardContent>
@@ -208,13 +201,9 @@ const MinistriesManagement = () => {
           <h1 className="text-3xl font-bold text-brand-gradient">
             Ministries Management
           </h1>
-          <p className="text-muted-foreground">
-            Manage ministries and promote ministry leaders ({ministries.length}{" "}
-            ministries)
-          </p>
+          <p className="text-muted-foreground">{ministries.length} ministries</p>
         </div>
         <div className="flex items-center space-x-4">
-          <ThemeToggle variant="icon" />
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMinistryModalOpen(true)}
