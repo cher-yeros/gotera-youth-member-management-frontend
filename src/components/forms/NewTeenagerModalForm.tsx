@@ -20,6 +20,7 @@ import { useAuth } from "@/redux/useAuth";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { ComboBox } from "@/components/ui/combo-box";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
+import { sanitizeLocalPhone, toE164Phone, toLocalPhone } from "@/lib/phone";
 
 const GUARDIAN_RELATIONSHIPS = [
   "Father",
@@ -74,13 +75,13 @@ const NewTeenagerModalForm = ({
 
   const [form, setForm] = useState({
     full_name: initial?.full_name || "",
-    contact_no: initial?.contact_no || "",
+    contact_no: toLocalPhone(initial?.contact_no),
     gender: initial?.gender || "",
     photo_url: (initial?.photo_url ?? null) as string | null,
     birth_date: initial?.birth_date || "",
     location_id: initial?.location_id || undefined,
     guardian_name: initial?.guardian_name || "",
-    guardian_contact: initial?.guardian_contact || "",
+    guardian_contact: toLocalPhone(initial?.guardian_contact),
     guardian_relationship: initial?.guardian_relationship || "",
     class_id: defaultClassId || initial?.class_id || undefined,
     status: initial?.status || "ACTIVE",
@@ -100,13 +101,13 @@ const NewTeenagerModalForm = ({
 
     const payload = {
       full_name: form.full_name.trim(),
-      contact_no: form.contact_no || null,
+      contact_no: toE164Phone(form.contact_no),
       gender: form.gender || null,
       photo_url: form.photo_url || null,
       birth_date: form.birth_date || null,
       location_id: form.location_id || null,
       guardian_name: form.guardian_name || null,
-      guardian_contact: form.guardian_contact || null,
+      guardian_contact: toE164Phone(form.guardian_contact),
       guardian_relationship: form.guardian_relationship || null,
       class_id: form.class_id,
       status: form.status,
@@ -141,11 +142,21 @@ const NewTeenagerModalForm = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>Contact</Label>
-          <Input
-            value={form.contact_no}
-            onChange={(e) => set("contact_no", e.target.value)}
-            disabled={loading}
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+              +251
+            </span>
+            <Input
+              type="tel"
+              placeholder="9xxxxxxxx"
+              value={form.contact_no}
+              onChange={(e) =>
+                set("contact_no", sanitizeLocalPhone(e.target.value))
+              }
+              className="pl-14"
+              disabled={loading}
+            />
+          </div>
         </div>
         <div>
           <Label>Gender</Label>
@@ -203,11 +214,21 @@ const NewTeenagerModalForm = ({
         </div>
         <div>
           <Label>Guardian contact</Label>
-          <Input
-            value={form.guardian_contact}
-            onChange={(e) => set("guardian_contact", e.target.value)}
-            disabled={loading}
-          />
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+              +251
+            </span>
+            <Input
+              type="tel"
+              placeholder="9xxxxxxxx"
+              value={form.guardian_contact}
+              onChange={(e) =>
+                set("guardian_contact", sanitizeLocalPhone(e.target.value))
+              }
+              className="pl-14"
+              disabled={loading}
+            />
+          </div>
         </div>
         <div>
           <Label>Guardian relationship</Label>

@@ -19,6 +19,12 @@ import {
   useUpdateMember,
 } from "@/hooks/useGraphQL";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
+import {
+  isValidLocalPhone,
+  sanitizeLocalPhone,
+  toE164Phone,
+  toLocalPhone,
+} from "@/lib/phone";
 import React, { useEffect, useState } from "react";
 
 interface NewMemberModalFormProps {
@@ -84,7 +90,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
       setFormData({
         id: member.id,
         full_name: member.full_name,
-        contact_no: member.contact_no || "",
+        contact_no: toLocalPhone(member.contact_no),
         gender: member.gender || undefined,
         photo_url: member.photo_url || undefined,
         status_id: member.status_id || undefined,
@@ -171,11 +177,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
       newErrors.full_name = "Full name is required";
     }
 
-    if (
-      formData.contact_no &&
-      !/^[+]?[0-9\s\-()]{10,}$/.test(formData.contact_no)
-    ) {
-      newErrors.contact_no = "Please enter a valid phone number";
+    if (formData.contact_no && !isValidLocalPhone(formData.contact_no)) {
+      newErrors.contact_no =
+        "Please enter a valid Ethiopian phone number (9xxxxxxxx)";
     }
 
     setErrors(newErrors);
@@ -196,7 +200,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         const cleanedData: UpdateMemberInput = {
           id: memberId!,
           full_name: formData.full_name?.trim() || undefined,
-          contact_no: formData.contact_no?.trim() || undefined,
+          contact_no: toE164Phone(formData.contact_no || "") || undefined,
           gender: formData.gender || undefined,
           photo_url: formData.photo_url ?? null,
           status_id: formData.status_id || undefined,
@@ -213,7 +217,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         // Clean up the form data for create - remove empty strings and undefined values
         const cleanedData: CreateMemberInput = {
           full_name: formData.full_name?.trim() || "",
-          contact_no: formData.contact_no?.trim() || undefined,
+          contact_no: toE164Phone(formData.contact_no || "") || undefined,
           gender: formData.gender || undefined,
           photo_url: formData.photo_url || undefined,
           status_id: formData.status_id || undefined,
@@ -301,17 +305,25 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
               >
                 Contact Number
               </label>
-              <Input
-                id="contact_no"
-                type="tel"
-                value={formData.contact_no || ""}
-                onChange={(e) =>
-                  handleInputChange("contact_no", e.target.value)
-                }
-                placeholder="Enter phone number"
-                className={errors.contact_no ? "border-red-500" : ""}
-                disabled={isSubmitting}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                  +251
+                </span>
+                <Input
+                  id="contact_no"
+                  type="tel"
+                  value={formData.contact_no || ""}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "contact_no",
+                      sanitizeLocalPhone(e.target.value),
+                    )
+                  }
+                  placeholder="9xxxxxxxx"
+                  className={`pl-14 ${errors.contact_no ? "border-red-500" : ""}`}
+                  disabled={isSubmitting}
+                />
+              </div>
               {errors.contact_no && (
                 <p className="text-red-500 text-sm mt-1">{errors.contact_no}</p>
               )}

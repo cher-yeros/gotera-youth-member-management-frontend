@@ -33,6 +33,7 @@ import { isFollowUpCoordinator, ROLE_LABELS } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { toast } from "react-toastify";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
+import { sanitizeLocalPhone, toE164Phone } from "@/lib/phone";
 
 interface IntakeNewcomerModalProps {
   open: boolean;
@@ -115,7 +116,7 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
       variables: {
         input: {
           full_name: form.full_name.trim(),
-          contact_no: form.contact_no || null,
+          contact_no: toE164Phone(form.contact_no),
           gender: form.gender || null,
           photo_url: form.photo_url || null,
           source: form.source,
@@ -159,13 +160,24 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="contact_no">Phone</Label>
-              <Input
-                id="contact_no"
-                value={form.contact_no}
-                onChange={(e) =>
-                  setForm({ ...form, contact_no: e.target.value })
-                }
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                  +251
+                </span>
+                <Input
+                  id="contact_no"
+                  type="tel"
+                  placeholder="9xxxxxxxx"
+                  value={form.contact_no}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      contact_no: sanitizeLocalPhone(e.target.value),
+                    })
+                  }
+                  className="pl-14"
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Gender</Label>

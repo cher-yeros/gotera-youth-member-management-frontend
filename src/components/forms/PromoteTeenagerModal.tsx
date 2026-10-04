@@ -20,6 +20,7 @@ import {
 import { useGetFamilies, useGetMinistries } from "@/hooks/useGraphQL";
 import { usePromoteTeenagerToMember } from "@/hooks/useTeenGraphQL";
 import PasswordDisplayModal from "@/components/forms/PasswordDisplayModal";
+import { sanitizeLocalPhone, toE164Phone, toLocalPhone } from "@/lib/phone";
 import { ROLE } from "@/lib/roles";
 
 interface Props {
@@ -46,7 +47,7 @@ const PromoteTeenagerModal = ({
 
   const [familyId, setFamilyId] = useState<number | undefined>();
   const [ministryId, setMinistryId] = useState<number | undefined>();
-  const [contactNo, setContactNo] = useState(teenager.contact_no || "");
+  const [contactNo, setContactNo] = useState(toLocalPhone(teenager.contact_no));
   const [createLogin, setCreateLogin] = useState(false);
   const [password, setPassword] = useState<string | null>(null);
   const { promoteTeenagerToMember, loading } = usePromoteTeenagerToMember();
@@ -57,7 +58,7 @@ const PromoteTeenagerModal = ({
       family_id: familyId,
       ministry_ids: ministryId ? [ministryId] : [],
       roles: [ROLE.FM],
-      contact_no: contactNo || undefined,
+      contact_no: toE164Phone(contactNo) || undefined,
       create_login: createLogin,
     });
     if (result?.password) {
@@ -78,10 +79,20 @@ const PromoteTeenagerModal = ({
           <div className="space-y-4">
             <div>
               <Label>Contact number</Label>
-              <Input
-                value={contactNo}
-                onChange={(e) => setContactNo(e.target.value)}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                  +251
+                </span>
+                <Input
+                  type="tel"
+                  placeholder="9xxxxxxxx"
+                  value={contactNo}
+                  onChange={(e) =>
+                    setContactNo(sanitizeLocalPhone(e.target.value))
+                  }
+                  className="pl-14"
+                />
+              </div>
             </div>
             <div>
               <Label>Family</Label>
