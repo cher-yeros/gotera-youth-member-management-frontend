@@ -46,11 +46,11 @@ const TransferTeenagerModal = ({
   const isAdmin = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
   const { data: adminClasses } = useGetTeenClasses();
   const { data: myClasses } = useGetMyTeenClasses();
-  const classes = (
-    isAdmin
+  const classes =
+    (isAdmin
       ? (adminClasses as any)?.teenClasses
       : (myClasses as any)?.myTeenClasses
-  )?.filter((c: any) => c.id !== teenager.class_id) || [];
+    )?.filter((c: any) => c.id !== teenager.class_id) || [];
 
   const [toClassId, setToClassId] = useState<number | undefined>();
   const [note, setNote] = useState("");
@@ -104,7 +104,11 @@ const TransferTeenagerModal = ({
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={!toClassId || loading}>
+          <Button
+            className="bg-brand-gradient hover:opacity-90 transition-opacity"
+            onClick={handleSubmit}
+            disabled={!toClassId || loading}
+          >
             Transfer
           </Button>
         </DialogFooter>

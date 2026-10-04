@@ -4,10 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenClassModalForm from "@/components/forms/NewTeenClassModalForm";
-import {
-  useDeleteTeenClass,
-  useGetTeenClasses,
-} from "@/hooks/useTeenGraphQL";
+import { useDeleteTeenClass, useGetTeenClasses } from "@/hooks/useTeenGraphQL";
 import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
@@ -38,13 +35,20 @@ const TeenClassesPage = () => {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Teen Classes</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient">
+            Teen Classes
+          </h1>
           <p className="text-muted-foreground text-sm">
             {classes.length} classes
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsCreateOpen(true)}>New Class</Button>
+          <Button
+            className="bg-brand-gradient hover:opacity-90 transition-opacity"
+            onClick={() => setIsCreateOpen(true)}
+          >
+            New Class
+          </Button>
         </div>
       </div>
 
@@ -143,8 +147,8 @@ const TeenClassesPage = () => {
             classId={editClass.id}
             initial={editClass}
             onSuccess={() => {
-            setEditClass(null);
-          }}
+              setEditClass(null);
+            }}
             onCancel={() => setEditClass(null)}
           />
         )}

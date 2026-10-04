@@ -58,7 +58,9 @@ const TeenClassDetail = () => {
   if (isMyClasses && myClasses.length > 1 && !selectedMyClassId) {
     return (
       <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-bold">My Classes</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient">
+          My Classes
+        </h1>
         <div className="grid gap-3 md:grid-cols-2">
           {myClasses.map((c: any) => (
             <Card
@@ -88,7 +90,7 @@ const TeenClassDetail = () => {
               ← Back
             </Button>
           )}
-          <h1 className="text-2xl sm:text-3xl font-bold truncate">
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
             {teenClass?.name || "Class"}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -97,7 +99,12 @@ const TeenClassDetail = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsCreateOpen(true)}>Add Teenager</Button>
+          <Button
+            className="bg-brand-gradient hover:opacity-90 transition-opacity"
+            onClick={() => setIsCreateOpen(true)}
+          >
+            Add Teenager
+          </Button>
           {isAdmin && (
             <Button variant="outline" onClick={() => setAssignOpen(true)}>
               Assign Teacher

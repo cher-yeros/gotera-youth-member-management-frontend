@@ -106,7 +106,7 @@ const Dashboard = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-brand-gradient">
-              Gotera Youth Dashboard
+              Dashboard
             </h1>
             <p className="text-muted-foreground">Overview</p>
           </div>
@@ -166,9 +166,7 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            Gotera Youth Dashboard
-          </h1>
+          <h1 className="text-3xl font-bold text-brand-gradient">Dashboard</h1>
           <p className="text-muted-foreground">
             {isFamilyCoordinator
               ? "Family coordinator view"

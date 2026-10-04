@@ -44,7 +44,11 @@ const CreateClassSessionBatchModal = ({ trigger, onSuccess }: Props) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {trigger || <Button>Create Session Day</Button>}
+        {trigger || (
+          <Button className="bg-brand-gradient hover:opacity-90 transition-opacity">
+            Create Session Day
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -83,6 +87,7 @@ const CreateClassSessionBatchModal = ({ trigger, onSuccess }: Props) => {
             Cancel
           </Button>
           <Button
+            className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={handleSubmit}
             disabled={loading || !title.trim() || !sessionDate}
           >

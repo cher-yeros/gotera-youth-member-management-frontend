@@ -132,7 +132,11 @@ const PromoteTeenagerModal = ({
             <Button variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={loading}>
+            <Button
+              className="bg-brand-gradient hover:opacity-90 transition-opacity"
+              onClick={handleSubmit}
+              disabled={loading}
+            >
               Promote to Youth Member
             </Button>
           </DialogFooter>

@@ -2,10 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  useCreateTeenClass,
-  useUpdateTeenClass,
-} from "@/hooks/useTeenGraphQL";
+import { useCreateTeenClass, useUpdateTeenClass } from "@/hooks/useTeenGraphQL";
 
 interface Props {
   mode?: "create" | "update";
@@ -64,7 +61,11 @@ const NewTeenClassModalForm = ({
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
         </Button>
-        <Button type="submit" disabled={loading}>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="bg-brand-gradient hover:opacity-90 transition-opacity"
+        >
           {mode === "update" ? "Update" : "Create"} Class
         </Button>
       </div>

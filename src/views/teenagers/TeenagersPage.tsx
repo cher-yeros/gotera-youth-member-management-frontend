@@ -48,7 +48,9 @@ const TeenagersPage = () => {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold">Teenagers</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient">
+            Teenagers
+          </h1>
           <p className="text-sm text-muted-foreground">
             {payload?.total != null
               ? `${payload.total} teenagers`
@@ -56,7 +58,10 @@ const TeenagersPage = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setIsCreateOpen(true)}>
+          <Button
+            className="bg-brand-gradient hover:opacity-90 transition-opacity"
+            onClick={() => setIsCreateOpen(true)}
+          >
             Register Teenager
           </Button>
         </div>

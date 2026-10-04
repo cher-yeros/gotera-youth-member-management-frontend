@@ -18,9 +18,7 @@ const TeenTeacherDashboard = () => {
   const classIds = new Set(classes.map((c: any) => c.id));
   const todaySessions = (
     (sessionsData as any)?.classSessions?.sessions || []
-  ).filter(
-    (s: any) => classIds.has(s.class_id) && s.session_date === today,
-  );
+  ).filter((s: any) => classIds.has(s.class_id) && s.session_date === today);
 
   const totalTeens = classes.reduce(
     (sum: number, c: any) => sum + (c.teenCount || 0),
@@ -31,12 +29,12 @@ const TeenTeacherDashboard = () => {
     <div className="p-4 md:p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Teen Teacher Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient">
+            Teen Teacher Dashboard
+          </h1>
           <p className="text-sm text-muted-foreground">
             {classes.length} classes
-            {todaySessions.length > 0
-              ? ` · ${todaySessions.length} today`
-              : ""}
+            {todaySessions.length > 0 ? ` · ${todaySessions.length} today` : ""}
           </p>
         </div>
       </div>
@@ -71,7 +69,10 @@ const TeenTeacherDashboard = () => {
           <CardTitle>Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
-          <Button onClick={() => navigate("/teen-classes/my-classes")}>
+          <Button
+            className="bg-brand-gradient hover:opacity-90 transition-opacity"
+            onClick={() => navigate("/teen-classes/my-classes")}
+          >
             Open My Classes
           </Button>
           <Button
