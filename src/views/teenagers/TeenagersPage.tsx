@@ -209,12 +209,22 @@ const TeenagersPage = () => {
                               t.guardian_contact) && (
                               <div className="flex justify-between gap-2">
                                 <span className="text-muted-foreground">
-                                  Guardian info:
+                                  Guardian phone:
                                 </span>
                                 <span className="text-right text-xs">
-                                  {[t.guardian_relationship, t.guardian_contact]
-                                    .filter(Boolean)
-                                    .join(" · ")}
+                                  {t.guardian_relationship
+                                    ? `${t.guardian_relationship} · `
+                                    : ""}
+                                  {t.guardian_contact ? (
+                                    <a
+                                      href={`tel:${t.guardian_contact}`}
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      {t.guardian_contact}
+                                    </a>
+                                  ) : (
+                                    "N/A"
+                                  )}
                                 </span>
                               </div>
                             )}
@@ -284,6 +294,7 @@ const TeenagersPage = () => {
                     <tr className="border-b text-left">
                       <th className="py-2">Name</th>
                       <th>Class</th>
+                      <th>Phone</th>
                       <th>Address</th>
                       <th>Guardian</th>
                       <th>Status</th>
@@ -306,14 +317,37 @@ const TeenagersPage = () => {
                             </div>
                           </td>
                           <td>{t.teenClass?.name || "—"}</td>
+                          <td>
+                            {t.contact_no ? (
+                              <a
+                                href={`tel:${t.contact_no}`}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {t.contact_no}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td>{t.location?.name || "—"}</td>
                           <td>
                             <div>{t.guardian_name || "—"}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {[t.guardian_relationship, t.guardian_contact]
-                                .filter(Boolean)
-                                .join(" · ") || ""}
-                            </div>
+                            {(t.guardian_relationship ||
+                              t.guardian_contact) && (
+                              <div className="text-xs text-muted-foreground">
+                                {t.guardian_relationship
+                                  ? `${t.guardian_relationship} · `
+                                  : ""}
+                                {t.guardian_contact ? (
+                                  <a
+                                    href={`tel:${t.guardian_contact}`}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    {t.guardian_contact}
+                                  </a>
+                                ) : null}
+                              </div>
+                            )}
                           </td>
                           <td>
                             <Badge>{t.status}</Badge>

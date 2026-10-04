@@ -96,7 +96,8 @@ const TeenClassDetail = () => {
             {incompleteCount > 0 ? ` · ${incompleteCount} incomplete` : ""}
           </p>
         </div>
-        <div className="flex gap-2">          <Button onClick={() => setIsCreateOpen(true)}>Add Teenager</Button>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsCreateOpen(true)}>Add Teenager</Button>
           {isAdmin && (
             <Button variant="outline" onClick={() => setAssignOpen(true)}>
               Assign Teacher
@@ -187,6 +188,23 @@ const TeenClassDetail = () => {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between gap-2">
                               <span className="text-muted-foreground">
+                                Contact:
+                              </span>
+                              <span className="text-right">
+                                {t.contact_no ? (
+                                  <a
+                                    href={`tel:${t.contact_no}`}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    {t.contact_no}
+                                  </a>
+                                ) : (
+                                  "N/A"
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between gap-2">
+                              <span className="text-muted-foreground">
                                 Address:
                               </span>
                               <span className="text-right">
@@ -205,12 +223,22 @@ const TeenClassDetail = () => {
                               t.guardian_contact) && (
                               <div className="flex justify-between gap-2">
                                 <span className="text-muted-foreground">
-                                  Guardian info:
+                                  Guardian phone:
                                 </span>
                                 <span className="text-right text-xs">
-                                  {[t.guardian_relationship, t.guardian_contact]
-                                    .filter(Boolean)
-                                    .join(" · ")}
+                                  {t.guardian_relationship
+                                    ? `${t.guardian_relationship} · `
+                                    : ""}
+                                  {t.guardian_contact ? (
+                                    <a
+                                      href={`tel:${t.guardian_contact}`}
+                                      className="text-blue-600 hover:underline"
+                                    >
+                                      {t.guardian_contact}
+                                    </a>
+                                  ) : (
+                                    "N/A"
+                                  )}
                                 </span>
                               </div>
                             )}
@@ -255,6 +283,7 @@ const TeenClassDetail = () => {
                   <thead>
                     <tr className="border-b text-left">
                       <th className="py-2">Name</th>
+                      <th>Phone</th>
                       <th>Address</th>
                       <th>Guardian</th>
                       <th>Status</th>
@@ -268,14 +297,37 @@ const TeenClassDetail = () => {
                       return (
                         <tr key={t.id} className="border-b">
                           <td className="py-3 font-medium">{t.full_name}</td>
+                          <td>
+                            {t.contact_no ? (
+                              <a
+                                href={`tel:${t.contact_no}`}
+                                className="text-blue-600 hover:underline"
+                              >
+                                {t.contact_no}
+                              </a>
+                            ) : (
+                              "—"
+                            )}
+                          </td>
                           <td>{t.location?.name || "—"}</td>
                           <td>
                             <div>{t.guardian_name || "—"}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {[t.guardian_relationship, t.guardian_contact]
-                                .filter(Boolean)
-                                .join(" · ") || ""}
-                            </div>
+                            {(t.guardian_relationship ||
+                              t.guardian_contact) && (
+                              <div className="text-xs text-muted-foreground">
+                                {t.guardian_relationship
+                                  ? `${t.guardian_relationship} · `
+                                  : ""}
+                                {t.guardian_contact ? (
+                                  <a
+                                    href={`tel:${t.guardian_contact}`}
+                                    className="text-blue-600 hover:underline"
+                                  >
+                                    {t.guardian_contact}
+                                  </a>
+                                ) : null}
+                              </div>
+                            )}
                           </td>
                           <td>
                             <Badge>{t.status}</Badge>

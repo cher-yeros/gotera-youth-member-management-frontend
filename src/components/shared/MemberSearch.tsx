@@ -45,9 +45,7 @@ const MemberSearch = ({
   const [filters, setFilters] = useState<SearchFilters>({
     search: "",
   });
-  const [showAdvancedFilters, setShowAdvancedFilters] = useState(
-    Boolean(extraFilters),
-  );
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Fetch lookup data
   const { data: familiesData } = useGetFamilies();
