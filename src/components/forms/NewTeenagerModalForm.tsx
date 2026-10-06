@@ -20,7 +20,10 @@ import { useAuth } from "@/redux/useAuth";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { ComboBox } from "@/components/ui/combo-box";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
+import PhoneExistsNotice from "@/components/forms/PhoneExistsNotice";
 import { sanitizeLocalPhone, toE164Phone, toLocalPhone } from "@/lib/phone";
+import { formatPhoneOwner, usePhoneLookup } from "@/hooks/usePhoneLookup";
+import { toast } from "react-toastify";
 
 const GUARDIAN_RELATIONSHIPS = [
   "Father",
@@ -92,12 +95,28 @@ const NewTeenagerModalForm = ({
   const loading = creating || updating;
   const classLocked = !!defaultClassId;
 
+  const {
+    matches: phoneMatches,
+    loading: phoneChecking,
+    exists: phoneExists,
+    primary: existingPhoneOwner,
+  } = usePhoneLookup({
+    localPhone: form.contact_no,
+    excludeTeenagerId: mode === "update" ? teenagerId : undefined,
+  });
+
   const set = (key: string, value: any) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.full_name.trim() || !form.class_id) return;
+    if (phoneExists && existingPhoneOwner) {
+      toast.error(
+        `Phone already registered to ${formatPhoneOwner(existingPhoneOwner)}`,
+      );
+      return;
+    }
 
     const payload = {
       full_name: form.full_name.trim(),
@@ -157,6 +176,7 @@ const NewTeenagerModalForm = ({
               disabled={loading}
             />
           </div>
+          <PhoneExistsNotice matches={phoneMatches} loading={phoneChecking} />
         </div>
         <div>
           <Label>Gender</Label>
@@ -275,7 +295,7 @@ const NewTeenagerModalForm = ({
         </Button>
         <Button
           type="submit"
-          disabled={loading}
+          disabled={loading || phoneExists || phoneChecking}
           className="bg-brand-gradient hover:opacity-90 transition-opacity"
         >
           {mode === "update" ? "Update" : "Register"} Teenager

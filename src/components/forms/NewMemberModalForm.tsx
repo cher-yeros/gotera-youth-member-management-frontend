@@ -19,13 +19,17 @@ import {
   useUpdateMember,
 } from "@/hooks/useGraphQL";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
+import PhoneExistsNotice from "@/components/forms/PhoneExistsNotice";
 import {
   isValidLocalPhone,
   sanitizeLocalPhone,
   toE164Phone,
   toLocalPhone,
 } from "@/lib/phone";
+import { formatPhoneOwner, usePhoneLookup } from "@/hooks/usePhoneLookup";
 import React, { useEffect, useState } from "react";
+
+const NO_MINISTRY_VALUE = "__none__";
 
 interface NewMemberModalFormProps {
   onSuccess?: () => void;
@@ -72,10 +76,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     full_name: "",
     contact_no: "",
     gender: undefined,
+    birth_date: "",
     photo_url: undefined,
     status_id: undefined,
     family_id: defaultFamilyId || undefined,
     ministry_ids: defaultMinistryId ? [defaultMinistryId] : [],
+    no_ministry: false,
     profession_id: undefined,
     location_id: undefined,
     profession_name: "",
@@ -87,15 +93,18 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   useEffect(() => {
     if (isUpdateMode && memberData?.member) {
       const member = memberData.member;
+      const ministryIds = member.ministries?.map((m) => m.id) || [];
       setFormData({
         id: member.id,
         full_name: member.full_name,
         contact_no: toLocalPhone(member.contact_no),
         gender: member.gender || undefined,
+        birth_date: member.birth_date || "",
         photo_url: member.photo_url || undefined,
         status_id: member.status_id || undefined,
         family_id: member.family_id || undefined,
-        ministry_ids: member.ministries?.map((m) => m.id) || [],
+        ministry_ids: ministryIds,
+        no_ministry: member.no_ministry === true && ministryIds.length === 0,
         role_id: member.role_id || undefined,
         profession_id: member.profession_id || undefined,
         location_id: member.location_id || undefined,
@@ -108,6 +117,16 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   const [errors, setErrors] = useState<
     Partial<Record<keyof (CreateMemberInput | UpdateMemberInput), string>>
   >({});
+
+  const {
+    matches: phoneMatches,
+    loading: phoneChecking,
+    exists: phoneExists,
+    primary: existingPhoneOwner,
+  } = usePhoneLookup({
+    localPhone: formData.contact_no || "",
+    excludeMemberId: isUpdateMode ? memberId : undefined,
+  });
 
   // Helper functions to convert GraphQL data to ComboBox options
   const getStatusOptions = (): ComboBoxOption[] =>
@@ -122,11 +141,13 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
       label: family.name,
     })) || [];
 
-  const getMinistryOptions = (): ComboBoxOption[] =>
-    ministrysData?.ministries?.map((ministry: Ministry) => ({
+  const getMinistryOptions = (): ComboBoxOption[] => [
+    { value: NO_MINISTRY_VALUE, label: "Ministry Unallocated" },
+    ...(ministrysData?.ministries?.map((ministry: Ministry) => ({
       value: ministry.id,
       label: ministry.name,
-    })) || [];
+    })) || []),
+  ];
 
   const getProfessionOptions = (): ComboBoxOption[] =>
     professionsData?.professions?.map((profession) => ({
@@ -143,7 +164,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle input changes
   const handleInputChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined | null | number[],
+    value: string | number | boolean | undefined | null | number[],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -162,9 +183,32 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
   // Handle ComboBox changes for foreign keys
   const handleComboBoxChange = (
     field: keyof (CreateMemberInput | UpdateMemberInput),
-    value: string | number | undefined | number[],
+    value: string | number | boolean | undefined | number[],
   ) => {
     handleInputChange(field, value);
+  };
+
+  const handleMinistryChange = (value: string | number | undefined) => {
+    if (value === NO_MINISTRY_VALUE) {
+      setFormData((prev) => ({
+        ...prev,
+        ministry_ids: [],
+        no_ministry: true,
+      }));
+      return;
+    }
+    if (value) {
+      const currentIds = formData.ministry_ids || [];
+      const numericValue =
+        typeof value === "string" ? parseInt(value, 10) : value;
+      if (!Number.isNaN(numericValue) && !currentIds.includes(numericValue)) {
+        setFormData((prev) => ({
+          ...prev,
+          ministry_ids: [...currentIds, numericValue],
+          no_ministry: false,
+        }));
+      }
+    }
   };
 
   // Validation
@@ -180,6 +224,8 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     if (formData.contact_no && !isValidLocalPhone(formData.contact_no)) {
       newErrors.contact_no =
         "Please enter a valid Ethiopian phone number (9xxxxxxxx)";
+    } else if (phoneExists && existingPhoneOwner) {
+      newErrors.contact_no = `Phone already registered to ${formatPhoneOwner(existingPhoneOwner)}`;
     }
 
     setErrors(newErrors);
@@ -194,6 +240,10 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
       return;
     }
 
+    const hasMinistries =
+      !!formData.ministry_ids && formData.ministry_ids.length > 0;
+    const noMinistry = !hasMinistries && formData.no_ministry === true;
+
     try {
       if (isUpdateMode) {
         // Clean up the form data for update - remove empty strings and undefined values
@@ -202,10 +252,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           full_name: formData.full_name?.trim() || undefined,
           contact_no: toE164Phone(formData.contact_no || "") || undefined,
           gender: formData.gender || undefined,
+          birth_date: formData.birth_date || null,
           photo_url: formData.photo_url ?? null,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
           ministry_ids: formData.ministry_ids || [],
+          no_ministry: noMinistry,
           profession_id: formData.profession_id || undefined,
           location_id: formData.location_id || undefined,
           profession_name: formData.profession_name?.trim() || undefined,
@@ -219,13 +271,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           full_name: formData.full_name?.trim() || "",
           contact_no: toE164Phone(formData.contact_no || "") || undefined,
           gender: formData.gender || undefined,
+          birth_date: formData.birth_date || null,
           photo_url: formData.photo_url || undefined,
           status_id: formData.status_id || undefined,
           family_id: formData.family_id || undefined,
-          ministry_ids:
-            formData.ministry_ids && formData.ministry_ids.length > 0
-              ? formData.ministry_ids
-              : undefined,
+          ministry_ids: hasMinistries ? formData.ministry_ids : undefined,
+          no_ministry: noMinistry || undefined,
           profession_id: formData.profession_id || undefined,
           location_id: formData.location_id || undefined,
           profession_name: formData.profession_name?.trim() || undefined,
@@ -327,6 +378,10 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
               {errors.contact_no && (
                 <p className="text-red-500 text-sm mt-1">{errors.contact_no}</p>
               )}
+              <PhoneExistsNotice
+                matches={phoneMatches}
+                loading={phoneChecking}
+              />
             </div>
 
             <div>
@@ -344,6 +399,24 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                 value={formData.gender ?? undefined}
                 onValueChange={(value) => handleComboBoxChange("gender", value)}
                 placeholder="Select gender"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="birth_date"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                Birth date
+              </label>
+              <Input
+                id="birth_date"
+                type="date"
+                value={formData.birth_date || ""}
+                onChange={(e) =>
+                  handleInputChange("birth_date", e.target.value)
+                }
                 disabled={isSubmitting}
               />
             </div>
@@ -406,25 +479,37 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
               </label>
               <ComboBox
                 options={getMinistryOptions()}
-                value={formData.ministry_ids?.[0] ?? undefined}
-                onValueChange={(value) => {
-                  if (value) {
-                    const currentIds = formData.ministry_ids || [];
-                    const numericValue =
-                      typeof value === "string" ? parseInt(value, 10) : value;
-                    if (!currentIds.includes(numericValue)) {
-                      handleComboBoxChange("ministry_ids", [
-                        ...currentIds,
-                        numericValue,
-                      ]);
-                    }
-                  }
-                }}
+                value={
+                  formData.no_ministry
+                    ? NO_MINISTRY_VALUE
+                    : (formData.ministry_ids?.[0] ?? undefined)
+                }
+                onValueChange={handleMinistryChange}
                 placeholder="Select ministries"
                 loading={ministrysLoading}
                 loadingText="Loading ministries..."
                 disabled={isSubmitting}
               />
+              {formData.no_ministry && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                    Ministry Unallocated
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          no_ministry: false,
+                        }))
+                      }
+                      className="ml-1 text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
+                      disabled={isSubmitting}
+                    >
+                      ×
+                    </button>
+                  </span>
+                </div>
+              )}
               {formData.ministry_ids && formData.ministry_ids.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-2">
                   {formData.ministry_ids.map((id) => {
@@ -444,7 +529,11 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                               formData.ministry_ids?.filter(
                                 (mid) => mid !== id,
                               ) || [];
-                            handleComboBoxChange("ministry_ids", newIds);
+                            setFormData((prev) => ({
+                              ...prev,
+                              ministry_ids: newIds,
+                              no_ministry: false,
+                            }));
                           }}
                           className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
                           disabled={isSubmitting}
@@ -566,7 +655,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           </Button>
           <Button
             type="submit"
-            disabled={isSubmitting || memberLoading}
+            disabled={
+              isSubmitting || memberLoading || phoneExists || phoneChecking
+            }
             className="flex-1 sm:flex-none sm:order-1"
           >
             {isSubmitting

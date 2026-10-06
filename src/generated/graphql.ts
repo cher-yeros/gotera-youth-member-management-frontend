@@ -327,6 +327,7 @@ export type CreateLocationInput = {
 };
 
 export type CreateMemberInput = {
+  birth_date?: InputMaybe<Scalars['String']['input']>;
   contact_no?: InputMaybe<Scalars['String']['input']>;
   family_id?: InputMaybe<Scalars['Int']['input']>;
   full_name: Scalars['String']['input'];
@@ -334,6 +335,8 @@ export type CreateMemberInput = {
   location_id?: InputMaybe<Scalars['Int']['input']>;
   location_name?: InputMaybe<Scalars['String']['input']>;
   ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** When true, member has no ministry by choice. Ignored if ministry_ids is non-empty. */
+  no_ministry?: InputMaybe<Scalars['Boolean']['input']>;
   photo_url?: InputMaybe<Scalars['String']['input']>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   profession_name?: InputMaybe<Scalars['String']['input']>;
@@ -394,6 +397,7 @@ export type Family = {
   __typename?: 'Family';
   createdAt: Scalars['String']['output'];
   id: Scalars['Int']['output'];
+  is_active: Scalars['Boolean']['output'];
   meetups: Array<FamilyMeetup>;
   members: Array<Member>;
   name: Scalars['String']['output'];
@@ -688,6 +692,7 @@ export type MeetupFilterInput = {
 
 export type Member = {
   __typename?: 'Member';
+  birth_date?: Maybe<Scalars['String']['output']>;
   contact_no?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
   family?: Maybe<Family>;
@@ -700,6 +705,8 @@ export type Member = {
   location_id?: Maybe<Scalars['Int']['output']>;
   location_name?: Maybe<Scalars['String']['output']>;
   ministries: Array<Ministry>;
+  /** True when the member explicitly has no ministry (profile treated as complete for ministry). */
+  no_ministry: Scalars['Boolean']['output'];
   photo_url?: Maybe<Scalars['String']['output']>;
   profession?: Maybe<Profession>;
   profession_id?: Maybe<Scalars['Int']['output']>;
@@ -725,6 +732,8 @@ export type MemberFilterInput = {
   location_id?: InputMaybe<Scalars['Int']['input']>;
   ministry_id?: InputMaybe<Scalars['Int']['input']>;
   ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** When true, only members with no ministry assignment (not in any ministry). */
+  no_ministry?: InputMaybe<Scalars['Boolean']['input']>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   /**
    * Filter members that have this role abbreviation (e.g. TT, FL, ML).
@@ -1362,6 +1371,22 @@ export type PaginationInput = {
   page?: InputMaybe<Scalars['Int']['input']>;
 };
 
+/** Person already registered with a given phone number. */
+export type PhoneLookupResult = {
+  __typename?: 'PhoneLookupResult';
+  class_name?: Maybe<Scalars['String']['output']>;
+  contact_no?: Maybe<Scalars['String']['output']>;
+  family_name?: Maybe<Scalars['String']['output']>;
+  full_name: Scalars['String']['output'];
+  id: Scalars['Int']['output'];
+  status?: Maybe<Scalars['String']['output']>;
+  type: PhoneOwnerType;
+};
+
+export type PhoneOwnerType =
+  | 'MEMBER'
+  | 'TEENAGER';
+
 export type Profession = {
   __typename?: 'Profession';
   createdAt: Scalars['String']['output'];
@@ -1422,6 +1447,8 @@ export type PromoteTeenagerToMemberInput = {
   location_id?: InputMaybe<Scalars['Int']['input']>;
   location_name?: InputMaybe<Scalars['String']['input']>;
   ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** When true, promoted member has no ministry by choice. Ignored if ministry_ids is non-empty. */
+  no_ministry?: InputMaybe<Scalars['Boolean']['input']>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   profession_name?: InputMaybe<Scalars['String']['input']>;
   role_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
@@ -1467,6 +1494,8 @@ export type Query = {
   location?: Maybe<Location>;
   locationSummaries: Array<LocationSummary>;
   locations: Array<Location>;
+  /** Look up members/teenagers that already use this phone number. */
+  lookupByPhone: Array<PhoneLookupResult>;
   managedAnnouncements: PaginatedAnnouncements;
   me: UserInfo;
   meetupAttendanceStats: AttendanceStats;
@@ -1606,6 +1635,13 @@ export type QueryLocationArgs = {
 
 export type QueryLocationSummariesArgs = {
   limit?: InputMaybe<Scalars['Int']['input']>;
+};
+
+
+export type QueryLookupByPhoneArgs = {
+  excludeMemberId?: InputMaybe<Scalars['Int']['input']>;
+  excludeTeenagerId?: InputMaybe<Scalars['Int']['input']>;
+  phone: Scalars['String']['input'];
 };
 
 
@@ -2020,6 +2056,7 @@ export type UpdateClassSessionInput = {
 
 export type UpdateFamilyInput = {
   id: Scalars['Int']['input'];
+  is_active?: InputMaybe<Scalars['Boolean']['input']>;
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -2057,6 +2094,7 @@ export type UpdateLocationInput = {
 };
 
 export type UpdateMemberInput = {
+  birth_date?: InputMaybe<Scalars['String']['input']>;
   contact_no?: InputMaybe<Scalars['String']['input']>;
   family_id?: InputMaybe<Scalars['Int']['input']>;
   full_name?: InputMaybe<Scalars['String']['input']>;
@@ -2065,6 +2103,8 @@ export type UpdateMemberInput = {
   location_id?: InputMaybe<Scalars['Int']['input']>;
   location_name?: InputMaybe<Scalars['String']['input']>;
   ministry_ids?: InputMaybe<Array<Scalars['Int']['input']>>;
+  /** When true, member has no ministry by choice. Ignored if ministry_ids is non-empty. */
+  no_ministry?: InputMaybe<Scalars['Boolean']['input']>;
   photo_url?: InputMaybe<Scalars['String']['input']>;
   profession_id?: InputMaybe<Scalars['Int']['input']>;
   profession_name?: InputMaybe<Scalars['String']['input']>;
@@ -2146,9 +2186,9 @@ export type MinistryFragmentFragment = { __typename?: 'Ministry', id: number, na
 
 export type MinistryWithMembersFragmentFragment = { __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean, program_frequency?: MinistryProgramFrequency | null, program_day?: string | null, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }>, leaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> };
 
-export type MemberBasicFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null };
+export type MemberBasicFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null };
 
-export type MemberWithMinistryFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean }> };
+export type MemberWithMinistryFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean }> };
 
 export type FamilyMeetupFragmentFragment = { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null };
 
@@ -2165,7 +2205,7 @@ export type FamilyMemberAttendanceFragmentFragment = { __typename?: 'FamilyMembe
 
 export type AttendanceStatsFragmentFragment = { __typename?: 'AttendanceStats', totalMembers: number, presentMembers: number, absentMembers: number, attendanceRate: number };
 
-export type MemberFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> };
+export type MemberFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> };
 
 export type FamilyFragmentFragment = { __typename?: 'Family', id: number, name: string, createdAt: string, updatedAt: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null }> };
 
@@ -2209,7 +2249,7 @@ export type GetMemberQueryVariables = Exact<{
 }>;
 
 
-export type GetMemberQuery = { __typename?: 'Query', member?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> } | null };
+export type GetMemberQuery = { __typename?: 'Query', member?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> } | null };
 
 export type GetMembersQueryVariables = Exact<{
   filter?: InputMaybe<MemberFilterInput>;
@@ -2217,7 +2257,16 @@ export type GetMembersQueryVariables = Exact<{
 }>;
 
 
-export type GetMembersQuery = { __typename?: 'Query', members: { __typename?: 'PaginatedMembers', total: number, page: number, limit: number, totalPages: number, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> }> } };
+export type GetMembersQuery = { __typename?: 'Query', members: { __typename?: 'PaginatedMembers', total: number, page: number, limit: number, totalPages: number, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> }> } };
+
+export type LookupByPhoneQueryVariables = Exact<{
+  phone: Scalars['String']['input'];
+  excludeMemberId?: InputMaybe<Scalars['Int']['input']>;
+  excludeTeenagerId?: InputMaybe<Scalars['Int']['input']>;
+}>;
+
+
+export type LookupByPhoneQuery = { __typename?: 'Query', lookupByPhone: Array<{ __typename?: 'PhoneLookupResult', type: PhoneOwnerType, id: number, full_name: string, contact_no?: string | null, status?: string | null, family_name?: string | null, class_name?: string | null }> };
 
 export type GetFamilyQueryVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -2364,7 +2413,7 @@ export type TransferMemberMutationVariables = Exact<{
 }>;
 
 
-export type TransferMemberMutation = { __typename?: 'Mutation', transferMember: { __typename?: 'TransferMemberResponse', success: boolean, message: string, member: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> }, oldFamily?: { __typename?: 'Family', id: number, name: string } | null, newFamily: { __typename?: 'Family', id: number, name: string } } };
+export type TransferMemberMutation = { __typename?: 'Mutation', transferMember: { __typename?: 'TransferMemberResponse', success: boolean, message: string, member: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> }, oldFamily?: { __typename?: 'Family', id: number, name: string } | null, newFamily: { __typename?: 'Family', id: number, name: string } } };
 
 export type CreateFamilyMutationVariables = Exact<{
   input: CreateFamilyInput;
@@ -2509,7 +2558,7 @@ export type GetFamilyMembersQueryVariables = Exact<{
 }>;
 
 
-export type GetFamilyMembersQuery = { __typename?: 'Query', family?: { __typename?: 'Family', id: number, name: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, createdAt: string, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> }> } | null };
+export type GetFamilyMembersQuery = { __typename?: 'Query', family?: { __typename?: 'Family', id: number, name: string, members: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, birth_date?: string | null, no_ministry: boolean, createdAt: string, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> }> } | null };
 
 export type GetFamilyStatsQueryVariables = Exact<{
   familyId: Scalars['Int']['input'];
@@ -2655,14 +2704,14 @@ export type GetMinistryMembersQueryVariables = Exact<{
 }>;
 
 
-export type GetMinistryMembersQuery = { __typename?: 'Query', ministryMembers: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> };
+export type GetMinistryMembersQuery = { __typename?: 'Query', ministryMembers: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> };
 
 export type GetMinistryLeadersQueryVariables = Exact<{
   ministryId: Scalars['Int']['input'];
 }>;
 
 
-export type GetMinistryLeadersQuery = { __typename?: 'Query', ministryLeaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> };
+export type GetMinistryLeadersQuery = { __typename?: 'Query', ministryLeaders: Array<{ __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null }> };
 
 export type CreateMinistryMutationVariables = Exact<{
   input: CreateMinistryInput;
@@ -3034,7 +3083,7 @@ export type MarkAnnouncementSeenMutation = { __typename?: 'Mutation', markAnnoun
 export type MemberChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MemberChangedSubscription = { __typename?: 'Subscription', memberChanged: { __typename?: 'MemberChangePayload', action: ChangeAction, id: number, member?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> } | null } };
+export type MemberChangedSubscription = { __typename?: 'Subscription', memberChanged: { __typename?: 'MemberChangePayload', action: ChangeAction, id: number, member?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, photo_url?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string }> } | null } };
 
 export type FamilyChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 

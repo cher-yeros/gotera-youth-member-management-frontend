@@ -1,9 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import MemberSearch from "@/components/shared/MemberSearch";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination from "@/components/shared/ListPagination";
+import ProfileCompletenessBadge, { CompletenessPageSummary } from "@/components/shared/ProfileCompletenessBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,12 +23,19 @@ import {
   useDeleteMember,
   useGetMembers,
   useGetFamily,
+  useGetFamilyMembers,
   useGetStatuses,
 } from "@/hooks/useGraphQL";
 import {
   ACTIVE_STATUS_NAME,
   getMemberCompleteness,
 } from "@/lib/memberCompleteness";
+import {
+  daysUntilLabel,
+  formatBirthdayMonthDay,
+  getUpcomingBirthdays,
+  UPCOMING_BIRTHDAY_DAYS,
+} from "@/lib/upcomingBirthdays";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import type { MemberFilterInput } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
@@ -31,6 +43,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/redux/useAuth";
+import { Cake } from "lucide-react";
 
 const FamilyMembers = () => {
   const { familyId } = useParams<{ familyId: string }>();
@@ -69,6 +82,19 @@ const FamilyMembers = () => {
     effectiveFamilyId || 0,
   );
 
+  // Full family roster for FL birthday suggestions (not limited by list pagination)
+  const { data: familyMembersData } = useGetFamilyMembers(
+    isFamilyLeaderView ? effectiveFamilyId || 0 : 0,
+  );
+
+  const upcomingBirthdays = useMemo(() => {
+    if (!isFamilyLeaderView) return [];
+    return getUpcomingBirthdays(
+      familyMembersData?.family?.members || [],
+      UPCOMING_BIRTHDAY_DAYS,
+    );
+  }, [isFamilyLeaderView, familyMembersData]);
+
   // Initialize filters with family + Active (unless include non-active)
   useEffect(() => {
     if (!effectiveFamilyId) return;
@@ -91,49 +117,6 @@ const FamilyMembers = () => {
   const totalPages = data?.members?.totalPages || 0;
   const total = data?.members?.total || 0;
   const family = familyData?.family;
-
-  const getCompletenessBadge = (member: (typeof members)[number]) => {
-    const { applicable, isIncomplete, isFullyIncomplete, missingFields } =
-      getMemberCompleteness(member);
-
-    if (!applicable) {
-      return (
-        <Badge className="text-xs bg-gray-100 text-gray-700">
-          Not checked (inactive)
-        </Badge>
-      );
-    }
-
-    if (isFullyIncomplete) {
-      return (
-        <div className="space-y-1">
-          <Badge className="text-xs bg-red-100 text-red-800">
-            Mostly empty
-          </Badge>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            Missing: {missingFields.join(", ")}
-          </p>
-        </div>
-      );
-    }
-
-    if (isIncomplete) {
-      return (
-        <div className="space-y-1">
-          <Badge className="text-xs bg-yellow-100 text-yellow-800">
-            Incomplete
-          </Badge>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            Missing: {missingFields.join(", ")}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <Badge className="text-xs bg-green-100 text-green-800">Complete</Badge>
-    );
-  };
 
   const incompleteOnPage = members.filter(
     (member) => getMemberCompleteness(member).isIncomplete,
@@ -171,10 +154,6 @@ const FamilyMembers = () => {
     }));
     setCurrentPage(1);
   };
-
-  // const handleDeleteMember = (member: { id: number; full_name: string }) => {
-  //   setMemberToDelete({ id: member.id, name: member.full_name });
-  // };
 
   const confirmDeleteMember = async () => {
     if (!memberToDelete) return;
@@ -231,12 +210,7 @@ const FamilyMembers = () => {
   if (familyLoading) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">
-            Loading family information...
-          </p>
-        </div>
+        <ListLoadingState message="Loading family information..." />
       </div>
     );
   }
@@ -244,23 +218,11 @@ const FamilyMembers = () => {
   if (!family) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white text-2xl">⚠️</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-red-600">
-            Family Not Found
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            The requested family could not be found.
-          </p>
-          <Button
-            onClick={handleBackToFamilies}
-            className="bg-brand-gradient hover:opacity-90 transition-opacity"
-          >
-            {isFamilyLeaderView ? "Back to Dashboard" : "Back to Families"}
-          </Button>
-        </div>
+        <ListErrorState
+          title="Family Not Found"
+          message="The requested family could not be found."
+          onRetry={handleBackToFamilies}
+        />
       </div>
     );
   }
@@ -268,66 +230,80 @@ const FamilyMembers = () => {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
-              {family.name}
-            </h1>
-          </div>
-        </div>
-        <Card className="shadow-brand">
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">
-                Error Loading Members
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {error.message || "Failed to load members. Please try again."}
-              </p>
-              <Button
-                onClick={() => refetch()}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader title={family.name} titleClassName="text-2xl sm:text-3xl" />
+        <ListErrorState
+          layout="page"
+          title="Error Loading Members"
+          message={error.message || "Failed to load members. Please try again."}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
-            {family.name}
-          </h1>
-          <p className="text-muted-foreground">{total} members</p>
-          <div className="mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBackToFamilies}
-              className="text-sm"
-            >
-              ← {isFamilyLeaderView ? "Back to Dashboard" : "Back to Families"}
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center space-x-4">
+      <PageHeader
+        title={family.name}
+        titleClassName="text-2xl sm:text-3xl truncate"
+        subtitle={`${total} members`}
+        back={{
+          label: isFamilyLeaderView ? "Back to Dashboard" : "Back to Families",
+          onClick: handleBackToFamilies,
+        }}
+        actions={
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMemberModalOpen(true)}
           >
             Add New Member
           </Button>
-        </div>
-      </div>
+        }
+      />
+
+      {isFamilyLeaderView && upcomingBirthdays.length > 0 && (
+        <Card className="border-2 border-pink-500/40 bg-pink-50 dark:bg-pink-950/20 shadow-brand">
+          <CardContent className="pt-6">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+              <div className="h-12 w-12 rounded-full bg-pink-100 dark:bg-pink-900/40 flex items-center justify-center shrink-0">
+                <Cake className="h-6 w-6 text-pink-600 dark:text-pink-400" />
+              </div>
+              <div className="flex-1 space-y-3 min-w-0">
+                <div>
+                  <h3 className="text-lg font-semibold text-pink-900 dark:text-pink-100">
+                    Upcoming birthdays
+                  </h3>
+                  <p className="text-sm text-pink-800 dark:text-pink-200">
+                    {upcomingBirthdays.length === 1
+                      ? "1 family member has a birthday in the next week."
+                      : `${upcomingBirthdays.length} family members have birthdays in the next week.`}
+                  </p>
+                </div>
+                <ul className="space-y-2">
+                  {upcomingBirthdays.map((item) => (
+                    <li
+                      key={item.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white/70 dark:bg-black/20 px-3 py-2"
+                    >
+                      <span className="font-medium text-pink-950 dark:text-pink-50">
+                        {item.full_name}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-pink-800 dark:text-pink-200">
+                          {formatBirthdayMonthDay(item.nextBirthday)}
+                        </span>
+                        <Badge className="bg-pink-100 text-pink-800 dark:bg-pink-900/50 dark:text-pink-200">
+                          {daysUntilLabel(item.daysUntil)}
+                        </Badge>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <MemberSearch
         onSearch={handleSearch}
@@ -357,43 +333,26 @@ const FamilyMembers = () => {
               Family Members List
             </CardTitle>
             {!loading && members.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <Badge className="bg-yellow-100 text-yellow-800">
-                  {incompleteOnPage} incomplete on this page
-                </Badge>
-                <Badge className="bg-green-100 text-green-800">
-                  {members.length - incompleteOnPage} complete on this page
-                </Badge>
-              </div>
+              <CompletenessPageSummary
+                incompleteCount={incompleteOnPage}
+                totalOnPage={members.length}
+              />
             )}
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading members...</p>
-            </div>
+            <ListLoadingState message="Loading members..." />
           ) : members.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">👥</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                No members found in this family
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Add the first member to the{" "}
-                {isFamilyLeaderView ? "your" : family.name} family to get
-                started.
-              </p>
-              <Button
-                onClick={() => setIsNewMemberModalOpen(true)}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Add First Member
-              </Button>
-            </div>
+            <ListEmptyState
+              icon="👥"
+              title="No members found in this family"
+              description={`Add the first member to the ${isFamilyLeaderView ? "your" : family.name} family to get started.`}
+              primaryAction={{
+                label: "Add First Member",
+                onClick: () => setIsNewMemberModalOpen(true),
+              }}
+            />
           ) : (
             <div className="space-y-4">
               {/* Mobile Card View - Hidden on desktop */}
@@ -442,7 +401,9 @@ const FamilyMembers = () => {
                           </div>
                         </div>
 
-                        <div>{getCompletenessBadge(member)}</div>
+                        <ProfileCompletenessBadge
+                          completeness={getMemberCompleteness(member)}
+                        />
 
                         {/* Member details */}
                         <div className="space-y-2 text-sm">
@@ -503,14 +464,6 @@ const FamilyMembers = () => {
                           >
                             Edit
                           </Button>
-                          {/* <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-red-600 hover:bg-red-50"
-                            onClick={() => handleDeleteMember(member)}
-                          >
-                            Delete
-                          </Button> */}
                         </div>
                       </div>
                     </CardContent>
@@ -574,7 +527,9 @@ const FamilyMembers = () => {
                             </div>
                           </td>
                           <td className="p-3 max-w-[180px]">
-                            {getCompletenessBadge(member)}
+                            <ProfileCompletenessBadge
+                              completeness={completeness}
+                            />
                           </td>
                           <td className="p-3">
                             <div className="text-sm text-muted-foreground">
@@ -637,14 +592,6 @@ const FamilyMembers = () => {
                               >
                                 Edit
                               </Button>
-                              {/* <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => handleDeleteMember(member)}
-                            >
-                              Delete
-                            </Button> */}
                             </div>
                           </td>
                         </tr>
@@ -654,101 +601,17 @@ const FamilyMembers = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-                {/* Page size selector */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Show:</span>
-                  <Select
-                    value={pageSize.toString()}
-                    onValueChange={(value) => {
-                      setPageSize(Number(value));
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                  >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    per page
-                  </span>
-                </div>
-
-                {/* Pagination info */}
-                <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                  {Math.min(currentPage * pageSize, total)} of {total} members
-                </div>
-
-                {/* Pagination controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      Previous
-                    </Button>
-
-                    <div className="flex space-x-1">
-                      {(() => {
-                        const maxVisiblePages = 5;
-                        const halfVisible = Math.floor(maxVisiblePages / 2);
-
-                        let startPage = Math.max(1, currentPage - halfVisible);
-                        const endPage = Math.min(
-                          totalPages,
-                          startPage + maxVisiblePages - 1,
-                        );
-
-                        // Adjust start page if we're near the end
-                        if (endPage - startPage + 1 < maxVisiblePages) {
-                          startPage = Math.max(
-                            1,
-                            endPage - maxVisiblePages + 1,
-                          );
-                        }
-
-                        const pages = [];
-                        for (let i = startPage; i <= endPage; i++) {
-                          pages.push(i);
-                        }
-
-                        return pages.map((page) => (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className={
-                              currentPage === page
-                                ? "bg-brand-gradient text-white"
-                                : ""
-                            }
-                          >
-                            {page}
-                          </Button>
-                        ));
-                      })()}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={total}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="members"
+              />
             </div>
           )}
         </CardContent>

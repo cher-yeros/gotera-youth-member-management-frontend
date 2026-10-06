@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenClassModalForm from "@/components/forms/NewTeenClassModalForm";
+import TeenClassSearch from "@/components/shared/TeenClassSearch";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination from "@/components/shared/ListPagination";
 import { useDeleteTeenClass, useGetTeenClasses } from "@/hooks/useTeenGraphQL";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,108 +22,276 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { BookOpen, Users } from "lucide-react";
+
+type TeenClassItem = {
+  id: number;
+  name: string;
+  description?: string | null;
+  teenCount?: number | null;
+  teacherCount?: number | null;
+};
 
 const TeenClassesPage = () => {
   const navigate = useNavigate();
-  const { data, loading } = useGetTeenClasses();
+  const { data, loading, error, refetch } = useGetTeenClasses();
   const { deleteTeenClass } = useDeleteTeenClass();
-  const classes = (data as any)?.teenClasses || [];
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [editClass, setEditClass] = useState<any | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
-  const [search, setSearch] = useState("");
+  const classes: TeenClassItem[] =
+    (data as { teenClasses?: TeenClassItem[] })?.teenClasses || [];
 
-  const filtered = classes.filter((c: any) =>
-    c.name.toLowerCase().includes(search.toLowerCase()),
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [editClass, setEditClass] = useState<TeenClassItem | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<TeenClassItem | null>(null);
+  const [searchFilters, setSearchFilters] = useState<{ search: string }>({
+    search: "",
+  });
+
+  const filtered = useMemo(() => {
+    const search = (searchFilters.search || "").toLowerCase();
+    return classes
+      .filter((c) => c.name.toLowerCase().includes(search))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [classes, searchFilters.search]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const paginated = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
   );
 
+  const handleSearch = useCallback((filters: { search: string }) => {
+    setSearchFilters(filters);
+    setCurrentPage(1);
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchFilters({ search: "" });
+    setCurrentPage(1);
+  }, []);
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Teen Classes" />
+        <ListErrorState
+          layout="page"
+          title="Error Loading Classes"
+          message={error.message || "Failed to load classes. Please try again."}
+          onRetry={() => refetch()}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient">
-            Teen Classes
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            {classes.length} classes
-          </p>
-        </div>
-        <div className="flex gap-2">
+    <div className="space-y-6">
+      <PageHeader
+        title="Teen Classes"
+        subtitle={`${classes.length} classes`}
+        actions={
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsCreateOpen(true)}
           >
             New Class
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Classes ({filtered.length})</CardTitle>
-          <input
-            className="border rounded px-3 py-1.5 text-sm"
-            placeholder="Search classes..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+      <TeenClassSearch
+        onSearch={handleSearch}
+        onClear={handleClearSearch}
+        isLoading={loading}
+      />
+
+      <Card className="shadow-brand">
+        <CardHeader>
+          <CardTitle className="text-brand-gradient">Classes List</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p>Loading...</p>
+            <ListLoadingState message="Loading classes..." />
+          ) : filtered.length === 0 ? (
+            <ListEmptyState
+              icon={<BookOpen className="h-8 w-8" />}
+              title={
+                searchFilters.search
+                  ? "No classes found matching your search"
+                  : "No classes found"
+              }
+              description={
+                searchFilters.search
+                  ? "Try adjusting your search criteria or clear the filters."
+                  : "Create your first teen class to get started."
+              }
+              secondaryAction={
+                searchFilters.search
+                  ? { label: "Clear Filters", onClick: handleClearSearch }
+                  : undefined
+              }
+              primaryAction={
+                !searchFilters.search
+                  ? { label: "Create First Class", onClick: () => setIsCreateOpen(true) }
+                  : undefined
+              }
+            />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left">
-                    <th className="py-2">Name</th>
-                    <th>Teens</th>
-                    <th>Teachers</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((c: any) => (
-                    <tr key={c.id} className="border-b">
-                      <td className="py-3 font-medium">{c.name}</td>
-                      <td>
-                        <Badge variant="secondary">{c.teenCount || 0}</Badge>
-                      </td>
-                      <td>
-                        <Badge variant="outline">{c.teacherCount || 0}</Badge>
-                      </td>
-                      <td className="space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/teen-classes/${c.id}`)}
-                        >
-                          Open
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setEditClass(c)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => setDeleteTarget(c)}
-                        >
-                          Delete
-                        </Button>
-                      </td>
+            <div className="space-y-4">
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-3">
+                {paginated.map((teenClass) => (
+                  <Card key={teenClass.id} className="shadow-sm border">
+                    <CardContent className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-semibold text-lg">
+                            {teenClass.name}
+                          </div>
+                          <Badge className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-900 shrink-0">
+                            {teenClass.teenCount || 0} teens
+                          </Badge>
+                        </div>
+                        {teenClass.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {teenClass.description}
+                          </p>
+                        )}
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary">
+                            <Users className="h-3 w-3 mr-1" />
+                            {teenClass.teenCount || 0} teenagers
+                          </Badge>
+                          <Badge variant="outline">
+                            {teenClass.teacherCount || 0} teachers
+                          </Badge>
+                        </div>
+                        <div className="flex space-x-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-green-600 hover:bg-green-50"
+                            onClick={() =>
+                              navigate(`/teen-classes/${teenClass.id}`)
+                            }
+                          >
+                            Open
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-blue-600 hover:bg-blue-50"
+                            onClick={() => setEditClass(teenClass)}
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-red-600 hover:bg-red-50"
+                            onClick={() => setDeleteTarget(teenClass)}
+                          >
+                            Delete
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-semibold">
+                        Class Name
+                      </th>
+                      <th className="text-left p-3 font-semibold">Teenagers</th>
+                      <th className="text-left p-3 font-semibold">Teachers</th>
+                      <th className="text-left p-3 font-semibold">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filtered.length === 0 && (
-                <p className="text-muted-foreground py-6 text-center">
-                  No classes yet.
-                </p>
-              )}
+                  </thead>
+                  <tbody>
+                    {paginated.map((teenClass) => (
+                      <tr
+                        key={teenClass.id}
+                        className="border-b hover:bg-muted/50"
+                      >
+                        <td className="p-3">
+                          <div className="font-medium">{teenClass.name}</div>
+                          {teenClass.description && (
+                            <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                              {teenClass.description}
+                            </p>
+                          )}
+                        </td>
+                        <td className="p-3">
+                          <Badge className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-900">
+                            {teenClass.teenCount || 0}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <Badge variant="outline">
+                            {teenClass.teacherCount || 0}
+                          </Badge>
+                        </td>
+                        <td className="p-3">
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-green-600 hover:bg-green-50"
+                              onClick={() =>
+                                navigate(`/teen-classes/${teenClass.id}`)
+                              }
+                            >
+                              Open
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-blue-600 hover:bg-blue-50"
+                              onClick={() => setEditClass(teenClass)}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => setDeleteTarget(teenClass)}
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={filtered.length}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="classes"
+                filtered={!!searchFilters.search}
+              />
             </div>
           )}
         </CardContent>
@@ -156,18 +330,21 @@ const TeenClassesPage = () => {
 
       <AlertDialog
         open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete class?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Class</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete {deleteTarget?.name}. Classes with
-              teenagers cannot be deleted.
+              Are you sure you want to delete{" "}
+              <strong>{deleteTarget?.name}</strong>? Classes with teenagers
+              cannot be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 if (deleteTarget) {
@@ -175,8 +352,9 @@ const TeenClassesPage = () => {
                   setDeleteTarget(null);
                 }
               }}
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
-              Delete
+              Delete Class
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -47,6 +47,7 @@ const PromoteTeenagerModal = ({
 
   const [familyId, setFamilyId] = useState<number | undefined>();
   const [ministryId, setMinistryId] = useState<number | undefined>();
+  const [noMinistry, setNoMinistry] = useState(false);
   const [contactNo, setContactNo] = useState(toLocalPhone(teenager.contact_no));
   const [createLogin, setCreateLogin] = useState(false);
   const [password, setPassword] = useState<string | null>(null);
@@ -56,7 +57,8 @@ const PromoteTeenagerModal = ({
     const result = await promoteTeenagerToMember({
       teenager_id: teenager.id,
       family_id: familyId,
-      ministry_ids: ministryId ? [ministryId] : [],
+      ministry_ids: noMinistry ? [] : ministryId ? [ministryId] : [],
+      no_ministry: noMinistry || undefined,
       roles: [ROLE.FM],
       contact_no: toE164Phone(contactNo) || undefined,
       create_login: createLogin,
@@ -115,13 +117,28 @@ const PromoteTeenagerModal = ({
             <div>
               <Label>Ministry</Label>
               <Select
-                value={ministryId ? String(ministryId) : undefined}
-                onValueChange={(v) => setMinistryId(parseInt(v))}
+                value={
+                  noMinistry
+                    ? "__none__"
+                    : ministryId
+                      ? String(ministryId)
+                      : undefined
+                }
+                onValueChange={(v) => {
+                  if (v === "__none__") {
+                    setNoMinistry(true);
+                    setMinistryId(undefined);
+                  } else {
+                    setNoMinistry(false);
+                    setMinistryId(parseInt(v));
+                  }
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select ministry" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="__none__">Ministry Unallocated</SelectItem>
                   {ministries.map((m: any) => (
                     <SelectItem key={m.id} value={String(m.id)}>
                       {m.name}

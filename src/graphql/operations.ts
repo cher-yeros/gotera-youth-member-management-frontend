@@ -65,6 +65,7 @@ export const MEMBER_BASIC_FRAGMENT = gql`
     full_name
     contact_no
     gender
+    birth_date
     status_id
     family_id
     role_id
@@ -72,6 +73,7 @@ export const MEMBER_BASIC_FRAGMENT = gql`
     location_id
     profession_name
     location_name
+    no_ministry
     createdAt
     updatedAt
     family {
@@ -110,6 +112,7 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
     full_name
     contact_no
     gender
+    birth_date
     status_id
     family_id
     role_id
@@ -117,6 +120,7 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
     location_id
     profession_name
     location_name
+    no_ministry
     createdAt
     updatedAt
     family {
@@ -286,6 +290,7 @@ export const MEMBER_FRAGMENT = gql`
     contact_no
     gender
     photo_url
+    birth_date
     status_id
     family_id
     role_id
@@ -293,6 +298,7 @@ export const MEMBER_FRAGMENT = gql`
     location_id
     profession_name
     location_name
+    no_ministry
     createdAt
     updatedAt
     family {
@@ -577,6 +583,28 @@ export const GET_MEMBERS = gql`
     }
   }
   ${MEMBER_FRAGMENT}
+`;
+
+export const LOOKUP_BY_PHONE = gql`
+  query LookupByPhone(
+    $phone: String!
+    $excludeMemberId: Int
+    $excludeTeenagerId: Int
+  ) {
+    lookupByPhone(
+      phone: $phone
+      excludeMemberId: $excludeMemberId
+      excludeTeenagerId: $excludeTeenagerId
+    ) {
+      type
+      id
+      full_name
+      contact_no
+      status
+      family_name
+      class_name
+    }
+  }
 `;
 
 // FAMILY QUERIES
@@ -1086,6 +1114,8 @@ export const GET_FAMILY_MEMBERS = gql`
         full_name
         contact_no
         gender
+        birth_date
+        no_ministry
         role {
           id
           name

@@ -1,6 +1,11 @@
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import AddMemberToMinistryForm from "@/components/forms/AddMemberToMinistryForm";
 import MemberSearch from "@/components/shared/MemberSearch";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination from "@/components/shared/ListPagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +28,7 @@ import {
 } from "@/hooks/useGraphQL";
 import { formatMinistryProgram } from "@/lib/ministryProgram";
 import { useAuth } from "@/redux/useAuth";
-import { ArrowLeft, CalendarClock, UserPlus, Users } from "lucide-react";
+import { CalendarClock, UserPlus, Users } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 
@@ -39,6 +44,8 @@ const MinistryMembers = () => {
     id: number;
     name: string;
   } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   // Determine if this is a ministry leader accessing their own ministry
   // Check both the route param and the pathname since /ministries/my-ministry doesn't have a param
@@ -74,6 +81,12 @@ const MinistryMembers = () => {
   const { updateMember } = useUpdateMember();
 
   const members = data?.ministryMembers || [];
+  const totalMembers = members.length;
+  const totalPages = Math.max(1, Math.ceil(totalMembers / pageSize));
+  const paginatedMembers = members.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
   const ministry = ministryData?.ministry;
   const programLabel = formatMinistryProgram(
     ministry?.program_frequency,
@@ -141,15 +154,16 @@ const MinistryMembers = () => {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   if (ministryLoading) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">
-            Loading ministry information...
-          </p>
-        </div>
+        <ListLoadingState message="Loading ministry information..." />
       </div>
     );
   }
@@ -157,23 +171,11 @@ const MinistryMembers = () => {
   if (!ministry) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-12">
-          <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-            <span className="text-white text-2xl">⚠️</span>
-          </div>
-          <h3 className="text-lg font-semibold mb-2 text-red-600">
-            Ministry Not Found
-          </h3>
-          <p className="text-muted-foreground mb-4">
-            The requested ministry could not be found.
-          </p>
-          <Button
-            onClick={handleBackToMinistrys}
-            className="bg-brand-gradient hover:opacity-90 transition-opacity"
-          >
-            Back to Ministries
-          </Button>
-        </div>
+        <ListErrorState
+          title="Ministry Not Found"
+          message="The requested ministry could not be found."
+          onRetry={handleBackToMinistrys}
+        />
       </div>
     );
   }
@@ -181,67 +183,30 @@ const MinistryMembers = () => {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
-              {ministry.name}
-            </h1>
-          </div>
-        </div>
-        <Card className="shadow-brand">
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">
-                Error Loading Members
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {error.message || "Failed to load members. Please try again."}
-              </p>
-              <Button
-                onClick={() => refetch()}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader title={ministry.name} titleClassName="text-2xl sm:text-3xl" />
+        <ListErrorState
+          layout="page"
+          title="Error Loading Members"
+          message={error.message || "Failed to load members. Please try again."}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient truncate">
-            {ministry.name}
-          </h1>
-          <p className="text-muted-foreground">{members.length} members</p>
-          {programLabel && (
-            <Badge className="mt-2 w-fit bg-indigo-100 text-indigo-800">
-              <CalendarClock className="mr-1 h-3 w-3" />
-              {programLabel}
-            </Badge>
-          )}
-          <div className="mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleBackToMinistrys}
-              className="text-sm"
-            >
-              <ArrowLeft className="mr-1 h-3 w-3" />
-              {isMinistryLeaderView
-                ? "Back to Dashboard"
-                : "Back to Ministries"}
-            </Button>
-          </div>
-        </div>
-        <div className="flex items-center space-x-4">
+      <PageHeader
+        title={ministry.name}
+        titleClassName="text-2xl sm:text-3xl truncate"
+        subtitle={`${totalMembers} members`}
+        back={{
+          label: isMinistryLeaderView
+            ? "Back to Dashboard"
+            : "Back to Ministries",
+          onClick: handleBackToMinistrys,
+        }}
+        actions={
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMemberModalOpen(true)}
@@ -249,8 +214,15 @@ const MinistryMembers = () => {
             <UserPlus className="mr-2 h-4 w-4" />
             Add Member to Ministry
           </Button>
-        </div>
-      </div>
+        }
+      />
+
+      {programLabel && (
+        <Badge className="w-fit bg-indigo-100 text-indigo-800">
+          <CalendarClock className="mr-1 h-3 w-3" />
+          {programLabel}
+        </Badge>
+      )}
 
       <MemberSearch
         onSearch={handleSearch}
@@ -266,33 +238,22 @@ const MinistryMembers = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading members...</p>
-            </div>
+            <ListLoadingState message="Loading members..." />
           ) : members.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Users className="text-white text-2xl" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                No members found in this ministry
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Add members to the {ministry.name} ministry to get started.
-              </p>
-              <Button
-                onClick={() => setIsNewMemberModalOpen(true)}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Add First Member
-              </Button>
-            </div>
+            <ListEmptyState
+              icon={<Users className="h-8 w-8" />}
+              title="No members found in this ministry"
+              description={`Add members to the ${ministry.name} ministry to get started.`}
+              primaryAction={{
+                label: "Add First Member",
+                onClick: () => setIsNewMemberModalOpen(true),
+              }}
+            />
           ) : (
             <div className="space-y-4">
               {/* Mobile Card View */}
               <div className="block md:hidden space-y-3">
-                {members.map((member: Member) => (
+                {paginatedMembers.map((member: Member) => (
                   <Card key={member.id} className="shadow-sm border">
                     <CardContent className="p-4">
                       <div className="space-y-3">
@@ -433,7 +394,7 @@ const MinistryMembers = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {members.map((member: Member) => (
+                    {paginatedMembers.map((member: Member) => (
                       <tr
                         key={member.id}
                         className="border-b hover:bg-muted/50"
@@ -540,6 +501,18 @@ const MinistryMembers = () => {
                   </tbody>
                 </table>
               </div>
+
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={totalMembers}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="members"
+              />
             </div>
           )}
         </CardContent>

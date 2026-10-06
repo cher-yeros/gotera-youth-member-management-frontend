@@ -906,8 +906,16 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                  {stats?.ministryUnallocatedMembers || 0}
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
+                    {stats?.ministryUnallocatedMembers || 0}
+                  </div>
+                  <Link
+                    to="/members?no_ministry=1"
+                    className="text-xs text-primary hover:underline"
+                  >
+                    View members
+                  </Link>
                 </div>
               </div>
             </div>

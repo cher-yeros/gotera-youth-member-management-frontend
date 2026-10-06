@@ -25,13 +25,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   CREATE_FAMILY_MEETUP_BATCH,
@@ -39,11 +32,16 @@ import {
   GET_FAMILY_MEETUP_BATCHES,
   UPDATE_FAMILY_MEETUP_BATCH,
 } from "@/graphql/operations";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination from "@/components/shared/ListPagination";
+import InlineSearchRow from "@/components/shared/InlineSearchRow";
 import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { format } from "date-fns";
 import {
-  ArrowLeft,
   Calendar,
   CalendarIcon,
   CheckCircle,
@@ -51,7 +49,6 @@ import {
   Edit,
   MapPin,
   Plus,
-  Search,
   Trash2,
   TrendingUp,
   Users,
@@ -111,15 +108,12 @@ const FamilyMeetupsManagement: React.FC = () => {
     meetup_date: new Date(),
   });
 
-  const { data, loading, error } = useQuery(
-    GET_FAMILY_MEETUP_BATCHES,
-    {
-      variables: {
-        filter: {},
-        pagination: { page: 1, limit: 1000 },
-      },
+  const { data, loading, error } = useQuery(GET_FAMILY_MEETUP_BATCHES, {
+    variables: {
+      filter: {},
+      pagination: { page: 1, limit: 1000 },
     },
-  );
+  });
 
   const [createBatch, { loading: creating }] = useMutation(
     CREATE_FAMILY_MEETUP_BATCH,
@@ -372,22 +366,16 @@ const FamilyMeetupsManagement: React.FC = () => {
 
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-start gap-4">
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="px-0 hover:bg-transparent"
-              onClick={() => {
-                setViewedBatchId(null);
-                setFamilySearchTerm("");
-              }}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to batches
-            </Button>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              {viewedBatch.title}
-            </h1>
+        <PageHeader
+          title={viewedBatch.title}
+          back={{
+            label: "Back to batches",
+            onClick: () => {
+              setViewedBatchId(null);
+              setFamilySearchTerm("");
+            },
+          }}
+          subtitle={
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
@@ -400,32 +388,30 @@ const FamilyMeetupsManagement: React.FC = () => {
               {getStatusBadge(viewedBatch.meetup_date)}
               <Badge variant="outline">{stats.familyCount} families</Badge>
             </div>
-          </div>
-          <div className="flex items-center space-x-2 shrink-0">
-            <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Batch
-            </Button>
-            <Button
-              variant="outline"
-              className="text-red-600 hover:text-red-700"
-              onClick={() => handleDelete(viewedBatch)}
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </Button>
-          </div>
-        </div>
+          }
+          actions={
+            <div className="flex items-center space-x-2 shrink-0">
+              <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Batch
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700"
+                onClick={() => handleDelete(viewedBatch)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          }
+        />
 
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search families..."
-            value={familySearchTerm}
-            onChange={(e) => setFamilySearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <InlineSearchRow
+          value={familySearchTerm}
+          onChange={setFamilySearchTerm}
+          placeholder="Search families..."
+        />
 
         <Card className="shadow-brand">
           <CardHeader>
@@ -647,46 +633,26 @@ const FamilyMeetupsManagement: React.FC = () => {
   // List view: batches only
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            Family Meetups Management
-          </h1>
-          <p className="text-muted-foreground">{batches.length} batches</p>
-        </div>
-        <div className="flex items-center space-x-4">
+      <PageHeader
+        title="Family Meetups Management"
+        subtitle={`${batches.length} batches`}
+        actions={
           <Button onClick={handleCreate} className="bg-brand-gradient">
             <Plus className="h-4 w-4 mr-2" />
             Create Meetup Batch
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search meetup batches..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="pl-10"
-          />
-        </div>
-        {searchTerm && (
-          <Button
-            onClick={() => {
-              setSearchTerm("");
-              setCurrentPage(1);
-            }}
-            variant="outline"
-          >
-            Clear
-          </Button>
-        )}
-      </div>
+      <InlineSearchRow
+        value={searchTerm}
+        onChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1);
+        }}
+        onClear={() => setCurrentPage(1)}
+        placeholder="Search meetup batches..."
+      />
 
       <Card className="shadow-brand">
         <CardHeader>
@@ -696,37 +662,42 @@ const FamilyMeetupsManagement: React.FC = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading batches...</p>
-            </div>
+            <ListLoadingState message="Loading batches..." />
           ) : error ? (
-            <div className="text-center py-12">
-              <p className="text-red-600">
-                Error loading batches: {error.message}
-              </p>
-            </div>
+            <ListErrorState
+              title="Error Loading Batches"
+              message={error.message}
+            />
           ) : paginatedBatches.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">📅</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {searchTerm
+            <ListEmptyState
+              icon="📅"
+              title={
+                searchTerm
                   ? "No meetup batches found matching your search"
-                  : "No meetup batches found"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {searchTerm
+                  : "No meetup batches found"
+              }
+              description={
+                searchTerm
                   ? "Try adjusting your search criteria"
-                  : "Create a meetup batch to schedule the same meetup for every family"}
-              </p>
-              {!searchTerm && (
-                <Button onClick={handleCreate} className="bg-brand-gradient">
-                  Create First Meetup Batch
-                </Button>
-              )}
-            </div>
+                  : "Create a meetup batch to schedule the same meetup for every family"
+              }
+              secondaryAction={
+                searchTerm
+                  ? {
+                      label: "Clear Filters",
+                      onClick: () => {
+                        setSearchTerm("");
+                        setCurrentPage(1);
+                      },
+                    }
+                  : undefined
+              }
+              primaryAction={
+                !searchTerm
+                  ? { label: "Create First Meetup Batch", onClick: handleCreate }
+                  : undefined
+              }
+            />
           ) : (
             <>
               <div className="overflow-x-auto">
@@ -836,53 +807,20 @@ const FamilyMeetupsManagement: React.FC = () => {
                 </table>
               </div>
 
-              {totalPages > 1 && (
-                <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-muted-foreground">Show:</span>
-                    <Select
-                      value={pageSize.toString()}
-                      onValueChange={(value) => {
-                        setPageSize(Number(value));
-                        setCurrentPage(1);
-                      }}
-                    >
-                      <SelectTrigger className="w-20">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="10">10</SelectItem>
-                        <SelectItem value="20">20</SelectItem>
-                        <SelectItem value="50">50</SelectItem>
-                        <SelectItem value="100">100</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                    {Math.min(currentPage * pageSize, filtered.length)} of{" "}
-                    {filtered.length} batches
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={filtered.length}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="batches"
+                showPageNumbers={false}
+                hideWhenSinglePage
+                filtered={!!searchTerm}
+              />
             </>
           )}
         </CardContent>

@@ -33,7 +33,9 @@ import { isFollowUpCoordinator, ROLE_LABELS } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { toast } from "react-toastify";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
+import PhoneExistsNotice from "@/components/forms/PhoneExistsNotice";
 import { sanitizeLocalPhone, toE164Phone } from "@/lib/phone";
+import { formatPhoneOwner, usePhoneLookup } from "@/hooks/usePhoneLookup";
 
 interface IntakeNewcomerModalProps {
   open: boolean;
@@ -70,6 +72,16 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
   const canAssign = isFollowUpCoordinator(user);
   const [form, setForm] = useState(emptyForm);
 
+  const {
+    matches: phoneMatches,
+    loading: phoneChecking,
+    exists: phoneExists,
+    primary: existingPhoneOwner,
+  } = usePhoneLookup({
+    localPhone: form.contact_no,
+    enabled: open,
+  });
+
   const { data: locationsData, loading: locationsLoading } = useQuery(
     GET_LOCATIONS,
     { skip: !open },
@@ -103,6 +115,13 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
     e.preventDefault();
     if (!form.full_name.trim()) {
       toast.error("Full name is required");
+      return;
+    }
+
+    if (phoneExists && existingPhoneOwner) {
+      toast.error(
+        `Phone already registered to ${formatPhoneOwner(existingPhoneOwner)}`,
+      );
       return;
     }
 
@@ -195,6 +214,7 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
               </Select>
             </div>
           </div>
+          <PhoneExistsNotice matches={phoneMatches} loading={phoneChecking} />
           <div className="space-y-2">
             <Label>Location *</Label>
             <ComboBox
@@ -336,7 +356,10 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button
+              type="submit"
+              disabled={loading || phoneExists || phoneChecking}
+            >
               {loading ? "Saving..." : "Create intake"}
             </Button>
           </div>

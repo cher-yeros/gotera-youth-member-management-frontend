@@ -1,26 +1,42 @@
 import { TeenAttendanceModal } from "@/components/forms/TeenAttendanceModal";
 import CreateClassSessionBatchModal from "@/components/forms/CreateClassSessionBatchModal";
 import EditClassSessionBatchModal from "@/components/forms/EditClassSessionBatchModal";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination from "@/components/shared/ListPagination";
+import InlineSearchRow from "@/components/shared/InlineSearchRow";
 import {
   useDeleteClassSessionBatch,
   useGetClassSessionBatches,
 } from "@/hooks/useTeenGraphQL";
 import { format, parseISO } from "date-fns";
 import {
-  ArrowLeft,
+  Calendar,
   CheckCircle,
+  ChevronRight,
   Edit,
-  Eye,
-  Search,
+  MapPin,
+  Trash2,
   TrendingUp,
   Users,
   XCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 interface SessionInBatch {
   id: number;
@@ -59,11 +75,23 @@ interface ClassSessionBatch {
 const TeenSessionsManagement = () => {
   const [viewedBatchId, setViewedBatchId] = useState<number | null>(null);
   const [classSearchTerm, setClassSearchTerm] = useState("");
-  const { data, loading } = useGetClassSessionBatches(undefined, {
-    page: 1,
-    limit: 50,
-  });
-  const { deleteClassSessionBatch } = useDeleteClassSessionBatch();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [batchToDelete, setBatchToDelete] = useState<ClassSessionBatch | null>(
+    null,
+  );
+
+  const { data, loading, error, refetch } = useGetClassSessionBatches(
+    undefined,
+    {
+      page: 1,
+      limit: 1000,
+    },
+  );
+  const { deleteClassSessionBatch, loading: deleting } =
+    useDeleteClassSessionBatch();
+
   const batches =
     (data as { classSessionBatches?: { batches: ClassSessionBatch[] } })
       ?.classSessionBatches?.batches || [];
@@ -99,6 +127,38 @@ const TeenSessionsManagement = () => {
     };
   };
 
+  const getStatusBadge = (sessionDate: string) => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (sessionDate === today) {
+      return <Badge variant="default">Today</Badge>;
+    }
+    if (sessionDate < today) {
+      return <Badge variant="secondary">Past</Badge>;
+    }
+    return <Badge variant="outline">Upcoming</Badge>;
+  };
+
+  const filteredBatches = useCallback(
+    (items: ClassSessionBatch[]) => {
+      if (!searchTerm) return items;
+      const term = searchTerm.toLowerCase();
+      return items.filter(
+        (batch) =>
+          batch.title.toLowerCase().includes(term) ||
+          (batch.location || "").toLowerCase().includes(term) ||
+          (batch.description || "").toLowerCase().includes(term),
+      );
+    },
+    [searchTerm],
+  );
+
+  const filtered = filteredBatches(batches);
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  const paginatedBatches = filtered.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize,
+  );
+
   const classSessions = useMemo(() => {
     if (!viewedBatch) return [];
     const sessions = [...(viewedBatch.sessions || [])].sort((a, b) =>
@@ -111,58 +171,76 @@ const TeenSessionsManagement = () => {
     );
   }, [viewedBatch, classSearchTerm]);
 
+  const confirmDelete = async () => {
+    if (!batchToDelete) return;
+    await deleteClassSessionBatch(batchToDelete.id);
+    setBatchToDelete(null);
+    if (viewedBatchId === batchToDelete.id) {
+      setViewedBatchId(null);
+    }
+  };
+
   if (viewedBatch) {
     const stats = getBatchStats(viewedBatch);
 
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-start gap-4">
-          <div className="space-y-2">
-            <Button
-              variant="ghost"
-              className="px-0 hover:bg-transparent"
-              onClick={() => {
-                setViewedBatchId(null);
-                setClassSearchTerm("");
-              }}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to batches
-            </Button>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              {viewedBatch.title}
-            </h1>
+        <PageHeader
+          title={viewedBatch.title}
+          back={{
+            label: "Back to batches",
+            onClick: () => {
+              setViewedBatchId(null);
+              setClassSearchTerm("");
+            },
+          }}
+          actions={
+            <div className="flex items-center space-x-2 shrink-0">
+              <EditClassSessionBatchModal
+                batch={viewedBatch}
+                trigger={
+                  <Button variant="outline">
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Session
+                  </Button>
+                }
+              />
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700"
+                onClick={() => setBatchToDelete(viewedBatch)}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
+          }
+          subtitle={
             <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-              <span>{formatSessionDate(viewedBatch.session_date)}</span>
-              {viewedBatch.location && <span>· {viewedBatch.location}</span>}
+              <span className="flex items-center gap-1">
+                <Calendar className="h-4 w-4" />
+                {formatSessionDate(viewedBatch.session_date)}
+              </span>
+              {viewedBatch.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {viewedBatch.location}
+                </span>
+              )}
+              {getStatusBadge(viewedBatch.session_date)}
               <Badge variant="outline">{stats.classCount} classes</Badge>
               <Badge variant="secondary">
                 {stats.attendanceRate.toFixed(1)}% attendance
               </Badge>
             </div>
-          </div>
-          <div className="flex items-center space-x-2 shrink-0">
-            <EditClassSessionBatchModal
-              batch={viewedBatch}
-              trigger={
-                <Button variant="outline">
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Session
-                </Button>
-              }
-            />
-          </div>
-        </div>
+          }
+        />
 
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search classes..."
-            value={classSearchTerm}
-            onChange={(e) => setClassSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <InlineSearchRow
+          value={classSearchTerm}
+          onChange={setClassSearchTerm}
+          placeholder="Search classes..."
+        />
 
         <Card className="shadow-brand">
           <CardHeader>
@@ -252,7 +330,6 @@ const TeenSessionsManagement = () => {
                               readOnly
                               trigger={
                                 <Button variant="outline" size="sm">
-                                  <Eye className="h-4 w-4 mr-1" />
                                   View
                                 </Button>
                               }
@@ -267,100 +344,345 @@ const TeenSessionsManagement = () => {
             )}
           </CardContent>
         </Card>
+
+        <AlertDialog
+          open={!!batchToDelete}
+          onOpenChange={(open) => !open && setBatchToDelete(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Session Batch</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will permanently delete the session batch &quot;
+                {batchToDelete?.title}&quot; for all{" "}
+                {batchToDelete?.sessions?.length || 0} classes, including
+                attendance records.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setBatchToDelete(null)}>
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete Batch"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-brand-gradient">
-            Teen Sessions
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {batches.length} batches
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <CreateClassSessionBatchModal />
-        </div>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Teen Sessions"
+        subtitle={`${batches.length} batches`}
+        actions={<CreateClassSessionBatchModal />}
+      />
 
-      <Card>
+      <InlineSearchRow
+        value={searchTerm}
+        onChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1);
+        }}
+        onClear={() => setCurrentPage(1)}
+        placeholder="Search session batches..."
+      />
+
+      <Card className="shadow-brand">
         <CardHeader>
-          <CardTitle>Session Batches ({batches.length})</CardTitle>
+          <CardTitle className="text-brand-gradient">
+            Session Day Batches
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {loading && <p>Loading...</p>}
-          {batches.map((b) => {
-            const stats = getBatchStats(b);
-            return (
-              <div
-                key={b.id}
-                className="flex flex-col md:flex-row md:items-center justify-between gap-2 border rounded-lg p-3"
-              >
-                <div>
-                  <div className="font-medium">{b.title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {formatSessionDate(b.session_date)}
-                    {b.location ? ` · ${b.location}` : ""}
-                  </div>
-                  <div className="text-xs mt-1 flex flex-wrap items-center gap-2">
-                    <span>{stats.classCount} class sessions</span>
-                    <span>·</span>
-                    <span className="text-green-600 font-medium">
-                      {stats.attendanceRate.toFixed(1)}% attendance
-                    </span>
-                    <span>
-                      ({stats.present}/{stats.total} present)
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant={b.is_active ? "secondary" : "outline"}>
-                    {b.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setViewedBatchId(b.id)}
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Attendance
-                  </Button>
-                  <EditClassSessionBatchModal
-                    batch={b}
-                    trigger={
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-4 w-4 mr-1" />
-                        Edit
-                      </Button>
+        <CardContent>
+          {loading ? (
+            <ListLoadingState message="Loading batches..." />
+          ) : error ? (
+            <ListErrorState
+              title="Error Loading Batches"
+              message={error.message}
+              onRetry={() => refetch()}
+            />
+          ) : paginatedBatches.length === 0 ? (
+            <ListEmptyState
+              icon="📅"
+              title={
+                searchTerm
+                  ? "No session batches found matching your search"
+                  : "No session batches found"
+              }
+              description={
+                searchTerm
+                  ? "Try adjusting your search criteria"
+                  : "Create a session batch to open attendance for all classes"
+              }
+              secondaryAction={
+                searchTerm
+                  ? {
+                      label: "Clear Filters",
+                      onClick: () => {
+                        setSearchTerm("");
+                        setCurrentPage(1);
+                      },
                     }
-                  />
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={async () => {
-                      if (confirm(`Delete batch "${b.title}"?`)) {
-                        await deleteClassSessionBatch(b.id);
-                      }
-                    }}
-                  >
-                    Delete
-                  </Button>
-                </div>
+                  : undefined
+              }
+            />
+          ) : (
+            <div className="space-y-4">
+              {/* Mobile Card View */}
+              <div className="block md:hidden space-y-3">
+                {paginatedBatches.map((batch) => {
+                  const stats = getBatchStats(batch);
+                  return (
+                    <Card
+                      key={batch.id}
+                      className="shadow-sm border cursor-pointer"
+                      onClick={() => setViewedBatchId(batch.id)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="font-semibold text-lg">
+                              {batch.title}
+                            </div>
+                            {getStatusBadge(batch.session_date)}
+                          </div>
+                          <div className="space-y-1 text-sm text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4" />
+                              {formatSessionDate(batch.session_date)}
+                            </div>
+                            {batch.location && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4" />
+                                {batch.location}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline">
+                              {stats.classCount} classes
+                            </Badge>
+                            <Badge variant="secondary">
+                              {stats.attendanceRate.toFixed(1)}% attendance
+                            </Badge>
+                          </div>
+                          <div className="flex space-x-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setViewedBatchId(batch.id);
+                              }}
+                            >
+                              View
+                            </Button>
+                            <div onClick={(e) => e.stopPropagation()}>
+                              <EditClassSessionBatchModal
+                                batch={batch}
+                                trigger={
+                                  <Button variant="outline" size="sm">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setBatchToDelete(batch);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
-            );
-          })}
-          {!loading && batches.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              No session batches yet. Create one to open attendance for all
-              classes.
-            </p>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3 font-semibold">Session</th>
+                      <th className="text-left p-3 font-semibold">Classes</th>
+                      <th className="text-left p-3 font-semibold">Date</th>
+                      <th className="text-left p-3 font-semibold">Location</th>
+                      <th className="text-left p-3 font-semibold">Status</th>
+                      <th className="text-left p-3 font-semibold">
+                        Attendance
+                      </th>
+                      <th className="text-left p-3 font-semibold">
+                        Created By
+                      </th>
+                      <th className="text-left p-3 font-semibold">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedBatches.map((batch) => {
+                      const stats = getBatchStats(batch);
+                      return (
+                        <tr
+                          key={batch.id}
+                          className="border-b hover:bg-muted/50 cursor-pointer"
+                          onClick={() => setViewedBatchId(batch.id)}
+                        >
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              <div>
+                                <div className="font-medium">{batch.title}</div>
+                                {batch.description && (
+                                  <div className="text-sm text-muted-foreground">
+                                    {batch.description}
+                                  </div>
+                                )}
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <Badge variant="outline">
+                              {stats.classCount} classes
+                            </Badge>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="h-4 w-4 text-muted-foreground" />
+                              {formatSessionDate(batch.session_date)}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              {batch.location ? (
+                                <>
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  {batch.location}
+                                </>
+                              ) : (
+                                "—"
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            {getStatusBadge(batch.session_date)}
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              <div className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                                <span className="font-medium text-green-600">
+                                  {stats.attendanceRate.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                                {stats.present}
+                                <XCircle className="h-3 w-3 text-red-600 ml-2" />
+                                {stats.absent}
+                                <Users className="h-3 w-3 text-muted-foreground ml-2" />
+                                {stats.total}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {batch.creator?.full_name || "—"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div
+                              className="flex items-center gap-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <EditClassSessionBatchModal
+                                batch={batch}
+                                trigger={
+                                  <Button variant="outline" size="sm">
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                }
+                              />
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setBatchToDelete(batch)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={filtered.length}
+                onPageChange={(page) => setCurrentPage(page)}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="batches"
+                showPageNumbers={false}
+                hideWhenSinglePage
+                filtered={!!searchTerm}
+              />
+            </div>
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog
+        open={!!batchToDelete}
+        onOpenChange={(open) => !open && setBatchToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Session Batch</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the session batch &quot;
+              {batchToDelete?.title}&quot; for all{" "}
+              {batchToDelete?.sessions?.length || 0} classes, including
+              attendance records.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBatchToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete Batch"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

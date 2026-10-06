@@ -1,118 +1,204 @@
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import LoadingCard from "@/components/ui/loading-card";
+import PageHeader from "@/components/shared/PageHeader";
 import {
   useGetMyTeenClasses,
   useGetClassSessions,
 } from "@/hooks/useTeenGraphQL";
+import { BookOpen, CalendarCheck, GraduationCap, Users } from "lucide-react";
+
+type TeenClassItem = {
+  id: number;
+  name: string;
+  teenCount?: number | null;
+  teacherCount?: number | null;
+};
+
+type ClassSession = {
+  id: number;
+  class_id: number;
+  title: string;
+  session_date: string;
+  teenClass?: { id: number; name: string } | null;
+};
 
 const TeenTeacherDashboard = () => {
   const navigate = useNavigate();
-  const { data: classesData } = useGetMyTeenClasses();
-  const classes = (classesData as any)?.myTeenClasses || [];
-  const { data: sessionsData } = useGetClassSessions(
+  const { data: classesData, loading: classesLoading } = useGetMyTeenClasses();
+  const classes: TeenClassItem[] =
+    (classesData as { myTeenClasses?: TeenClassItem[] })?.myTeenClasses || [];
+
+  const { data: sessionsData, loading: sessionsLoading } = useGetClassSessions(
     { is_active: true },
-    { page: 1, limit: 20 },
+    { page: 1, limit: 50 },
   );
+
   const today = new Date().toISOString().slice(0, 10);
-  const classIds = new Set(classes.map((c: any) => c.id));
-  const todaySessions = (
-    (sessionsData as any)?.classSessions?.sessions || []
-  ).filter((s: any) => classIds.has(s.class_id) && s.session_date === today);
+  const classIds = new Set(classes.map((c) => c.id));
+  const todaySessions: ClassSession[] = (
+    (sessionsData as { classSessions?: { sessions: ClassSession[] } })
+      ?.classSessions?.sessions || []
+  ).filter((s) => classIds.has(s.class_id) && s.session_date === today);
 
   const totalTeens = classes.reduce(
-    (sum: number, c: any) => sum + (c.teenCount || 0),
+    (sum, c) => sum + (c.teenCount || 0),
     0,
   );
 
-  return (
-    <div className="p-4 md:p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-brand-gradient">
-            Teen Teacher Dashboard
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {classes.length} classes
-            {todaySessions.length > 0 ? ` · ${todaySessions.length} today` : ""}
-          </p>
+  const isLoading = classesLoading || sessionsLoading;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Teen Teacher Dashboard"
+          subtitle="Loading dashboard..."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <LoadingCard
+              key={index}
+              variant="minimal"
+              className="hover-brand-glow transition-all duration-300"
+            />
+          ))}
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        title="Teen Teacher Dashboard"
+        subtitle={`${classes.length} classes${
+          todaySessions.length > 0
+            ? ` · ${todaySessions.length} session${todaySessions.length === 1 ? "" : "s"} today`
+            : ""
+        }`}
+      />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">My Classes</CardTitle>
+        <Card className="shadow-brand hover-brand-glow transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">My Classes</CardTitle>
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="text-3xl font-bold">
-            {classes.length}
+          <CardContent>
+            <div className="text-3xl font-bold">{classes.length}</div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Teenagers</CardTitle>
+        <Card className="shadow-brand hover-brand-glow transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Teenagers</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="text-3xl font-bold">{totalTeens}</CardContent>
+          <CardContent>
+            <div className="text-3xl font-bold">{totalTeens}</div>
+          </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Today&apos;s Sessions</CardTitle>
+        <Card className="shadow-brand hover-brand-glow transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Today&apos;s Sessions
+            </CardTitle>
+            <CalendarCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
-          <CardContent className="text-3xl font-bold">
-            {todaySessions.length}
+          <CardContent>
+            <div className="text-3xl font-bold">{todaySessions.length}</div>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Quick Actions</CardTitle>
+      <Card className="shadow-brand">
+        <CardHeader>
+          <CardTitle className="text-brand-gradient">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => navigate("/teen-classes/my-classes")}
           >
+            <BookOpen className="h-4 w-4 mr-2" />
             Open My Classes
           </Button>
           <Button
             variant="outline"
             onClick={() => navigate("/teen-attendance")}
           >
+            <Users className="h-4 w-4 mr-2" />
             Record Attendance
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Classes</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {classes.map((c: any) => (
-            <div
-              key={c.id}
-              className="flex items-center justify-between border rounded p-3"
-            >
-              <div>
-                <div className="font-medium">{c.name}</div>
-                <div className="text-sm text-muted-foreground">
-                  {c.teenCount || 0} teens
-                </div>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigate(`/teen-classes/${c.id}`)}
+      {todaySessions.length > 0 && (
+        <Card className="shadow-brand">
+          <CardHeader>
+            <CardTitle className="text-brand-gradient">
+              Today&apos;s Sessions
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {todaySessions.map((session) => (
+              <div
+                key={session.id}
+                className="flex items-center justify-between border rounded-lg p-3"
               >
-                Open
-              </Button>
+                <div>
+                  <div className="font-medium">{session.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {session.teenClass?.name || "Class"}
+                  </div>
+                </div>
+                <Badge variant="default">Today</Badge>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="shadow-brand">
+        <CardHeader>
+          <CardTitle className="text-brand-gradient">Classes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {classes.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-sm text-muted-foreground">
+                You are not assigned to any classes yet.
+              </p>
             </div>
-          ))}
-          {classes.length === 0 && (
-            <p className="text-sm text-muted-foreground">
-              You are not assigned to any classes yet.
-            </p>
+          ) : (
+            <div className="space-y-2">
+              {classes.map((c) => (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between border rounded-lg p-3 hover:bg-muted/50"
+                >
+                  <div>
+                    <div className="font-medium">{c.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {c.teenCount || 0} teens
+                      {c.teacherCount != null
+                        ? ` · ${c.teacherCount} teachers`
+                        : ""}
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-green-600 hover:bg-green-50"
+                    onClick={() => navigate(`/teen-classes/${c.id}`)}
+                  >
+                    Open
+                  </Button>
+                </div>
+              ))}
+            </div>
           )}
         </CardContent>
       </Card>

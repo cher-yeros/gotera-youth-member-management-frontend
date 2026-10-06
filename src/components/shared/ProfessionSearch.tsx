@@ -1,7 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { Search, X } from "lucide-react";
+import SearchFilterCard from "@/components/shared/SearchFilterCard";
 import { useState, useCallback } from "react";
 
 interface ProfessionSearchProps {
@@ -10,11 +7,11 @@ interface ProfessionSearchProps {
   isLoading?: boolean;
 }
 
-const ProfessionSearch: React.FC<ProfessionSearchProps> = ({
+const ProfessionSearch = ({
   onSearch,
   onClear,
   isLoading = false,
-}) => {
+}: ProfessionSearchProps) => {
   const [searchTerm, setSearchTerm] = useState("");
 
   const handleSearch = useCallback(() => {
@@ -26,49 +23,33 @@ const ProfessionSearch: React.FC<ProfessionSearchProps> = ({
     onClear();
   }, [onClear]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
+  const hasActiveFilters = Boolean(searchTerm.trim());
 
   return (
-    <Card className="shadow-brand">
-      <CardContent className="p-4">
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search professions..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="pl-10 focus-brand-ring"
-              disabled={isLoading}
-            />
+    <SearchFilterCard
+      title="Search Professions"
+      isLoading={isLoading}
+      hasActiveFilters={hasActiveFilters}
+      onClear={handleClear}
+      searchValue={searchTerm}
+      onSearchChange={setSearchTerm}
+      onSearchSubmit={handleSearch}
+      searchPlaceholder="Search professions..."
+      clearPlacement="inline"
+      onSearchKeyDown={(e) => {
+        if (e.key === "Enter") handleSearch();
+      }}
+      activeFiltersSummary={
+        hasActiveFilters ? (
+          <div className="text-sm text-muted-foreground">
+            <p>Active filters:</p>
+            <ul className="list-disc list-inside space-y-1 mt-1">
+              {searchTerm && <li>Search: &quot;{searchTerm}&quot;</li>}
+            </ul>
           </div>
-          <div className="flex gap-2">
-            <Button
-              onClick={handleSearch}
-              disabled={isLoading}
-              className="bg-brand-gradient hover:opacity-90 transition-opacity"
-            >
-              <Search className="mr-2 h-4 w-4" />
-              Search
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleClear}
-              disabled={isLoading}
-              className="border-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              <X className="mr-2 h-4 w-4" />
-              Clear
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+        ) : undefined
+      }
+    />
   );
 };
 

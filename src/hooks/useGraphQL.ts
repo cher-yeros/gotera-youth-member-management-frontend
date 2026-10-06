@@ -802,6 +802,7 @@ export const useGetRecentMembers = (limit: number = 5) => {
   });
 };
 
+/** Pass limit 0 to fetch all family summaries (no slice). */
 export const useGetFamilySummaries = (limit: number = 5) => {
   return useQuery<any>(GET_FAMILY_SUMMARIES, {
     variables: { limit },

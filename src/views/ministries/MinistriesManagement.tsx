@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMinistryModalForm from "@/components/forms/NewMinistryModalForm";
 import PromoteMinistryLeaderModal from "@/components/forms/PromoteMinistryLeaderModal";
@@ -30,7 +34,7 @@ const MinistriesManagement = () => {
     useState(false);
   const [isPromoteModalOpen, setIsPromoteModalOpen] = useState(false);
   const [selectedMinistryId, setSelectedMinistryId] = useState<number | null>(
-    null
+    null,
   );
   const [ministryToDelete, setMinistryToDelete] = useState<{
     id: number;
@@ -39,7 +43,6 @@ const MinistriesManagement = () => {
   const [ministryToPromote, setMinistryToPromote] = useState<{
     id: number;
     name: string;
-    members: unknown[];
   } | null>(null);
 
   // Fetch ministries and stats
@@ -106,7 +109,6 @@ const MinistriesManagement = () => {
     setMinistryToPromote({
       id: ministry.id,
       name: ministry.name,
-      members: [], // Will be fetched separately in the modal
     });
     setIsPromoteModalOpen(true);
   };
@@ -133,7 +135,7 @@ const MinistriesManagement = () => {
         totalMembers: number;
         totalLeaders: number;
         activeMembers: number;
-      }) => stat.id === ministryId
+      }) => stat.id === ministryId,
     );
     return stats || { totalMembers: 0, totalLeaders: 0, activeMembers: 0 };
   };
@@ -141,18 +143,8 @@ const MinistriesManagement = () => {
   if (loading || statsLoading) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              Ministries Management
-            </h1>
-            <p className="text-muted-foreground">Ministries</p>
-          </div>
-        </div>
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading ministries...</p>
-        </div>
+        <PageHeader title="Ministries Management" subtitle="Ministries" />
+        <ListLoadingState message="Loading ministries..." />
       </div>
     );
   }
@@ -160,50 +152,25 @@ const MinistriesManagement = () => {
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              Ministries Management
-            </h1>
-            <p className="text-muted-foreground">Ministries</p>
-          </div>
-        </div>
-        <Card className="shadow-brand">
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">
-                Error Loading Ministries
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {error.message ||
-                  "Failed to load ministries. Please try again."}
-              </p>
-              <Button
-                onClick={() => refetch()}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader title="Ministries Management" subtitle="Ministries" />
+        <ListErrorState
+          layout="page"
+          title="Error Loading Ministries"
+          message={
+            error.message || "Failed to load ministries. Please try again."
+          }
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            Ministries Management
-          </h1>
-          <p className="text-muted-foreground">{ministries.length} ministries</p>
-        </div>
-        <div className="flex items-center space-x-4">
+      <PageHeader
+        title="Ministries Management"
+        subtitle={`${ministries.length} ministries`}
+        actions={
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewMinistryModalOpen(true)}
@@ -211,8 +178,8 @@ const MinistriesManagement = () => {
             <Users className="mr-2 h-4 w-4" />
             Create New Ministry
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <Card className="shadow-brand">
         <CardHeader>
@@ -220,24 +187,15 @@ const MinistriesManagement = () => {
         </CardHeader>
         <CardContent>
           {ministries.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <Users className="text-white text-2xl" />
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                No ministries found
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first ministry to get started with ministry
-                management.
-              </p>
-              <Button
-                onClick={() => setIsNewMinistryModalOpen(true)}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Create First Ministry
-              </Button>
-            </div>
+            <ListEmptyState
+              icon={<Users className="h-8 w-8" />}
+              title="No ministries found"
+              description="Create your first ministry to get started with ministry management."
+              primaryAction={{
+                label: "Create First Ministry",
+                onClick: () => setIsNewMinistryModalOpen(true),
+              }}
+            />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {ministries.map((ministry: unknown) => {

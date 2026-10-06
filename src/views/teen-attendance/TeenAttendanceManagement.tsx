@@ -3,9 +3,13 @@ import SessionTopicModal from "@/components/forms/SessionTopicModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination from "@/components/shared/ListPagination";
+import InlineSearchRow from "@/components/shared/InlineSearchRow";
 import {
   useGetClassSessions,
   useGetMyTeenClasses,
@@ -16,7 +20,6 @@ import { format, parseISO } from "date-fns";
 import {
   CheckCircle,
   Eye,
-  Search,
   TrendingUp,
   Users,
   XCircle,
@@ -236,88 +239,6 @@ const TeenAttendanceManagement: React.FC = () => {
     );
   };
 
-  const renderPagination = (list: ClassSession[], label: string) => {
-    const totalPages = Math.ceil(list.length / pageSize);
-    if (totalPages <= 1) return null;
-
-    return (
-      <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">Show:</span>
-          <Select
-            value={pageSize.toString()}
-            onValueChange={(value) => {
-              setPageSize(Number(value));
-              setCurrentPage(1);
-            }}
-          >
-            <option value="5">5</option>
-            <option value="10">10</option>
-            <option value="20">20</option>
-            <option value="50">50</option>
-          </Select>
-          <span className="text-sm text-muted-foreground">per page</span>
-        </div>
-
-        <div className="text-sm text-muted-foreground">
-          Showing {(currentPage - 1) * pageSize + 1} to{" "}
-          {Math.min(currentPage * pageSize, list.length)} of {list.length}{" "}
-          {label}
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentPage === 1}
-            onClick={() => handlePageChange(currentPage - 1)}
-          >
-            Previous
-          </Button>
-
-          <div className="flex space-x-1">
-            {(() => {
-              const maxVisiblePages = 5;
-              const halfVisible = Math.floor(maxVisiblePages / 2);
-              let startPage = Math.max(1, currentPage - halfVisible);
-              const endPage = Math.min(
-                totalPages,
-                startPage + maxVisiblePages - 1,
-              );
-              if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-              }
-              const pages = [];
-              for (let i = startPage; i <= endPage; i++) pages.push(i);
-              return pages.map((page) => (
-                <Button
-                  key={page}
-                  variant={currentPage === page ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => handlePageChange(page)}
-                  className={
-                    currentPage === page ? "bg-brand-gradient text-white" : ""
-                  }
-                >
-                  {page}
-                </Button>
-              ));
-            })()}
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={currentPage === totalPages}
-            onClick={() => handlePageChange(currentPage + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
   const renderMobileCards = (
     list: ClassSession[],
     options: { showActions: boolean; finalLabel?: boolean },
@@ -509,66 +430,36 @@ const TeenAttendanceManagement: React.FC = () => {
   if (!classesLoading && myClasses.length === 0) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-brand-gradient">
-              Attendance Management
-            </h1>
-            <p className="text-muted-foreground">Class sessions</p>
-          </div>
-        </div>
-        <Card className="shadow-brand">
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">
-                {isAdmin ? "No Teen Classes" : "No Classes Assigned"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {isAdmin
-                  ? "Create teen classes and session days before attendance can be recorded."
-                  : "You need to be assigned as a teacher to a teen class to manage attendance."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader
+          title="Attendance Management"
+          subtitle="Class sessions"
+        />
+        <ListErrorState
+          layout="page"
+          title={isAdmin ? "No Teen Classes" : "No Classes Assigned"}
+          message={
+            isAdmin
+              ? "Create teen classes and session days before attendance can be recorded."
+              : "You need to be assigned as a teacher to a teen class to manage attendance."
+          }
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            Attendance Management
-          </h1>
-          <p className="text-muted-foreground">{sessions.length} sessions</p>
-        </div>
-      </div>
+      <PageHeader
+        title="Attendance Management"
+        subtitle={`${sessions.length} sessions`}
+      />
 
-      <div className="flex items-center space-x-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Search sessions..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        {searchTerm && (
-          <Button
-            onClick={handleClearSearch}
-            variant="outline"
-            className="border-primary hover:bg-primary hover:text-primary-foreground"
-          >
-            Clear
-          </Button>
-        )}
-      </div>
+      <InlineSearchRow
+        value={searchTerm}
+        onChange={handleSearch}
+        onClear={handleClearSearch}
+        placeholder="Search sessions..."
+      />
 
       <Card className="shadow-brand">
         <CardHeader>
@@ -589,55 +480,34 @@ const TeenAttendanceManagement: React.FC = () => {
 
             <TabsContent value="upcoming" className="space-y-4 mt-4">
               {loading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto" />
-                  <p className="mt-4 text-muted-foreground">
-                    Loading sessions...
-                  </p>
-                </div>
+                <ListLoadingState message="Loading sessions..." />
               ) : error ? (
-                <div className="text-center py-12">
-                  <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-white text-2xl">⚠️</span>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2 text-red-600">
-                    Error Loading Sessions
-                  </h3>
-                  <p className="text-muted-foreground mb-4">{error.message}</p>
-                  <Button
-                    onClick={() => window.location.reload()}
-                    className="bg-brand-gradient hover:opacity-90 transition-opacity"
-                  >
-                    Retry
-                  </Button>
-                </div>
+                <ListErrorState
+                  title="Error Loading Sessions"
+                  message={error.message}
+                  onRetry={() => window.location.reload()}
+                />
               ) : filteredSessions(upcomingSessions).length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-white text-2xl">📅</span>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    {searchTerm
+                <ListEmptyState
+                  icon="📅"
+                  title={
+                    searchTerm
                       ? "No upcoming sessions found matching your search"
-                      : "No upcoming sessions found"}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {searchTerm
+                      : "No upcoming sessions found"
+                  }
+                  description={
+                    searchTerm
                       ? "Try adjusting your search criteria or clear the filters to see all sessions."
                       : isAdmin
                         ? "Create a session day from Teen Sessions to open attendance for all classes."
-                        : "No sessions have been scheduled yet. Contact an admin to create a session day."}
-                  </p>
-                  {searchTerm && (
-                    <Button
-                      onClick={handleClearSearch}
-                      variant="outline"
-                      className="border-primary hover:bg-primary hover:text-primary-foreground"
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
+                        : "No sessions have been scheduled yet. Contact an admin to create a session day."
+                  }
+                  secondaryAction={
+                    searchTerm
+                      ? { label: "Clear Filters", onClick: handleClearSearch }
+                      : undefined
+                  }
+                />
               ) : (
                 <div className="space-y-4">
                   {renderMobileCards(filteredSessions(upcomingSessions), {
@@ -646,40 +516,44 @@ const TeenAttendanceManagement: React.FC = () => {
                   {renderDesktopTable(filteredSessions(upcomingSessions), {
                     showActions: true,
                   })}
-                  {renderPagination(
-                    filteredSessions(upcomingSessions),
-                    "upcoming sessions",
-                  )}
+                  <ListPagination
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    totalItems={filteredSessions(upcomingSessions).length}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size);
+                      setCurrentPage(1);
+                    }}
+                    itemLabel="upcoming sessions"
+                    showPageNumbers={false}
+                    hideWhenSinglePage
+                    filtered={!!searchTerm}
+                  />
                 </div>
               )}
             </TabsContent>
 
             <TabsContent value="past" className="space-y-4 mt-4">
               {filteredSessions(pastSessions).length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <span className="text-white text-2xl">📅</span>
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">
-                    {searchTerm
+                <ListEmptyState
+                  icon="📅"
+                  title={
+                    searchTerm
                       ? "No past sessions found matching your search"
-                      : "No past sessions found"}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {searchTerm
+                      : "No past sessions found"
+                  }
+                  description={
+                    searchTerm
                       ? "Try adjusting your search criteria or clear the filters to see all sessions."
-                      : "Past sessions will appear here once they are completed."}
-                  </p>
-                  {searchTerm && (
-                    <Button
-                      onClick={handleClearSearch}
-                      variant="outline"
-                      className="border-primary hover:bg-primary hover:text-primary-foreground"
-                    >
-                      Clear Filters
-                    </Button>
-                  )}
-                </div>
+                      : "Past sessions will appear here once they are completed."
+                  }
+                  secondaryAction={
+                    searchTerm
+                      ? { label: "Clear Filters", onClick: handleClearSearch }
+                      : undefined
+                  }
+                />
               ) : (
                 <div className="space-y-4">
                   {renderMobileCards(filteredSessions(pastSessions), {
@@ -690,10 +564,20 @@ const TeenAttendanceManagement: React.FC = () => {
                     showActions: true,
                     finalLabel: true,
                   })}
-                  {renderPagination(
-                    filteredSessions(pastSessions),
-                    "past sessions",
-                  )}
+                  <ListPagination
+                    currentPage={currentPage}
+                    pageSize={pageSize}
+                    totalItems={filteredSessions(pastSessions).length}
+                    onPageChange={handlePageChange}
+                    onPageSizeChange={(size) => {
+                      setPageSize(size);
+                      setCurrentPage(1);
+                    }}
+                    itemLabel="past sessions"
+                    showPageNumbers={false}
+                    hideWhenSinglePage
+                    filtered={!!searchTerm}
+                  />
                 </div>
               )}
             </TabsContent>

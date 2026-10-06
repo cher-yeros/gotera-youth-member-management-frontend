@@ -1,11 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewFamilyModalForm from "@/components/forms/NewFamilyModalForm";
 import FamilySearch from "@/components/shared/FamilySearch";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListPagination from "@/components/shared/ListPagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +23,7 @@ import {
   useDeleteFamily,
   useGetFamilies,
   useGetFamilyPlacementNeeds,
+  useGetFamilySummaries,
 } from "@/hooks/useGraphQL";
 import { useState, useCallback, useMemo } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +36,26 @@ import {
   genderSkewLabel,
   type FamilyPlacementNeed,
 } from "@/lib/familyPlacement";
+
+type FamilyCompletenessSummary = {
+  id: number;
+  memberCount: number;
+  completeMemberCount: number;
+  incompleteMemberCount: number;
+};
+
+const getActiveCompletionPercent = (
+  summary?: FamilyCompletenessSummary,
+): number | null => {
+  if (!summary || summary.memberCount <= 0) return null;
+  return Math.round((summary.completeMemberCount / summary.memberCount) * 100);
+};
+
+const completionBadgeClass = (percent: number) => {
+  if (percent >= 80) return "bg-green-100 text-green-900";
+  if (percent >= 50) return "bg-amber-100 text-amber-900";
+  return "bg-red-100 text-red-900";
+};
 
 const FamiliesPage = () => {
   const navigate = useNavigate();
@@ -56,6 +80,9 @@ const FamiliesPage = () => {
     loading: placementLoading,
     refetch: refetchPlacement,
   } = useGetFamilyPlacementNeeds();
+  // limit 0 = all families (same completeness logic as dashboard)
+  const { data: summariesData, loading: summariesLoading } =
+    useGetFamilySummaries(0);
   const { deleteFamily } = useDeleteFamily();
 
   const [updateFollowUpCase] = useMutation(UPDATE_FOLLOW_UP_CASE, {
@@ -80,6 +107,14 @@ const FamiliesPage = () => {
     }
     return map;
   }, [placementData]);
+
+  const completenessById = useMemo(() => {
+    const map = new Map<number, FamilyCompletenessSummary>();
+    for (const summary of summariesData?.familySummaries || []) {
+      map.set(summary.id, summary);
+    }
+    return map;
+  }, [summariesData]);
 
   const needsMembersCount = useMemo(
     () =>
@@ -264,29 +299,50 @@ const FamiliesPage = () => {
     );
   };
 
-  const isLoading = loading || placementLoading;
+  const renderCompletion = (familyId: number) => {
+    const summary = completenessById.get(familyId);
+    const percent = getActiveCompletionPercent(summary);
+
+    if (percent === null) {
+      return (
+        <span className="text-xs text-muted-foreground">No active members</span>
+      );
+    }
+
+    return (
+      <div className="space-y-1">
+        <Badge
+          className={`px-2 py-1 rounded-full text-xs ${completionBadgeClass(percent)}`}
+          title={`${summary!.completeMemberCount} of ${summary!.memberCount} active members complete`}
+        >
+          {percent}%
+        </Badge>
+        <p className="text-xs text-muted-foreground">
+          {summary!.completeMemberCount}/{summary!.memberCount} active complete
+        </p>
+      </div>
+    );
+  };
+
+  const isLoading = loading || placementLoading || summariesLoading;
+  const hasActiveFilters = !!(searchFilters.search || needsMembersOnly);
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">Families</h1>
-          <p className="text-muted-foreground">
-            {totalFamilies} families
-            {needsMembersCount > 0
-              ? ` · ${needsMembersCount} need members`
-              : ""}
-          </p>
-        </div>
-        <div className="flex items-center space-x-4">
+      <PageHeader
+        title="Families"
+        subtitle={`${totalFamilies} families${
+          needsMembersCount > 0 ? ` · ${needsMembersCount} need members` : ""
+        }`}
+        actions={
           <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewFamilyModalOpen(true)}
           >
             Add New Family
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <FamilySearch
         onSearch={handleSearch}
@@ -316,44 +372,34 @@ const FamiliesPage = () => {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading families...</p>
-            </div>
+            <ListLoadingState message="Loading families..." />
           ) : filteredFamilies.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">
-                  {searchFilters.search || needsMembersOnly ? "🔍" : "👥"}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {searchFilters.search || needsMembersOnly
+            <ListEmptyState
+              icon={hasActiveFilters ? "🔍" : "👥"}
+              title={
+                hasActiveFilters
                   ? "No families found matching your filters"
-                  : "No families found"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {searchFilters.search || needsMembersOnly
+                  : "No families found"
+              }
+              description={
+                hasActiveFilters
                   ? "Try adjusting your search or clear the needs-members filter."
-                  : "Add your first family to get started with the Gotera Youth system."}
-              </p>
-              {searchFilters.search || needsMembersOnly ? (
-                <Button
-                  onClick={handleClearSearch}
-                  variant="outline"
-                  className="border-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  Clear Filters
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setIsNewFamilyModalOpen(true)}
-                  className="bg-brand-gradient hover:opacity-90 transition-opacity"
-                >
-                  Add First Family
-                </Button>
-              )}
-            </div>
+                  : "Add your first family to get started with the Gotera Youth system."
+              }
+              secondaryAction={
+                hasActiveFilters
+                  ? { label: "Clear Filters", onClick: handleClearSearch }
+                  : undefined
+              }
+              primaryAction={
+                !hasActiveFilters
+                  ? {
+                      label: "Add First Family",
+                      onClick: () => setIsNewFamilyModalOpen(true),
+                    }
+                  : undefined
+              }
+            />
           ) : (
             <div className="space-y-4">
               {/* Mobile Card View */}
@@ -374,6 +420,13 @@ const FamiliesPage = () => {
                           </div>
 
                           {renderPlacementBadges(placement)}
+
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Active members completion
+                            </p>
+                            {renderCompletion(family.id)}
+                          </div>
 
                           {placement?.needsMembers &&
                             placement.needReasons.length > 0 && (
@@ -433,6 +486,9 @@ const FamiliesPage = () => {
                         Active / Gender
                       </th>
                       <th className="text-left p-3 font-semibold">
+                        Active completion
+                      </th>
+                      <th className="text-left p-3 font-semibold">
                         Suggested newcomers
                       </th>
                       <th className="text-left p-3 font-semibold">
@@ -465,6 +521,7 @@ const FamiliesPage = () => {
                               </Badge>
                             )}
                           </td>
+                          <td className="p-3">{renderCompletion(family.id)}</td>
                           <td className="p-3">
                             {renderSuggestions(family.id, placement)}
                           </td>
@@ -500,98 +557,18 @@ const FamiliesPage = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Show:</span>
-                  <Select
-                    value={pageSize.toString()}
-                    onValueChange={(value) => {
-                      setPageSize(Number(value));
-                      setCurrentPage(1);
-                    }}
-                  >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    per page
-                  </span>
-                </div>
-
-                <div className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                  {Math.min(currentPage * pageSize, filteredFamilies.length)} of{" "}
-                  {filteredFamilies.length} families
-                </div>
-
-                {totalPages > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      Previous
-                    </Button>
-
-                    <div className="flex space-x-1">
-                      {(() => {
-                        const maxVisiblePages = 5;
-                        const halfVisible = Math.floor(maxVisiblePages / 2);
-
-                        let startPage = Math.max(1, currentPage - halfVisible);
-                        const endPage = Math.min(
-                          totalPages,
-                          startPage + maxVisiblePages - 1,
-                        );
-
-                        if (endPage - startPage + 1 < maxVisiblePages) {
-                          startPage = Math.max(
-                            1,
-                            endPage - maxVisiblePages + 1,
-                          );
-                        }
-
-                        const pages = [];
-                        for (let i = startPage; i <= endPage; i++) {
-                          pages.push(i);
-                        }
-
-                        return pages.map((page) => (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className={
-                              currentPage === page
-                                ? "bg-brand-gradient text-white"
-                                : ""
-                            }
-                          >
-                            {page}
-                          </Button>
-                        ));
-                      })()}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={filteredFamilies.length}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="families"
+                filtered={hasActiveFilters}
+              />
             </div>
           )}
         </CardContent>

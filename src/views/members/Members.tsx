@@ -1,12 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
 import MemberViewModal from "@/components/forms/MemberViewModal";
@@ -16,6 +9,12 @@ import PasswordDisplayModal from "@/components/forms/PasswordDisplayModal";
 import TransferMemberModal from "@/components/forms/TransferMemberModal";
 import MemberSearch from "@/components/shared/MemberSearch";
 import { PersonAvatar } from "@/components/shared/PersonAvatar";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListErrorState from "@/components/shared/ListErrorState";
+import ListPagination, { LIST_PAGE_SIZE_ALL } from "@/components/shared/ListPagination";
+import ProfileCompletenessBadge, { CompletenessPageSummary } from "@/components/shared/ProfileCompletenessBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,9 +58,15 @@ const Members = () => {
   const [unassignedOnly, setUnassignedOnly] = useState(
     () => searchParams.get("unassigned") === "1",
   );
-  const [searchFilters, setSearchFilters] = useState<MemberFilterInput>(() =>
-    searchParams.get("unassigned") === "1" ? { unassigned: true } : {},
+  const [noMinistryOnly, setNoMinistryOnly] = useState(
+    () => searchParams.get("no_ministry") === "1",
   );
+  const [searchFilters, setSearchFilters] = useState<MemberFilterInput>(() => {
+    const initial: MemberFilterInput = {};
+    if (searchParams.get("unassigned") === "1") initial.unassigned = true;
+    if (searchParams.get("no_ministry") === "1") initial.no_ministry = true;
+    return initial;
+  });
   const [memberToDelete, setMemberToDelete] = useState<{
     id: number;
     name: string;
@@ -111,50 +116,7 @@ const Members = () => {
   const members = data?.members?.members || [];
   const total = data?.members?.total || 0;
   // Calculate totalPages on frontend to handle "All" option properly
-  const totalPages = pageSize === 10000 ? 1 : Math.ceil(total / pageSize);
-
-  const getCompletenessBadge = (member: (typeof members)[number]) => {
-    const { applicable, isIncomplete, isFullyIncomplete, missingFields } =
-      getMemberCompleteness(member);
-
-    if (!applicable) {
-      return (
-        <Badge className="text-xs bg-gray-100 text-gray-700">
-          Not checked (inactive)
-        </Badge>
-      );
-    }
-
-    if (isFullyIncomplete) {
-      return (
-        <div className="space-y-1">
-          <Badge className="text-xs bg-red-100 text-red-800">
-            Mostly empty
-          </Badge>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            Missing: {missingFields.join(", ")}
-          </p>
-        </div>
-      );
-    }
-
-    if (isIncomplete) {
-      return (
-        <div className="space-y-1">
-          <Badge className="text-xs bg-yellow-100 text-yellow-800">
-            Incomplete
-          </Badge>
-          <p className="text-[11px] text-muted-foreground leading-tight">
-            Missing: {missingFields.join(", ")}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <Badge className="text-xs bg-green-100 text-green-800">Complete</Badge>
-    );
-  };
+  const totalPages = pageSize === LIST_PAGE_SIZE_ALL ? 1 : Math.ceil(total / pageSize);
 
   const incompleteOnPage = members.filter(
     (member) => getMemberCompleteness(member).isIncomplete,
@@ -174,6 +136,21 @@ const Members = () => {
     // Only sync when the URL changes, not when local toggle flips (handled below)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, canFilterUnassigned]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("no_ministry") === "1";
+    if (fromUrl !== noMinistryOnly) {
+      setNoMinistryOnly(fromUrl);
+      setSearchFilters((prev) => ({
+        ...prev,
+        no_ministry: fromUrl || undefined,
+        ministry_id: fromUrl ? undefined : prev.ministry_id,
+        ministry_ids: fromUrl ? undefined : prev.ministry_ids,
+      }));
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const applyUnassignedOnly = useCallback(
     (checked: boolean) => {
@@ -199,33 +176,44 @@ const Members = () => {
 
   const handleSearch = useCallback(
     (filters: MemberFilterInput) => {
+      const nextNoMinistry = filters.no_ministry === true;
+      setNoMinistryOnly(nextNoMinistry);
       setSearchFilters({
         ...filters,
         unassigned: unassignedOnly || undefined,
         family_id: unassignedOnly ? undefined : filters.family_id,
+        no_ministry: nextNoMinistry || undefined,
+        ministry_id: nextNoMinistry ? undefined : filters.ministry_id,
       });
       setCurrentPage(1);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (nextNoMinistry) next.set("no_ministry", "1");
+          else next.delete("no_ministry");
+          return next;
+        },
+        { replace: true },
+      );
     },
-    [unassignedOnly],
+    [unassignedOnly, setSearchParams],
   );
 
   const handleClearSearch = useCallback(() => {
     setUnassignedOnly(false);
+    setNoMinistryOnly(false);
     setSearchFilters({});
     setCurrentPage(1);
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
         next.delete("unassigned");
+        next.delete("no_ministry");
         return next;
       },
       { replace: true },
     );
   }, [setSearchParams]);
-
-  // const handleDeleteMember = (member: { id: number; full_name: string }) => {
-  //   setMemberToDelete({ id: member.id, name: member.full_name });
-  // };
 
   const confirmDeleteMember = async () => {
     if (!memberToDelete) return;
@@ -471,70 +459,54 @@ const Members = () => {
     setIsExportModalOpen(false);
   };
 
+  const hasActiveFilters = Object.keys(searchFilters).length > 0;
+
   if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-brand-gradient">Members</h1>
-          </div>
-        </div>
-        <Card className="shadow-brand">
-          <CardContent>
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-red-500 rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">⚠️</span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2 text-red-600">
-                Error Loading Members
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {error.message || "Failed to load members. Please try again."}
-              </p>
-              <Button
-                onClick={() => refetch()}
-                className="bg-brand-gradient hover:opacity-90 transition-opacity"
-              >
-                Retry
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader title="Members" />
+        <ListErrorState
+          layout="page"
+          title="Error Loading Members"
+          message={error.message || "Failed to load members. Please try again."}
+          onRetry={() => refetch()}
+        />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">Members</h1>
-          <p className="text-muted-foreground">{total} members</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="outline"
-            className="border-primary hover:bg-primary hover:text-primary-foreground"
-            onClick={() => setIsExportModalOpen(true)}
-            disabled={isExporting}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {isExporting ? "Exporting..." : "Export"}
-          </Button>
-          <Button
-            className="bg-brand-gradient hover:opacity-90 transition-opacity"
-            onClick={() => setIsNewMemberModalOpen(true)}
-          >
-            Add New Member
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Members"
+        subtitle={`${total} members`}
+        actions={
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="outline"
+              className="border-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={() => setIsExportModalOpen(true)}
+              disabled={isExporting}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {isExporting ? "Exporting..." : "Export"}
+            </Button>
+            <Button
+              className="bg-brand-gradient hover:opacity-90 transition-opacity"
+              onClick={() => setIsNewMemberModalOpen(true)}
+            >
+              Add New Member
+            </Button>
+          </div>
+        }
+      />
 
       <MemberSearch
         onSearch={handleSearch}
         onClear={handleClearSearch}
         isLoading={loading}
         hideFamilyFilter={unassignedOnly}
+        initialNoMinistry={noMinistryOnly}
         extraFiltersActive={unassignedOnly}
         extraFiltersLabel="Unassigned only"
         extraFilters={
@@ -558,57 +530,43 @@ const Members = () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <CardTitle className="text-brand-gradient">Members List</CardTitle>
             {!loading && members.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <Badge className="bg-yellow-100 text-yellow-800">
-                  {incompleteOnPage} incomplete on this page
-                </Badge>
-                <Badge className="bg-green-100 text-green-800">
-                  {members.length - incompleteOnPage} complete on this page
-                </Badge>
-              </div>
+              <CompletenessPageSummary
+                incompleteCount={incompleteOnPage}
+                totalOnPage={members.length}
+              />
             )}
           </div>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">Loading members...</p>
-            </div>
+            <ListLoadingState message="Loading members..." />
           ) : members.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">
-                  {Object.keys(searchFilters).length > 0 ? "🔍" : "👥"}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {Object.keys(searchFilters).length > 0
+            <ListEmptyState
+              icon={hasActiveFilters ? "🔍" : "👥"}
+              title={
+                hasActiveFilters
                   ? "No members found matching your search"
-                  : "No members found"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {Object.keys(searchFilters).length > 0
+                  : "No members found"
+              }
+              description={
+                hasActiveFilters
                   ? "Try adjusting your search criteria or clear the filters to see all members."
-                  : "Add your first member to get started with the Gotera Youth system."}
-              </p>
-              {Object.keys(searchFilters).length > 0 ? (
-                <Button
-                  onClick={handleClearSearch}
-                  variant="outline"
-                  className="border-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  Clear Filters
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setIsNewMemberModalOpen(true)}
-                  className="bg-brand-gradient hover:opacity-90 transition-opacity"
-                >
-                  Add First Member
-                </Button>
-              )}
-            </div>
+                  : "Add your first member to get started with the Gotera Youth system."
+              }
+              secondaryAction={
+                hasActiveFilters
+                  ? { label: "Clear Filters", onClick: handleClearSearch }
+                  : undefined
+              }
+              primaryAction={
+                !hasActiveFilters
+                  ? {
+                      label: "Add First Member",
+                      onClick: () => setIsNewMemberModalOpen(true),
+                    }
+                  : undefined
+              }
+            />
           ) : (
             <div className="space-y-4">
               {/* Mobile Card View - Hidden on desktop */}
@@ -661,7 +619,9 @@ const Members = () => {
                           </div>
                         </div>
 
-                        <div>{getCompletenessBadge(member)}</div>
+                        <ProfileCompletenessBadge
+                          completeness={getMemberCompleteness(member)}
+                        />
 
                         {/* Member details */}
                         <div className="space-y-2 text-sm">
@@ -764,14 +724,6 @@ const Members = () => {
                           >
                             Transfer
                           </Button>
-                          {/* <Button
-                            variant="outline"
-                            size="sm"
-                            className="flex-1 text-red-600 hover:bg-red-50"
-                            onClick={() => handleDeleteMember(member)}
-                          >
-                            Delete
-                          </Button> */}
                         </div>
                       </div>
                     </CardContent>
@@ -840,7 +792,9 @@ const Members = () => {
                             </div>
                           </td>
                           <td className="p-3 max-w-[180px]">
-                            {getCompletenessBadge(member)}
+                            <ProfileCompletenessBadge
+                              completeness={completeness}
+                            />
                           </td>
                           <td className="p-3">
                             <div className="text-sm text-muted-foreground">
@@ -944,14 +898,6 @@ const Members = () => {
                               >
                                 Transfer
                               </Button>
-                              {/* <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-red-600 hover:bg-red-50"
-                              onClick={() => handleDeleteMember(member)}
-                            >
-                              Delete
-                            </Button> */}
                             </div>
                           </td>
                         </tr>
@@ -961,130 +907,19 @@ const Members = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-                {/* Page size selector */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Show:</span>
-                  <Select
-                    value={pageSize === 10000 ? "all" : pageSize.toString()}
-                    onValueChange={(value) => {
-                      if (value === "all") {
-                        setPageSize(10000); // Large number to show all
-                      } else {
-                        setPageSize(Number(value));
-                      }
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                  >
-                    <SelectTrigger className="w-[80px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                      <SelectItem value="all">All</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    per page
-                  </span>
-                </div>
-
-                {/* Pagination info */}
-                <div className="text-sm text-muted-foreground">
-                  {pageSize === 10000 ? (
-                    // Show all members
-                    Object.keys(searchFilters).length > 0 ? (
-                      <>Showing all {total} filtered members</>
-                    ) : (
-                      <>Showing all {total} members</>
-                    )
-                  ) : // Show paginated info
-                  Object.keys(searchFilters).length > 0 ? (
-                    <>
-                      Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                      {Math.min(currentPage * pageSize, total)} of {total}{" "}
-                      filtered members
-                    </>
-                  ) : (
-                    <>
-                      Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                      {Math.min(currentPage * pageSize, total)} of {total}{" "}
-                      members
-                    </>
-                  )}
-                </div>
-
-                {/* Pagination controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      Previous
-                    </Button>
-
-                    <div className="flex space-x-2">
-                      {(() => {
-                        const maxVisiblePages = 5;
-                        const halfVisible = Math.floor(maxVisiblePages / 2);
-
-                        let startPage = Math.max(1, currentPage - halfVisible);
-                        const endPage = Math.min(
-                          totalPages,
-                          startPage + maxVisiblePages - 1,
-                        );
-
-                        // Adjust start page if we're near the end
-                        if (endPage - startPage + 1 < maxVisiblePages) {
-                          startPage = Math.max(
-                            1,
-                            endPage - maxVisiblePages + 1,
-                          );
-                        }
-
-                        const pages = [];
-                        for (let i = startPage; i <= endPage; i++) {
-                          pages.push(i);
-                        }
-
-                        return pages.map((page) => (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className={`min-w-[40px] ${
-                              currentPage === page
-                                ? "bg-brand-gradient text-white"
-                                : ""
-                            }`}
-                          >
-                            {page}
-                          </Button>
-                        ));
-                      })()}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={total}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="members"
+                allowShowAll
+                filtered={hasActiveFilters}
+              />
             </div>
           )}
         </CardContent>
@@ -1197,7 +1032,7 @@ const Members = () => {
             <AlertDialogDescription>
               Choose the format to export members data. This will export all
               members
-              {Object.keys(searchFilters).length > 0
+              {hasActiveFilters
                 ? " matching your current search filters"
                 : ""}
               .

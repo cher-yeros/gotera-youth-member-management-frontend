@@ -1,9 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewProfessionModalForm from "@/components/forms/NewProfessionModalForm";
 import ProfessionSearch from "@/components/shared/ProfessionSearch";
+import PageHeader from "@/components/shared/PageHeader";
+import ListLoadingState from "@/components/shared/ListLoadingState";
+import ListEmptyState from "@/components/shared/ListEmptyState";
+import ListPagination from "@/components/shared/ListPagination";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,14 +49,14 @@ const ProfessionsPage = () => {
   const filteredProfessions = professions.filter((profession) =>
     profession.name
       .toLowerCase()
-      .includes((searchFilters.search || "").toLowerCase())
+      .includes((searchFilters.search || "").toLowerCase()),
   );
 
   // Calculate pagination
   const totalPages = Math.ceil(filteredProfessions.length / pageSize);
   const paginatedProfessions = filteredProfessions.slice(
     (currentPage - 1) * pageSize,
-    currentPage * pageSize
+    currentPage * pageSize,
   );
 
   // Event handlers
@@ -115,23 +118,22 @@ const ProfessionsPage = () => {
     setSelectedProfessionId(null);
   };
 
+  const hasActiveFilters = Boolean(searchFilters.search?.trim());
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-brand-gradient">
-            Professions
-          </h1>
-          <p className="text-muted-foreground">{totalProfessions} professions</p>
-        </div>
-        <div className="flex items-center space-x-4">          <Button
+      <PageHeader
+        title="Professions"
+        subtitle={`${totalProfessions} professions`}
+        actions={
+          <Button
             className="bg-brand-gradient hover:opacity-90 transition-opacity"
             onClick={() => setIsNewProfessionModalOpen(true)}
           >
             Add New Profession
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       <ProfessionSearch
         onSearch={handleSearch}
@@ -147,46 +149,34 @@ const ProfessionsPage = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-4 text-muted-foreground">
-                Loading professions...
-              </p>
-            </div>
+            <ListLoadingState message="Loading professions..." />
           ) : filteredProfessions.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="h-16 w-16 bg-brand-gradient rounded-full mx-auto mb-4 flex items-center justify-center">
-                <span className="text-white text-2xl">
-                  {Object.keys(searchFilters).length > 0 ? "🔍" : "💼"}
-                </span>
-              </div>
-              <h3 className="text-lg font-semibold mb-2">
-                {Object.keys(searchFilters).length > 0
+            <ListEmptyState
+              icon={hasActiveFilters ? "🔍" : "💼"}
+              title={
+                hasActiveFilters
                   ? "No professions found matching your search"
-                  : "No professions found"}
-              </h3>
-              <p className="text-muted-foreground mb-4">
-                {Object.keys(searchFilters).length > 0
+                  : "No professions found"
+              }
+              description={
+                hasActiveFilters
                   ? "Try adjusting your search criteria or clear the filters to see all professions."
-                  : "Add your first profession to get started with the Gotera Youth system."}
-              </p>
-              {Object.keys(searchFilters).length > 0 ? (
-                <Button
-                  onClick={handleClearSearch}
-                  variant="outline"
-                  className="border-primary hover:bg-primary hover:text-primary-foreground"
-                >
-                  Clear Filters
-                </Button>
-              ) : (
-                <Button
-                  onClick={() => setIsNewProfessionModalOpen(true)}
-                  className="bg-brand-gradient hover:opacity-90 transition-opacity"
-                >
-                  Add First Profession
-                </Button>
-              )}
-            </div>
+                  : "Add your first profession to get started with the Gotera Youth system."
+              }
+              secondaryAction={
+                hasActiveFilters
+                  ? { label: "Clear Filters", onClick: handleClearSearch }
+                  : undefined
+              }
+              primaryAction={
+                !hasActiveFilters
+                  ? {
+                      label: "Add First Profession",
+                      onClick: () => setIsNewProfessionModalOpen(true),
+                    }
+                  : undefined
+              }
+            />
           ) : (
             <div className="space-y-4">
               {/* Mobile Card View - Hidden on desktop */}
@@ -208,7 +198,7 @@ const ProfessionsPage = () => {
                             </span>
                             <span>
                               {new Date(
-                                profession.createdAt
+                                profession.createdAt,
                               ).toLocaleDateString()}
                             </span>
                           </div>
@@ -265,7 +255,7 @@ const ProfessionsPage = () => {
                         <td className="p-3">
                           <div className="text-sm text-muted-foreground">
                             {new Date(
-                              profession.createdAt
+                              profession.createdAt,
                             ).toLocaleDateString()}
                           </div>
                         </td>
@@ -297,118 +287,18 @@ const ProfessionsPage = () => {
                 </table>
               </div>
 
-              {/* Pagination */}
-              <div className="flex flex-col sm:flex-row justify-between items-center space-y-4 sm:space-y-0 mt-6">
-                {/* Page size selector */}
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">Show:</span>
-                  <Select
-                    value={pageSize.toString()}
-                    onValueChange={(value) => {
-                      setPageSize(Number(value));
-                      setCurrentPage(1); // Reset to first page when changing page size
-                    }}
-                  >
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="50">50</option>
-                  </Select>
-                  <span className="text-sm text-muted-foreground">
-                    per page
-                  </span>
-                </div>
-
-                {/* Pagination info */}
-                <div className="text-sm text-muted-foreground">
-                  {Object.keys(searchFilters).length > 0 ? (
-                    <>
-                      Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                      {Math.min(
-                        currentPage * pageSize,
-                        filteredProfessions.length
-                      )}{" "}
-                      of {filteredProfessions.length} filtered professions
-                    </>
-                  ) : (
-                    <>
-                      Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                      {Math.min(
-                        currentPage * pageSize,
-                        filteredProfessions.length
-                      )}{" "}
-                      of {filteredProfessions.length} professions
-                    </>
-                  )}
-                </div>
-
-                {/* Pagination controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      Previous
-                    </Button>
-
-                    <div className="flex space-x-1">
-                      {(() => {
-                        const maxVisiblePages = 5;
-                        const halfVisible = Math.floor(maxVisiblePages / 2);
-
-                        let startPage = Math.max(1, currentPage - halfVisible);
-                        const endPage = Math.min(
-                          totalPages,
-                          startPage + maxVisiblePages - 1
-                        );
-
-                        // Adjust start page if we're near the end
-                        if (endPage - startPage + 1 < maxVisiblePages) {
-                          startPage = Math.max(
-                            1,
-                            endPage - maxVisiblePages + 1
-                          );
-                        }
-
-                        const pages = [];
-                        for (let i = startPage; i <= endPage; i++) {
-                          pages.push(i);
-                        }
-
-                        return pages.map((page) => (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            size="sm"
-                            onClick={() => handlePageChange(page)}
-                            className={
-                              currentPage === page
-                                ? "bg-brand-gradient text-white"
-                                : ""
-                            }
-                          >
-                            {page}
-                          </Button>
-                        ));
-                      })()}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      Next
-                    </Button>
-                  </div>
-                )}
-              </div>
+              <ListPagination
+                currentPage={currentPage}
+                pageSize={pageSize}
+                totalItems={filteredProfessions.length}
+                onPageChange={handlePageChange}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                itemLabel="professions"
+                filtered={hasActiveFilters}
+              />
             </div>
           )}
         </CardContent>

@@ -19,6 +19,7 @@ export type CompletenessMember = {
   location?: { id?: number | null } | null;
   location_name?: string | null;
   ministries?: Array<{ id?: number | null }> | null;
+  no_ministry?: boolean | null;
 };
 
 export const isActiveMember = (member: CompletenessMember) =>
@@ -51,7 +52,10 @@ export const getMissingFields = (
   if (!member.location?.id && !member.location_name?.trim()) {
     missing.push("Location");
   }
-  if (!member.ministries || member.ministries.length === 0) {
+  const hasMinistry =
+    (member.ministries && member.ministries.length > 0) ||
+    member.no_ministry === true;
+  if (!hasMinistry) {
     missing.push("Ministry");
   }
 

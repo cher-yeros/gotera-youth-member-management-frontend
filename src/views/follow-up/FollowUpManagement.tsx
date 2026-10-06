@@ -1,19 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@apollo/client/react";
-import {
-  AlertCircle,
-  CheckCircle2,
-  Clock,
-  Phone,
-  Plus,
-  Search,
-  UserPlus,
-  Users,
-} from "lucide-react";
+import { Clock, Phone, Plus, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { IntakeNewcomerModal } from "@/components/forms/IntakeNewcomerModal";
 import { AssignFollowUpModal } from "@/components/forms/AssignFollowUpModal";
@@ -144,94 +135,47 @@ const FollowUpManagement: React.FC = () => {
       </div>
 
       {dashboard && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <UserPlus className="h-4 w-4" /> New
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{dashboard.newCount}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Users className="h-4 w-4" /> Assigned
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {dashboard.assignedCount}
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Phone className="h-4 w-4" /> In progress
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="rounded-lg border p-3">
+              <div className="text-xs text-muted-foreground">New</div>
+              <div className="text-xl font-bold">{dashboard.newCount}</div>
+            </div>
+            <div className="rounded-lg border p-3">
+              <div className="text-xs text-muted-foreground">Assigned</div>
+              <div className="text-xl font-bold">{dashboard.assignedCount}</div>
+            </div>
+            <div className="rounded-lg border p-3">
+              <div className="text-xs text-muted-foreground">In progress</div>
+              <div className="text-xl font-bold">
                 {dashboard.inProgressCount}
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-700">
-                <AlertCircle className="h-4 w-4" /> Overdue
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-700">
+            </div>
+            <div className="rounded-lg border p-3 border-red-200">
+              <div className="text-xs text-red-700">Overdue</div>
+              <div className="text-xl font-bold text-red-700">
                 {dashboard.overdueCount}
               </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" /> Promoted this month
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
+            </div>
+            <div className="rounded-lg border p-3">
+              <div className="text-xs text-muted-foreground">
+                Promoted this month
+              </div>
+              <div className="text-xl font-bold">
                 {dashboard.joinedThisMonth}
               </div>
-            </CardContent>
-          </Card>
-          <Card className="md:col-span-3">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">
-                Coordinator workload
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dashboard.coordinatorWorkload?.length ? (
-                <div className="flex flex-wrap gap-2">
-                  {dashboard.coordinatorWorkload.map((c: any) => (
-                    <Badge
-                      key={c.member_id}
-                      variant="outline"
-                      className="gap-1"
-                    >
-                      {c.full_name}: {c.openCases} open
-                      {c.overdueCases > 0 && (
-                        <span className="text-red-600">
-                          ({c.overdueCases} overdue)
-                        </span>
-                      )}
-                    </Badge>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No open load</p>
-              )}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          {dashboard.coordinatorWorkload?.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {dashboard.coordinatorWorkload.map((c: any) => (
+                <Badge key={c.member_id} variant="outline">
+                  {c.full_name}: {c.openCases} open
+                  {c.overdueCases > 0 ? ` · ${c.overdueCases} overdue` : ""}
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

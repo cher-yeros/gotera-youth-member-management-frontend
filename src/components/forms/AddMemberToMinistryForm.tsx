@@ -94,6 +94,7 @@ const AddMemberToMinistryForm: React.FC<AddMemberToMinistryFormProps> = ({
       await updateMember({
         id: selectedMemberId,
         ministry_ids: updatedMinistryIds,
+        no_ministry: false,
       });
 
       toast.success("Member added to ministry successfully!");
