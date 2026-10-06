@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@apollo/client/react";
 import { toast } from "react-toastify";
+import type { GetTeenagersQuery } from "@/generated/graphql";
 import {
   ASSIGN_CLASS_TEACHER,
   BULK_CREATE_TEEN_ATTENDANCE,
@@ -49,7 +50,7 @@ export const useGetTeenClass = (id: number) =>
   });
 
 export const useGetTeenagers = (filter?: any, pagination?: any) =>
-  useQuery(GET_TEENAGERS, {
+  useQuery<GetTeenagersQuery>(GET_TEENAGERS, {
     variables: { filter, pagination },
     errorPolicy: "all",
     fetchPolicy: "cache-and-network",

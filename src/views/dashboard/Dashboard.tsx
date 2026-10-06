@@ -2,6 +2,7 @@ import RoleTestComponent from "@/components/test/RoleTestComponent";
 import RecentActivitiesWidget from "@/components/widgets/RecentActivitiesWidget";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import StatCard from "@/components/shared/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import type { Member } from "@/generated/graphql";
@@ -179,201 +180,98 @@ const Dashboard = () => {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Total Members
-              </CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{stats?.totalMembers || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.activeMembers || 0} active members
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Members"
+          value={stats?.totalMembers || 0}
+          description={`${stats?.activeMembers || 0} active members`}
+          icon={Users}
+          tone="primary"
+        />
 
         {isFamilyCoordinator ? (
-          <Card
-            className={`hover-brand-glow transition-all duration-300 ${
-              (stats?.unassignedMembers || 0) > 0
-                ? "border-2 border-amber-500/40"
+          <StatCard
+            title="Unassigned members"
+            value={stats?.unassignedMembers || 0}
+            description="Members with no family"
+            icon={UserCheck}
+            tone={(stats?.unassignedMembers || 0) > 0 ? "warning" : "success"}
+            href="/members?unassigned=1"
+            linkLabel="View unassigned"
+          />
+        ) : (
+          <StatCard
+            title="Teenagers"
+            value={teenStats?.activeTeenagers || 0}
+            description={`${teenStats?.totalClasses || 0} classes${
+              teenStats?.incompleteTeenagers
+                ? ` · ${teenStats.incompleteTeenagers} incomplete`
                 : ""
             }`}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Unassigned members
-                </CardTitle>
-                <UserCheck className="h-4 w-4 text-amber-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {stats?.unassignedMembers || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Members with no family
-              </p>
-              <Link
-                to="/members?unassigned=1"
-                className="text-xs text-primary hover:underline"
-              >
-                View unassigned
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="hover-brand-glow transition-all duration-300">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Teenagers</CardTitle>
-                <GraduationCap className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {teenStats?.activeTeenagers || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {teenStats?.totalClasses || 0} classes
-                {teenStats?.incompleteTeenagers
-                  ? ` · ${teenStats.incompleteTeenagers} incomplete`
-                  : ""}
-              </p>
-              <Link
-                to="/teenagers"
-                className="text-xs text-primary hover:underline"
-              >
-                Manage teenagers
-              </Link>
-            </CardContent>
-          </Card>
+            icon={GraduationCap}
+            tone="primary"
+            href="/teenagers"
+            linkLabel="Manage teenagers"
+          />
         )}
 
-        <Card
-          className={`hover-brand-glow transition-all duration-300 ${
+        <StatCard
+          title="Families"
+          value={stats?.totalFamilies || 0}
+          description={
+            incompleteFamiliesCount > 0
+              ? `${incompleteFamiliesCount} with incomplete info`
+              : "Registered families"
+          }
+          icon={Home}
+          tone={
             incompleteFamiliesCount > 0
               ? fullyIncompleteFamiliesCount > 0
-                ? "border-2 border-red-500/40"
-                : "border-2 border-yellow-500/40"
-              : ""
-          }`}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Families</CardTitle>
-              <Home className="h-4 w-4 text-secondary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">
-              {stats?.totalFamilies || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {incompleteFamiliesCount > 0
-                ? `${incompleteFamiliesCount} with incomplete info`
-                : "Registered families"}
-            </p>
-          </CardContent>
-        </Card>
+                ? "danger"
+                : "warning"
+              : "secondary"
+          }
+        />
 
         {isFamilyCoordinator ? (
-          <Card
-            className={`hover-brand-glow transition-all duration-300 ${
-              (stats?.openNewcomers || 0) > 0
-                ? "border-2 border-amber-500/40"
-                : ""
-            }`}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Open newcomers
-                </CardTitle>
-                <PhoneCall className="h-4 w-4 text-amber-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {stats?.openNewcomers || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Awaiting family placement
-              </p>
-              <Link
-                to="/newcomers"
-                className="text-xs text-primary hover:underline"
-              >
-                View newcomers
-              </Link>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Open newcomers"
+            value={stats?.openNewcomers || 0}
+            description="Awaiting family placement"
+            icon={PhoneCall}
+            tone={(stats?.openNewcomers || 0) > 0 ? "warning" : "success"}
+            href="/newcomers"
+            linkLabel="View newcomers"
+          />
         ) : (
-          <Card className="hover-brand-glow transition-all duration-300">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Professions
-                </CardTitle>
-                <Briefcase className="h-4 w-4 text-accent" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {stats?.totalProfessions || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Different professions
-              </p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Professions"
+            value={stats?.totalProfessions || 0}
+            description="Different professions"
+            icon={Briefcase}
+            tone="accent"
+          />
         )}
 
         {isFamilyCoordinator ? (
-          <Card
-            className={`hover-brand-glow transition-all duration-300 ${
+          <StatCard
+            title="Needs Profession"
+            value={stats?.professionUnallocatedMembers || 0}
+            description="Members without profession"
+            icon={AlertTriangle}
+            tone={
               (stats?.professionUnallocatedMembers || 0) > 0
-                ? "border-2 border-yellow-500/40"
-                : ""
-            }`}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">
-                  Needs Profession
-                </CardTitle>
-                <AlertTriangle className="h-4 w-4 text-yellow-600" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {stats?.professionUnallocatedMembers || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Members without profession
-              </p>
-            </CardContent>
-          </Card>
+                ? "warning"
+                : "success"
+            }
+          />
         ) : (
-          <Card className="hover-brand-glow transition-all duration-300">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium">Locations</CardTitle>
-                <MapPin className="h-4 w-4 text-primary" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold">
-                {stats?.totalLocations || 0}
-              </div>
-              <p className="text-xs text-muted-foreground">Covered locations</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            title="Locations"
+            value={stats?.totalLocations || 0}
+            description="Covered locations"
+            icon={MapPin}
+            tone="primary"
+          />
         )}
       </div>
 
@@ -398,36 +296,41 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">New</div>
-                <div className="text-xl font-bold">{followUpDash.newCount}</div>
-              </div>
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">Assigned</div>
-                <div className="text-xl font-bold">
-                  {followUpDash.assignedCount}
-                </div>
-              </div>
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">In progress</div>
-                <div className="text-xl font-bold">
-                  {followUpDash.inProgressCount}
-                </div>
-              </div>
-              <div className="rounded-lg border p-3 border-red-200">
-                <div className="text-xs text-red-700">Overdue</div>
-                <div className="text-xl font-bold text-red-700">
-                  {followUpDash.overdueCount}
-                </div>
-              </div>
-              <div className="rounded-lg border p-3">
-                <div className="text-xs text-muted-foreground">
-                  Promoted this month
-                </div>
-                <div className="text-xl font-bold">
-                  {followUpDash.joinedThisMonth}
-                </div>
-              </div>
+              <StatCard
+                variant="compact"
+                title="New"
+                value={followUpDash.newCount}
+                tone="primary"
+              />
+              <StatCard
+                variant="compact"
+                title="Assigned"
+                value={followUpDash.assignedCount}
+                tone="secondary"
+              />
+              <StatCard
+                variant="compact"
+                title="In progress"
+                value={followUpDash.inProgressCount}
+                tone="accent"
+              />
+              <StatCard
+                variant="compact"
+                title="Overdue"
+                value={followUpDash.overdueCount}
+                tone={followUpDash.overdueCount > 0 ? "danger" : "muted"}
+                valueClassName={
+                  followUpDash.overdueCount > 0
+                    ? "text-red-600 dark:text-red-400"
+                    : undefined
+                }
+              />
+              <StatCard
+                variant="compact"
+                title="Promoted this month"
+                value={followUpDash.joinedThisMonth}
+                tone="success"
+              />
             </div>
             {followUpDash.coordinatorWorkload?.length > 0 && (
               <div className="flex flex-wrap gap-2">
@@ -708,65 +611,40 @@ const Dashboard = () => {
             Breakdown of members by their current status
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-3">
-            <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-              <div className="flex items-center space-x-3">
-                <UserCheck className="h-5 w-5 text-green-600" />
-                <div className="text-left">
-                  <div className="font-semibold">Active Members</div>
-                  <div className="text-xs opacity-70">
-                    Currently active members
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold">
-                {stats?.activeMembers || 0}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-              <div className="flex items-center space-x-3">
-                <Users className="h-5 w-5 text-gray-600" />
-                <div className="text-left">
-                  <div className="font-semibold">Not Active Members</div>
-                  <div className="text-xs opacity-70">
-                    Members not currently active
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold">
-                {stats?.notActiveMembers || 0}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-              <div className="flex items-center space-x-3">
-                <Users className="h-5 w-5 text-orange-600" />
-                <div className="text-left">
-                  <div className="font-semibold">Moved Out</div>
-                  <div className="text-xs opacity-70">
-                    Members who have moved out
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold">
-                {stats?.movedOutMembers || 0}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-              <div className="flex items-center space-x-3">
-                <TrendingUp className="h-5 w-5 text-blue-600" />
-                <div className="text-left">
-                  <div className="font-semibold">New Members</div>
-                  <div className="text-xs opacity-70">
-                    Members added in the last 30 days
-                  </div>
-                </div>
-              </div>
-              <div className="text-2xl font-bold">{stats?.newMembers || 0}</div>
-            </div>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <StatCard
+              variant="row"
+              title="Active Members"
+              description="Currently active members"
+              value={stats?.activeMembers || 0}
+              icon={UserCheck}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Not Active Members"
+              description="Members not currently active"
+              value={stats?.notActiveMembers || 0}
+              icon={Users}
+              tone="muted"
+            />
+            <StatCard
+              variant="row"
+              title="Moved Out"
+              description="Members who have moved out"
+              value={stats?.movedOutMembers || 0}
+              icon={Users}
+              tone="warning"
+            />
+            <StatCard
+              variant="row"
+              title="New Members"
+              description="Members added in the last 30 days"
+              value={stats?.newMembers || 0}
+              icon={TrendingUp}
+              tone="primary"
+            />
           </div>
         </CardContent>
       </Card>
@@ -783,40 +661,32 @@ const Dashboard = () => {
               Members with and without location assignments
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-semibold">Location Allocated</div>
-                    <div className="text-xs opacity-70">
-                      Members with location assigned
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">
-                  {stats?.locationAllocatedMembers || 0}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                  <div className="text-left">
-                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                      Location Unallocated
-                    </div>
-                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
-                      Members without location
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                  {stats?.locationUnallocatedMembers || 0}
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <StatCard
+              variant="row"
+              title="Location Allocated"
+              description="Members with location assigned"
+              value={stats?.locationAllocatedMembers || 0}
+              icon={MapPin}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Location Unallocated"
+              description="Members without location"
+              value={stats?.locationUnallocatedMembers || 0}
+              icon={AlertTriangle}
+              tone={
+                (stats?.locationUnallocatedMembers || 0) > 0
+                  ? "warning"
+                  : "success"
+              }
+              valueClassName={
+                (stats?.locationUnallocatedMembers || 0) > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
+            />
           </CardContent>
         </Card>
 
@@ -830,40 +700,32 @@ const Dashboard = () => {
               Members with and without profession assignments
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <Briefcase className="h-5 w-5 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-semibold">Profession Allocated</div>
-                    <div className="text-xs opacity-70">
-                      Members with profession assigned
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">
-                  {stats?.professionAllocatedMembers || 0}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                  <div className="text-left">
-                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                      Profession Unallocated
-                    </div>
-                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
-                      Members without profession
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                  {stats?.professionUnallocatedMembers || 0}
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <StatCard
+              variant="row"
+              title="Profession Allocated"
+              description="Members with profession assigned"
+              value={stats?.professionAllocatedMembers || 0}
+              icon={Briefcase}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Profession Unallocated"
+              description="Members without profession"
+              value={stats?.professionUnallocatedMembers || 0}
+              icon={AlertTriangle}
+              tone={
+                (stats?.professionUnallocatedMembers || 0) > 0
+                  ? "warning"
+                  : "success"
+              }
+              valueClassName={
+                (stats?.professionUnallocatedMembers || 0) > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
+            />
           </CardContent>
         </Card>
 
@@ -877,48 +739,34 @@ const Dashboard = () => {
               Members with and without ministry assignments
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <Activity className="h-5 w-5 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-semibold">Ministry Allocated</div>
-                    <div className="text-xs opacity-70">
-                      Members in ministries
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">
-                  {stats?.ministryAllocatedMembers || 0}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                  <div className="text-left">
-                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                      Ministry Unallocated
-                    </div>
-                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
-                      Members not in any ministry
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                    {stats?.ministryUnallocatedMembers || 0}
-                  </div>
-                  <Link
-                    to="/members?no_ministry=1"
-                    className="text-xs text-primary hover:underline"
-                  >
-                    View members
-                  </Link>
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <StatCard
+              variant="row"
+              title="Ministry Allocated"
+              description="Members in ministries"
+              value={stats?.ministryAllocatedMembers || 0}
+              icon={Activity}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Ministry Unallocated"
+              description="Members not in any ministry"
+              value={stats?.ministryUnallocatedMembers || 0}
+              icon={AlertTriangle}
+              tone={
+                (stats?.ministryUnallocatedMembers || 0) > 0
+                  ? "warning"
+                  : "success"
+              }
+              valueClassName={
+                (stats?.ministryUnallocatedMembers || 0) > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
+              href="/members?no_ministry=1"
+              linkLabel="View members"
+            />
           </CardContent>
         </Card>
       </div>

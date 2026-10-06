@@ -153,7 +153,6 @@ const TeenSessionsManagement = () => {
   );
 
   const filtered = filteredBatches(batches);
-  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
   const paginatedBatches = filtered.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,

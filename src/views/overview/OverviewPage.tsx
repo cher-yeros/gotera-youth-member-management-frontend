@@ -1,3 +1,4 @@
+import StatCard from "@/components/shared/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -110,65 +111,34 @@ const OverviewPage = () => {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Members</CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{stats?.totalMembers || 0}</div>
-            <p className="text-xs text-muted-foreground">
-              {stats?.activeMembers || 0} active
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Families</CardTitle>
-              <Home className="h-4 w-4 text-secondary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">
-              {stats?.totalFamilies || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Registered</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Professions</CardTitle>
-              <Briefcase className="h-4 w-4 text-accent" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">
-              {stats?.totalProfessions || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Types</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Locations</CardTitle>
-              <MapPin className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">
-              {stats?.totalLocations || 0}
-            </div>
-            <p className="text-xs text-muted-foreground">Covered</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Members"
+          value={stats?.totalMembers || 0}
+          description={`${stats?.activeMembers || 0} active`}
+          icon={Users}
+          tone="primary"
+        />
+        <StatCard
+          title="Families"
+          value={stats?.totalFamilies || 0}
+          description="Registered"
+          icon={Home}
+          tone="secondary"
+        />
+        <StatCard
+          title="Professions"
+          value={stats?.totalProfessions || 0}
+          description="Types"
+          icon={Briefcase}
+          tone="accent"
+        />
+        <StatCard
+          title="Locations"
+          value={stats?.totalLocations || 0}
+          description="Covered"
+          icon={MapPin}
+          tone="primary"
+        />
       </div>
 
       {/* Content Grid */}

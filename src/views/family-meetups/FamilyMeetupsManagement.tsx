@@ -343,7 +343,6 @@ const FamilyMeetupsManagement: React.FC = () => {
   };
 
   const filtered = filteredBatches(batches);
-  const totalPages = Math.ceil(filtered.length / pageSize);
   const paginatedBatches = filtered.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
@@ -694,7 +693,10 @@ const FamilyMeetupsManagement: React.FC = () => {
               }
               primaryAction={
                 !searchTerm
-                  ? { label: "Create First Meetup Batch", onClick: handleCreate }
+                  ? {
+                      label: "Create First Meetup Batch",
+                      onClick: handleCreate,
+                    }
                   : undefined
               }
             />

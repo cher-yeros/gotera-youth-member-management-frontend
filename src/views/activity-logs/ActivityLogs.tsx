@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useQuery } from "@apollo/client/react";
 import { GET_ACTIVITIES } from "@/graphql/operations";
+import StatCard from "@/components/shared/StatCard";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -269,51 +270,24 @@ const ActivityLogs: React.FC<ActivityLogsProps> = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Activity className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Activities
-                </p>
-                <p className="text-2xl font-bold text-foreground">{total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <User className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Current Page
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {currentPage}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Clock className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Total Pages
-                </p>
-                <p className="text-2xl font-bold text-foreground">
-                  {totalPages}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Activities"
+          value={total}
+          icon={Activity}
+          tone="primary"
+        />
+        <StatCard
+          title="Current Page"
+          value={currentPage}
+          icon={User}
+          tone="success"
+        />
+        <StatCard
+          title="Total Pages"
+          value={totalPages}
+          icon={Clock}
+          tone="secondary"
+        />
       </div>
 
       {/* Activity List */}

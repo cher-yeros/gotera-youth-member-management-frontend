@@ -52,7 +52,7 @@ interface Props {
     guardian_contact?: string | null;
     guardian_relationship?: string | null;
     class_id?: number;
-    status?: string;
+    status?: string | null;
   };
   onSuccess?: () => void;
   onCancel?: () => void;

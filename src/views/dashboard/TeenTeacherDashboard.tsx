@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import StatCard from "@/components/shared/StatCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -43,10 +44,7 @@ const TeenTeacherDashboard = () => {
       ?.classSessions?.sessions || []
   ).filter((s) => classIds.has(s.class_id) && s.session_date === today);
 
-  const totalTeens = classes.reduce(
-    (sum, c) => sum + (c.teenCount || 0),
-    0,
-  );
+  const totalTeens = classes.reduce((sum, c) => sum + (c.teenCount || 0), 0);
 
   const isLoading = classesLoading || sessionsLoading;
 
@@ -82,35 +80,24 @@ const TeenTeacherDashboard = () => {
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card className="shadow-brand hover-brand-glow transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">My Classes</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{classes.length}</div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-brand hover-brand-glow transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Teenagers</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalTeens}</div>
-          </CardContent>
-        </Card>
-        <Card className="shadow-brand hover-brand-glow transition-all duration-300">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Today&apos;s Sessions
-            </CardTitle>
-            <CalendarCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{todaySessions.length}</div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="My Classes"
+          value={classes.length}
+          icon={BookOpen}
+          tone="primary"
+        />
+        <StatCard
+          title="Teenagers"
+          value={totalTeens}
+          icon={GraduationCap}
+          tone="secondary"
+        />
+        <StatCard
+          title="Today's Sessions"
+          value={todaySessions.length}
+          icon={CalendarCheck}
+          tone="accent"
+        />
       </div>
 
       <Card className="shadow-brand">

@@ -1,3 +1,4 @@
+import StatCard from "@/components/shared/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -194,69 +195,34 @@ const MinistryLeaderDashboard = () => {
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Total Members
-              </CardTitle>
-              <Users className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{totalMembers}</div>
-            <p className="text-xs text-muted-foreground">
-              {activeMembers} active members
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Active Members
-              </CardTitle>
-              <UserCheck className="h-4 w-4 text-secondary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{activeMembers}</div>
-            <p className="text-xs text-muted-foreground">
-              {inactiveMembers} inactive
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Ministry Leaders
-              </CardTitle>
-              <Crown className="h-4 w-4 text-accent" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{ministryLeaders}</div>
-            <p className="text-xs text-muted-foreground">Including yourself</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Professions</CardTitle>
-              <Briefcase className="h-4 w-4 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{professions.length}</div>
-            <p className="text-xs text-muted-foreground">
-              Different professions
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total Members"
+          value={totalMembers}
+          description={`${activeMembers} active members`}
+          icon={Users}
+          tone="primary"
+        />
+        <StatCard
+          title="Active Members"
+          value={activeMembers}
+          description={`${inactiveMembers} inactive`}
+          icon={UserCheck}
+          tone="success"
+        />
+        <StatCard
+          title="Ministry Leaders"
+          value={ministryLeaders}
+          description="Including yourself"
+          icon={Crown}
+          tone="accent"
+        />
+        <StatCard
+          title="Professions"
+          value={professions.length}
+          description="Different professions"
+          icon={Briefcase}
+          tone="primary"
+        />
       </div>
 
       {/* Main Content Grid */}

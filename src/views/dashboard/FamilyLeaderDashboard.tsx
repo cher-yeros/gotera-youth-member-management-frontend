@@ -1,3 +1,4 @@
+import StatCard from "@/components/shared/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -353,104 +354,60 @@ const FamilyLeaderDashboard = () => {
 
       {/* Status Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Active Members
-              </CardTitle>
-              <UserCheck className="h-4 w-4 text-green-600" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{activeMembers}</div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Not Active Members
-              </CardTitle>
-              <UserX className="h-4 w-4 text-gray-600" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{notActiveMembers}</div>
-            <p className="text-xs text-muted-foreground">Inactive members</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Moved Out</CardTitle>
-              <UserX className="h-4 w-4 text-orange-600" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{movedOutMembers}</div>
-            <p className="text-xs text-muted-foreground">Moved out members</p>
-          </CardContent>
-        </Card>
-
-        <Card className="hover-brand-glow transition-all duration-300">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">New Members</CardTitle>
-              <UserPlus className="h-4 w-4 text-blue-600" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="text-2xl font-bold">{newMembers}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className={`hover-brand-glow transition-all duration-300 ${
+        <StatCard
+          title="Active Members"
+          value={activeMembers}
+          description="Currently active"
+          icon={UserCheck}
+          tone="success"
+        />
+        <StatCard
+          title="Not Active Members"
+          value={notActiveMembers}
+          description="Inactive members"
+          icon={UserX}
+          tone="muted"
+        />
+        <StatCard
+          title="Moved Out"
+          value={movedOutMembers}
+          description="Moved out members"
+          icon={UserX}
+          tone="warning"
+        />
+        <StatCard
+          title="New Members"
+          value={newMembers}
+          description="Last 30 days"
+          icon={UserPlus}
+          tone="primary"
+        />
+        <StatCard
+          title="Incomplete Profiles"
+          value={incompleteMembers.length}
+          description={
+            isFullyUncompletedFamily
+              ? "Family fully incomplete"
+              : hasUnfilledData
+                ? "Need data filled"
+                : "All profiles complete"
+          }
+          icon={ClipboardList}
+          tone={
             hasUnfilledData
               ? isFullyUncompletedFamily
-                ? "border-2 border-red-500/50"
-                : "border-2 border-yellow-500/50"
-              : ""
-          }`}
-        >
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">
-                Incomplete Profiles
-              </CardTitle>
-              <ClipboardList
-                className={`h-4 w-4 ${
-                  hasUnfilledData ? "text-yellow-600" : "text-green-600"
-                }`}
-              />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div
-              className={`text-2xl font-bold ${
-                hasUnfilledData
-                  ? isFullyUncompletedFamily
-                    ? "text-red-600"
-                    : "text-yellow-700 dark:text-yellow-400"
-                  : "text-green-600"
-              }`}
-            >
-              {incompleteMembers.length}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {isFullyUncompletedFamily
-                ? "Family fully incomplete"
-                : hasUnfilledData
-                  ? "Need data filled"
-                  : "All profiles complete"}
-            </p>
-          </CardContent>
-        </Card>
+                ? "danger"
+                : "warning"
+              : "success"
+          }
+          valueClassName={
+            hasUnfilledData
+              ? isFullyUncompletedFamily
+                ? "text-red-600"
+                : "text-amber-600 dark:text-amber-400"
+              : "text-emerald-600 dark:text-emerald-400"
+          }
+        />
       </div>
 
       {/* Allocation Statistics Grid */}
@@ -465,38 +422,28 @@ const FamilyLeaderDashboard = () => {
               Members with and without location assignments
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <MapPin className="h-5 w-5 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-semibold">Location Allocated</div>
-                    <div className="text-xs opacity-70">
-                      Members with location assigned
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">{locationAllocated}</div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                  <div className="text-left">
-                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                      Location Unallocated
-                    </div>
-                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
-                      Members without location
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                  {locationUnallocated}
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <StatCard
+              variant="row"
+              title="Location Allocated"
+              description="Members with location assigned"
+              value={locationAllocated}
+              icon={MapPin}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Location Unallocated"
+              description="Members without location"
+              value={locationUnallocated}
+              icon={AlertTriangle}
+              tone={locationUnallocated > 0 ? "warning" : "success"}
+              valueClassName={
+                locationUnallocated > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
+            />
           </CardContent>
         </Card>
 
@@ -510,38 +457,28 @@ const FamilyLeaderDashboard = () => {
               Members with and without profession assignments
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <Briefcase className="h-5 w-5 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-semibold">Profession Allocated</div>
-                    <div className="text-xs opacity-70">
-                      Members with profession assigned
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">{professionAllocated}</div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                  <div className="text-left">
-                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                      Profession Unallocated
-                    </div>
-                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
-                      Members without profession
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                  {professionUnallocated}
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <StatCard
+              variant="row"
+              title="Profession Allocated"
+              description="Members with profession assigned"
+              value={professionAllocated}
+              icon={Briefcase}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Profession Unallocated"
+              description="Members without profession"
+              value={professionUnallocated}
+              icon={AlertTriangle}
+              tone={professionUnallocated > 0 ? "warning" : "success"}
+              valueClassName={
+                professionUnallocated > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
+            />
           </CardContent>
         </Card>
 
@@ -555,38 +492,28 @@ const FamilyLeaderDashboard = () => {
               Members with and without ministry assignments
             </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-3">
-              <div className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <Activity className="h-5 w-5 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-semibold">Ministry Allocated</div>
-                    <div className="text-xs opacity-70">
-                      Members in ministries
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold">{ministryAllocated}</div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border-2 border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-950/30 transition-all duration-200">
-                <div className="flex items-center space-x-3">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
-                  <div className="text-left">
-                    <div className="font-semibold text-yellow-900 dark:text-yellow-100">
-                      Ministry Unallocated
-                    </div>
-                    <div className="text-xs opacity-70 text-yellow-800 dark:text-yellow-200">
-                      Members not in any ministry
-                    </div>
-                  </div>
-                </div>
-                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">
-                  {ministryUnallocated}
-                </div>
-              </div>
-            </div>
+          <CardContent className="space-y-3">
+            <StatCard
+              variant="row"
+              title="Ministry Allocated"
+              description="Members in ministries"
+              value={ministryAllocated}
+              icon={Activity}
+              tone="success"
+            />
+            <StatCard
+              variant="row"
+              title="Ministry Unallocated"
+              description="Members not in any ministry"
+              value={ministryUnallocated}
+              icon={AlertTriangle}
+              tone={ministryUnallocated > 0 ? "warning" : "success"}
+              valueClassName={
+                ministryUnallocated > 0
+                  ? "text-amber-600 dark:text-amber-400"
+                  : undefined
+              }
+            />
           </CardContent>
         </Card>
       </div>
