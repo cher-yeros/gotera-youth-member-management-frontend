@@ -2,7 +2,6 @@ export type MissingField =
   | "Contact"
   | "Gender"
   | "Status"
-  | "Role"
   | "Profession"
   | "Location"
   | "Ministry";
@@ -13,7 +12,6 @@ export type CompletenessMember = {
   contact_no?: string | null;
   gender?: string | null;
   status?: { id?: number | null; name?: string | null } | null;
-  role?: { id?: number | null } | null;
   profession?: { id?: number | null } | null;
   profession_name?: string | null;
   location?: { id?: number | null } | null;
@@ -46,7 +44,6 @@ export const getMissingFields = (
   if (!hasValidContact(member.contact_no)) missing.push("Contact");
   if (!member.gender?.trim()) missing.push("Gender");
   if (!member.status?.id) missing.push("Status");
-  if (!member.role?.id) missing.push("Role");
   if (
     !member.profession?.id &&
     !member.profession_name?.trim() &&
