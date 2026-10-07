@@ -13,8 +13,12 @@ import PageHeader from "@/components/shared/PageHeader";
 import ListLoadingState from "@/components/shared/ListLoadingState";
 import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
-import ListPagination, { LIST_PAGE_SIZE_ALL } from "@/components/shared/ListPagination";
-import ProfileCompletenessBadge, { CompletenessPageSummary } from "@/components/shared/ProfileCompletenessBadge";
+import ListPagination, {
+  LIST_PAGE_SIZE_ALL,
+} from "@/components/shared/ListPagination";
+import ProfileCompletenessBadge, {
+  CompletenessPageSummary,
+} from "@/components/shared/ProfileCompletenessBadge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -61,10 +65,14 @@ const Members = () => {
   const [noMinistryOnly, setNoMinistryOnly] = useState(
     () => searchParams.get("no_ministry") === "1",
   );
+  const [notEmployedOnly, setNotEmployedOnly] = useState(
+    () => searchParams.get("not_employed") === "1",
+  );
   const [searchFilters, setSearchFilters] = useState<MemberFilterInput>(() => {
     const initial: MemberFilterInput = {};
     if (searchParams.get("unassigned") === "1") initial.unassigned = true;
     if (searchParams.get("no_ministry") === "1") initial.no_ministry = true;
+    if (searchParams.get("not_employed") === "1") initial.not_employed = true;
     return initial;
   });
   const [memberToDelete, setMemberToDelete] = useState<{
@@ -116,7 +124,8 @@ const Members = () => {
   const members = data?.members?.members || [];
   const total = data?.members?.total || 0;
   // Calculate totalPages on frontend to handle "All" option properly
-  const totalPages = pageSize === LIST_PAGE_SIZE_ALL ? 1 : Math.ceil(total / pageSize);
+  const totalPages =
+    pageSize === LIST_PAGE_SIZE_ALL ? 1 : Math.ceil(total / pageSize);
 
   const incompleteOnPage = members.filter(
     (member) => getMemberCompleteness(member).isIncomplete,
@@ -152,6 +161,20 @@ const Members = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  useEffect(() => {
+    const fromUrl = searchParams.get("not_employed") === "1";
+    if (fromUrl !== notEmployedOnly) {
+      setNotEmployedOnly(fromUrl);
+      setSearchFilters((prev) => ({
+        ...prev,
+        not_employed: fromUrl || undefined,
+        profession_id: fromUrl ? undefined : prev.profession_id,
+      }));
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const applyUnassignedOnly = useCallback(
     (checked: boolean) => {
       setUnassignedOnly(checked);
@@ -177,13 +200,17 @@ const Members = () => {
   const handleSearch = useCallback(
     (filters: MemberFilterInput) => {
       const nextNoMinistry = filters.no_ministry === true;
+      const nextNotEmployed = filters.not_employed === true;
       setNoMinistryOnly(nextNoMinistry);
+      setNotEmployedOnly(nextNotEmployed);
       setSearchFilters({
         ...filters,
         unassigned: unassignedOnly || undefined,
         family_id: unassignedOnly ? undefined : filters.family_id,
         no_ministry: nextNoMinistry || undefined,
         ministry_id: nextNoMinistry ? undefined : filters.ministry_id,
+        not_employed: nextNotEmployed || undefined,
+        profession_id: nextNotEmployed ? undefined : filters.profession_id,
       });
       setCurrentPage(1);
       setSearchParams(
@@ -191,6 +218,8 @@ const Members = () => {
           const next = new URLSearchParams(prev);
           if (nextNoMinistry) next.set("no_ministry", "1");
           else next.delete("no_ministry");
+          if (nextNotEmployed) next.set("not_employed", "1");
+          else next.delete("not_employed");
           return next;
         },
         { replace: true },
@@ -202,6 +231,7 @@ const Members = () => {
   const handleClearSearch = useCallback(() => {
     setUnassignedOnly(false);
     setNoMinistryOnly(false);
+    setNotEmployedOnly(false);
     setSearchFilters({});
     setCurrentPage(1);
     setSearchParams(
@@ -209,6 +239,7 @@ const Members = () => {
         const next = new URLSearchParams(prev);
         next.delete("unassigned");
         next.delete("no_ministry");
+        next.delete("not_employed");
         return next;
       },
       { replace: true },
@@ -507,6 +538,7 @@ const Members = () => {
         isLoading={loading}
         hideFamilyFilter={unassignedOnly}
         initialNoMinistry={noMinistryOnly}
+        initialNotEmployed={notEmployedOnly}
         extraFiltersActive={unassignedOnly}
         extraFiltersLabel="Unassigned only"
         extraFilters={
@@ -1032,10 +1064,7 @@ const Members = () => {
             <AlertDialogDescription>
               Choose the format to export members data. This will export all
               members
-              {hasActiveFilters
-                ? " matching your current search filters"
-                : ""}
-              .
+              {hasActiveFilters ? " matching your current search filters" : ""}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4 space-y-3">

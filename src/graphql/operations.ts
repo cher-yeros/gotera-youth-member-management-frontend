@@ -74,6 +74,7 @@ export const MEMBER_BASIC_FRAGMENT = gql`
     profession_name
     location_name
     no_ministry
+    not_employed
     createdAt
     updatedAt
     family {
@@ -121,6 +122,7 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
     profession_name
     location_name
     no_ministry
+    not_employed
     createdAt
     updatedAt
     family {
@@ -299,6 +301,7 @@ export const MEMBER_FRAGMENT = gql`
     profession_name
     location_name
     no_ministry
+    not_employed
     createdAt
     updatedAt
     family {
@@ -1116,6 +1119,7 @@ export const GET_FAMILY_MEMBERS = gql`
         gender
         birth_date
         no_ministry
+        not_employed
         role {
           id
           name

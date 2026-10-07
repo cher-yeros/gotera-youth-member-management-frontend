@@ -30,6 +30,7 @@ import { formatPhoneOwner, usePhoneLookup } from "@/hooks/usePhoneLookup";
 import React, { useEffect, useState } from "react";
 
 const NO_MINISTRY_VALUE = "__none__";
+const NOT_EMPLOYED_VALUE = "__not_employed__";
 
 interface NewMemberModalFormProps {
   onSuccess?: () => void;
@@ -82,6 +83,7 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     family_id: defaultFamilyId || undefined,
     ministry_ids: defaultMinistryId ? [defaultMinistryId] : [],
     no_ministry: false,
+    not_employed: false,
     profession_id: undefined,
     location_id: undefined,
     profession_name: "",
@@ -110,6 +112,10 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
         location_id: member.location_id || undefined,
         profession_name: member.profession_name || "",
         location_name: member.location_name || "",
+        not_employed:
+          member.not_employed === true &&
+          !member.profession_id &&
+          !member.profession_name?.trim(),
       });
     }
   }, [isUpdateMode, memberData]);
@@ -149,11 +155,13 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     })) || []),
   ];
 
-  const getProfessionOptions = (): ComboBoxOption[] =>
-    professionsData?.professions?.map((profession) => ({
+  const getProfessionOptions = (): ComboBoxOption[] => [
+    { value: NOT_EMPLOYED_VALUE, label: "Not employed" },
+    ...(professionsData?.professions?.map((profession) => ({
       value: profession.id,
       label: profession.name,
-    })) || [];
+    })) || []),
+  ];
 
   const getLocationOptions = (): ComboBoxOption[] =>
     locationsData?.locations?.map((location) => ({
@@ -211,6 +219,28 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     }
   };
 
+  const handleProfessionChange = (value: string | number | undefined) => {
+    if (value === NOT_EMPLOYED_VALUE) {
+      setFormData((prev) => ({
+        ...prev,
+        profession_id: undefined,
+        profession_name: "",
+        not_employed: true,
+      }));
+      return;
+    }
+    setFormData((prev) => ({
+      ...prev,
+      profession_id:
+        value === undefined || value === ""
+          ? undefined
+          : typeof value === "string"
+            ? parseInt(value, 10)
+            : value,
+      not_employed: false,
+    }));
+  };
+
   // Validation
   const validateForm = (): boolean => {
     const newErrors: Partial<
@@ -243,6 +273,9 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
     const hasMinistries =
       !!formData.ministry_ids && formData.ministry_ids.length > 0;
     const noMinistry = !hasMinistries && formData.no_ministry === true;
+    const professionName = formData.profession_name?.trim() || undefined;
+    const hasProfession = !!formData.profession_id || !!professionName;
+    const notEmployed = !hasProfession && formData.not_employed === true;
 
     try {
       if (isUpdateMode) {
@@ -258,9 +291,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           family_id: formData.family_id || undefined,
           ministry_ids: formData.ministry_ids || [],
           no_ministry: noMinistry,
-          profession_id: formData.profession_id || undefined,
+          profession_id: notEmployed
+            ? null
+            : formData.profession_id || undefined,
           location_id: formData.location_id || undefined,
-          profession_name: formData.profession_name?.trim() || undefined,
+          profession_name: notEmployed ? null : professionName,
+          not_employed: notEmployed,
           location_name: formData.location_name?.trim() || undefined,
         };
 
@@ -277,9 +313,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
           family_id: formData.family_id || undefined,
           ministry_ids: hasMinistries ? formData.ministry_ids : undefined,
           no_ministry: noMinistry || undefined,
-          profession_id: formData.profession_id || undefined,
+          profession_id: notEmployed
+            ? undefined
+            : formData.profession_id || undefined,
           location_id: formData.location_id || undefined,
-          profession_name: formData.profession_name?.trim() || undefined,
+          profession_name: notEmployed ? undefined : professionName,
+          not_employed: notEmployed || undefined,
           location_name: formData.location_name?.trim() || undefined,
         };
 
@@ -556,15 +595,22 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
               </label>
               <ComboBox
                 options={getProfessionOptions()}
-                value={formData.profession_id ?? undefined}
-                onValueChange={(value) =>
-                  handleComboBoxChange("profession_id", value)
+                value={
+                  formData.not_employed
+                    ? NOT_EMPLOYED_VALUE
+                    : (formData.profession_id ?? undefined)
                 }
+                onValueChange={handleProfessionChange}
                 placeholder="Select profession"
                 loading={professionsLoading}
                 loadingText="Loading professions..."
                 disabled={isSubmitting}
               />
+              {formData.not_employed && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Marked as not employed — profession considered complete.
+                </p>
+              )}
             </div>
 
             <div>
@@ -607,11 +653,16 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
                 id="profession_name"
                 type="text"
                 value={formData.profession_name || ""}
-                onChange={(e) =>
-                  handleInputChange("profession_name", e.target.value)
-                }
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    profession_name: value,
+                    not_employed: value.trim() ? false : prev.not_employed,
+                  }));
+                }}
                 placeholder="Enter custom profession name"
-                disabled={isSubmitting}
+                disabled={isSubmitting || formData.not_employed === true}
               />
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Override the profession name from the dropdown above

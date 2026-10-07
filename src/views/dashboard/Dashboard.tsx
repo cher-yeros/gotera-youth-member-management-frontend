@@ -725,6 +725,8 @@ const Dashboard = () => {
                   ? "text-amber-600 dark:text-amber-400"
                   : undefined
               }
+              href="/members?not_employed=1"
+              linkLabel="View members"
             />
           </CardContent>
         </Card>

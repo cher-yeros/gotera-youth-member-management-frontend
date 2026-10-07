@@ -11,6 +11,7 @@ import {
 } from "@/hooks/useGraphQL";
 
 const NO_MINISTRY_FILTER = "__none__";
+const NOT_EMPLOYED_FILTER = "__not_employed__";
 
 interface SearchFilters {
   search: string;
@@ -20,6 +21,7 @@ interface SearchFilters {
   location_id?: number;
   ministry_id?: number;
   no_ministry?: boolean;
+  not_employed?: boolean;
 }
 
 interface MemberSearchProps {
@@ -34,6 +36,8 @@ interface MemberSearchProps {
   hideFamilyFilter?: boolean;
   /** Prefill no-ministry filter (e.g. from URL). */
   initialNoMinistry?: boolean;
+  /** Prefill not-employed filter (e.g. from URL). */
+  initialNotEmployed?: boolean;
 }
 
 const MemberSearch = ({
@@ -45,13 +49,16 @@ const MemberSearch = ({
   extraFiltersLabel = "Extra filter",
   hideFamilyFilter = false,
   initialNoMinistry = false,
+  initialNotEmployed = false,
 }: MemberSearchProps) => {
   const [filters, setFilters] = useState<SearchFilters>({
     search: "",
     no_ministry: initialNoMinistry || undefined,
+    not_employed: initialNotEmployed || undefined,
   });
-  const [showAdvancedFilters, setShowAdvancedFilters] =
-    useState(initialNoMinistry);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(
+    initialNoMinistry || initialNotEmployed,
+  );
 
   // Fetch lookup data
   const { data: familiesData } = useGetFamilies();
@@ -66,7 +73,7 @@ const MemberSearch = ({
   const locations = locationsData?.locations || [];
   const ministries = ministriesData?.ministries || [];
 
-  // Sync external initialNoMinistry (URL) into local state
+  // Sync external URL filters into local state
   useEffect(() => {
     setFilters((prev) => ({
       ...prev,
@@ -77,6 +84,17 @@ const MemberSearch = ({
       setShowAdvancedFilters(true);
     }
   }, [initialNoMinistry]);
+
+  useEffect(() => {
+    setFilters((prev) => ({
+      ...prev,
+      not_employed: initialNotEmployed || undefined,
+      profession_id: initialNotEmployed ? undefined : prev.profession_id,
+    }));
+    if (initialNotEmployed) {
+      setShowAdvancedFilters(true);
+    }
+  }, [initialNotEmployed]);
 
   // Helper functions to convert data to ComboBox options
   const getStatusOptions = (): ComboBoxOption[] =>
@@ -91,11 +109,13 @@ const MemberSearch = ({
       label: family.name,
     }));
 
-  const getProfessionOptions = (): ComboBoxOption[] =>
-    professions.map((profession) => ({
+  const getProfessionOptions = (): ComboBoxOption[] => [
+    { value: NOT_EMPLOYED_FILTER, label: "Not employed" },
+    ...professions.map((profession: { id: number; name: string }) => ({
       value: profession.id,
       label: profession.name,
-    }));
+    })),
+  ];
 
   const getLocationOptions = (): ComboBoxOption[] =>
     locations.map((location) => ({
@@ -116,7 +136,8 @@ const MemberSearch = ({
     onSearch({
       status_id: filters.status_id,
       family_id: hideFamilyFilter ? undefined : filters.family_id,
-      profession_id: filters.profession_id,
+      profession_id: filters.not_employed ? undefined : filters.profession_id,
+      not_employed: filters.not_employed || undefined,
       location_id: filters.location_id,
       ministry_id: filters.no_ministry ? undefined : filters.ministry_id,
       no_ministry: filters.no_ministry || undefined,
@@ -126,6 +147,7 @@ const MemberSearch = ({
     filters.status_id,
     filters.family_id,
     filters.profession_id,
+    filters.not_employed,
     filters.location_id,
     filters.ministry_id,
     filters.no_ministry,
@@ -180,16 +202,44 @@ const MemberSearch = ({
     }));
   };
 
+  const handleProfessionFilterChange = (value: string | number | undefined) => {
+    if (value === NOT_EMPLOYED_FILTER) {
+      setFilters((prev) => ({
+        ...prev,
+        profession_id: undefined,
+        not_employed: true,
+      }));
+      return;
+    }
+    if (value === undefined || value === "") {
+      setFilters((prev) => ({
+        ...prev,
+        profession_id: undefined,
+        not_employed: undefined,
+      }));
+      return;
+    }
+    const numericValue =
+      typeof value === "string" ? parseInt(value, 10) : value;
+    setFilters((prev) => ({
+      ...prev,
+      profession_id: numericValue,
+      not_employed: undefined,
+    }));
+  };
+
   const handleSearch = () => {
     onSearch({
       ...filters,
       family_id: hideFamilyFilter ? undefined : filters.family_id,
+      profession_id: filters.not_employed ? undefined : filters.profession_id,
+      not_employed: filters.not_employed || undefined,
       ministry_id: filters.no_ministry ? undefined : filters.ministry_id,
       no_ministry: filters.no_ministry || undefined,
     });
   };
 
-const handleClearFilters = () => {
+  const handleClearFilters = () => {
     setFilters({ search: "" });
     onClear();
   };
@@ -199,6 +249,7 @@ const handleClearFilters = () => {
     filters.status_id != null ||
     (!hideFamilyFilter && filters.family_id != null) ||
     filters.profession_id != null ||
+    filters.not_employed === true ||
     filters.location_id != null ||
     filters.ministry_id != null ||
     filters.no_ministry === true ||
@@ -209,6 +260,7 @@ const handleClearFilters = () => {
       filters.status_id,
       hideFamilyFilter ? undefined : filters.family_id,
       filters.profession_id,
+      filters.not_employed ? 1 : undefined,
       filters.location_id,
       filters.ministry_id,
       filters.no_ministry ? 1 : undefined,
@@ -249,12 +301,15 @@ const handleClearFilters = () => {
                   {families.find((f) => f.id === filters.family_id)?.name}
                 </li>
               )}
-              {filters.profession_id && (
+              {filters.not_employed && <li>Profession: Not employed</li>}
+              {!filters.not_employed && filters.profession_id && (
                 <li>
                   Profession:{" "}
                   {
-                    professions.find((p) => p.id === filters.profession_id)
-                      ?.name
+                    professions.find(
+                      (p: { id: number; name: string }) =>
+                        p.id === filters.profession_id,
+                    )?.name
                   }
                 </li>
               )}
@@ -321,10 +376,12 @@ const handleClearFilters = () => {
           </label>
           <ComboBox
             options={getProfessionOptions()}
-            value={filters.profession_id ?? undefined}
-            onValueChange={(value) =>
-              handleComboBoxChange("profession_id", value)
+            value={
+              filters.not_employed
+                ? NOT_EMPLOYED_FILTER
+                : (filters.profession_id ?? undefined)
             }
+            onValueChange={handleProfessionFilterChange}
             placeholder="All Professions"
             disabled={isLoading}
           />

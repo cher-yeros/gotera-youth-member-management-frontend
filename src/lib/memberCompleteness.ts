@@ -20,6 +20,7 @@ export type CompletenessMember = {
   location_name?: string | null;
   ministries?: Array<{ id?: number | null }> | null;
   no_ministry?: boolean | null;
+  not_employed?: boolean | null;
 };
 
 export const isActiveMember = (member: CompletenessMember) =>
@@ -46,7 +47,11 @@ export const getMissingFields = (
   if (!member.gender?.trim()) missing.push("Gender");
   if (!member.status?.id) missing.push("Status");
   if (!member.role?.id) missing.push("Role");
-  if (!member.profession?.id && !member.profession_name?.trim()) {
+  if (
+    !member.profession?.id &&
+    !member.profession_name?.trim() &&
+    member.not_employed !== true
+  ) {
     missing.push("Profession");
   }
   if (!member.location?.id && !member.location_name?.trim()) {
