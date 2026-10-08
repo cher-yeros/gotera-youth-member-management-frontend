@@ -1,13 +1,3 @@
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -28,7 +18,6 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   CREATE_FAMILY_MEETUP_BATCH,
-  DELETE_FAMILY_MEETUP_BATCH,
   GET_FAMILY_MEETUP_BATCHES,
   UPDATE_FAMILY_MEETUP_BATCH,
 } from "@/graphql/operations";
@@ -42,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { format } from "date-fns";
 import {
+  BookOpen,
   Calendar,
   CalendarIcon,
   CheckCircle,
@@ -49,13 +39,19 @@ import {
   Edit,
   MapPin,
   Plus,
-  Trash2,
   TrendingUp,
   Users,
   XCircle,
 } from "lucide-react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
+import {
+  formatBibleStudyLabel,
+  formatBibleStudyLabelAm,
+  formatQuestionNumbersInput,
+  getBibleStudyProgress,
+  parseQuestionNumbers,
+} from "@/lib/bibleStudy";
 
 interface FamilyMeetupInBatch {
   id: number;
@@ -64,11 +60,20 @@ interface FamilyMeetupInBatch {
   description: string;
   meetup_date: string;
   location: string;
+  bible_study_number?: number | null;
+  bible_study_questions?: number[] | null;
+  completed_bible_study_questions?: number[];
   is_active: boolean;
   family: {
     id: number;
     name: string;
   };
+  attendanceStats?: {
+    totalMembers: number;
+    presentMembers: number;
+    absentMembers: number;
+    attendanceRate: number;
+  } | null;
   attendances?: Array<{
     id: number;
     is_present: boolean;
@@ -81,6 +86,8 @@ interface FamilyMeetupBatch {
   description: string;
   meetup_date: string;
   location: string;
+  bible_study_number?: number | null;
+  bible_study_questions?: number[] | null;
   is_active: boolean;
   createdAt: string;
   creator: {
@@ -98,7 +105,6 @@ const FamilyMeetupsManagement: React.FC = () => {
   const [viewedBatchId, setViewedBatchId] = useState<number | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [batchPendingAction, setBatchPendingAction] =
     useState<FamilyMeetupBatch | null>(null);
   const [formData, setFormData] = useState({
@@ -106,6 +112,8 @@ const FamilyMeetupsManagement: React.FC = () => {
     description: "",
     location: "",
     meetup_date: new Date(),
+    bible_study_number: "",
+    bible_study_questions: "",
   });
 
   const { data, loading, error } = useQuery(GET_FAMILY_MEETUP_BATCHES, {
@@ -152,25 +160,6 @@ const FamilyMeetupsManagement: React.FC = () => {
     },
   );
 
-  const [deleteBatch, { loading: deleting }] = useMutation(
-    DELETE_FAMILY_MEETUP_BATCH,
-    {
-      onCompleted: () => {
-        toast.success("Meetup batch deleted for all families!");
-        setIsDeleteDialogOpen(false);
-        setBatchPendingAction(null);
-        setViewedBatchId(null);
-      },
-      onError: (err: {
-        message?: string;
-        graphQLErrors?: Array<{ message: string }>;
-      }) => {
-        const errorMessage = err.graphQLErrors?.[0]?.message || err.message;
-        toast.error(`Failed to delete meetup batch: ${errorMessage}`);
-      },
-    },
-  );
-
   const batches =
     (
       data as {
@@ -195,7 +184,26 @@ const FamilyMeetupsManagement: React.FC = () => {
       description: "",
       location: "",
       meetup_date: new Date(),
+      bible_study_number: "",
+      bible_study_questions: "",
     });
+  };
+
+  const buildBibleStudyInput = () => {
+    const questions = parseQuestionNumbers(formData.bible_study_questions);
+    const studyRaw = formData.bible_study_number.trim();
+    const studyNumber = studyRaw ? Number(studyRaw) : null;
+    if (
+      studyRaw &&
+      (!Number.isInteger(studyNumber) || (studyNumber ?? 0) <= 0)
+    ) {
+      toast.error("Bible study number must be a positive integer");
+      return null;
+    }
+    return {
+      bible_study_number: studyNumber,
+      bible_study_questions: questions.length > 0 ? questions : null,
+    };
   };
 
   const handleCreate = () => {
@@ -211,19 +219,14 @@ const FamilyMeetupsManagement: React.FC = () => {
       description: batch.description,
       location: batch.location,
       meetup_date: new Date(parseInt(batch.meetup_date)),
+      bible_study_number: batch.bible_study_number
+        ? String(batch.bible_study_number)
+        : "",
+      bible_study_questions: formatQuestionNumbersInput(
+        batch.bible_study_questions,
+      ),
     });
     setIsEditModalOpen(true);
-  };
-
-  const handleDelete = (batch: FamilyMeetupBatch, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    setBatchPendingAction(batch);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const confirmDelete = () => {
-    if (!batchPendingAction) return;
-    deleteBatch({ variables: { id: batchPendingAction.id } });
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -234,6 +237,9 @@ const FamilyMeetupsManagement: React.FC = () => {
       return;
     }
 
+    const bibleStudy = buildBibleStudyInput();
+    if (!bibleStudy) return;
+
     try {
       await createBatch({
         variables: {
@@ -242,6 +248,7 @@ const FamilyMeetupsManagement: React.FC = () => {
             description: formData.description,
             location: formData.location,
             meetup_date: formData.meetup_date.toISOString(),
+            ...bibleStudy,
           },
         },
       });
@@ -263,6 +270,9 @@ const FamilyMeetupsManagement: React.FC = () => {
       return;
     }
 
+    const bibleStudy = buildBibleStudyInput();
+    if (!bibleStudy) return;
+
     try {
       await updateBatch({
         variables: {
@@ -272,6 +282,7 @@ const FamilyMeetupsManagement: React.FC = () => {
             description: formData.description,
             location: formData.location,
             meetup_date: formData.meetup_date.toISOString(),
+            ...bibleStudy,
           },
         },
       });
@@ -279,6 +290,85 @@ const FamilyMeetupsManagement: React.FC = () => {
       console.error("Error updating meetup batch:", err);
     }
   };
+
+  const bibleStudyPreviewEn = formatBibleStudyLabel(
+    formData.bible_study_number.trim()
+      ? Number(formData.bible_study_number)
+      : null,
+    parseQuestionNumbers(formData.bible_study_questions),
+  );
+  const bibleStudyPreviewAm = formatBibleStudyLabelAm(
+    formData.bible_study_number.trim()
+      ? Number(formData.bible_study_number)
+      : null,
+    parseQuestionNumbers(formData.bible_study_questions),
+  );
+
+  const getStudyProgressBadge = (meetup: FamilyMeetupInBatch) => {
+    const progress = getBibleStudyProgress(
+      meetup.bible_study_questions,
+      meetup.completed_bible_study_questions,
+    );
+    if (progress.status === "not_assigned") {
+      return <Badge variant="outline">No study</Badge>;
+    }
+    if (progress.status === "complete") {
+      return (
+        <Badge className="bg-green-600 hover:bg-green-600">Complete</Badge>
+      );
+    }
+    if (progress.status === "in_progress") {
+      return <Badge variant="secondary">{progress.label}</Badge>;
+    }
+    return <Badge variant="outline">Not started</Badge>;
+  };
+
+  const renderBibleStudyFields = (idPrefix: string) => (
+    <>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-study-number`}>Bible Study Number</Label>
+          <Input
+            id={`${idPrefix}-study-number`}
+            type="number"
+            min={1}
+            value={formData.bible_study_number}
+            onChange={(e) =>
+              setFormData({ ...formData, bible_study_number: e.target.value })
+            }
+            placeholder="e.g. 2"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor={`${idPrefix}-questions`}>Question Numbers</Label>
+          <Input
+            id={`${idPrefix}-questions`}
+            value={formData.bible_study_questions}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                bible_study_questions: e.target.value,
+              })
+            }
+            placeholder="e.g. 1, 2, 3"
+          />
+        </div>
+      </div>
+      {bibleStudyPreviewEn && (
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm space-y-0.5">
+          <div className="flex items-center gap-2 font-medium">
+            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            {bibleStudyPreviewEn}
+          </div>
+          {bibleStudyPreviewAm && (
+            <div className="text-muted-foreground pl-6">
+              {bibleStudyPreviewAm}
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
 
   const filteredBatches = useCallback(
     (items: FamilyMeetupBatch[]) => {
@@ -302,10 +392,15 @@ const FamilyMeetupsManagement: React.FC = () => {
   };
 
   const getBatchAttendanceStats = (batch: FamilyMeetupBatch) => {
-    const attendances = batch.meetups.flatMap((m) => m.attendances || []);
-    const totalMembers = attendances.length;
-    const presentMembers = attendances.filter((a) => a.is_present).length;
-    const absentMembers = totalMembers - presentMembers;
+    const totalMembers = batch.meetups.reduce(
+      (sum, m) => sum + (m.attendanceStats?.totalMembers ?? 0),
+      0,
+    );
+    const presentMembers = batch.meetups.reduce(
+      (sum, m) => sum + (m.attendanceStats?.presentMembers ?? 0),
+      0,
+    );
+    const absentMembers = Math.max(0, totalMembers - presentMembers);
     const attendanceRate =
       totalMembers > 0 ? (presentMembers / totalMembers) * 100 : 0;
 
@@ -319,14 +414,13 @@ const FamilyMeetupsManagement: React.FC = () => {
   };
 
   const getMeetupAttendanceStats = (meetup: FamilyMeetupInBatch) => {
-    const attendances = meetup.attendances || [];
-    const totalMembers = attendances.length;
-    const presentMembers = attendances.filter((a) => a.is_present).length;
-    const absentMembers = totalMembers - presentMembers;
-    const attendanceRate =
-      totalMembers > 0 ? (presentMembers / totalMembers) * 100 : 0;
-
-    return { totalMembers, presentMembers, absentMembers, attendanceRate };
+    const stats = meetup.attendanceStats;
+    return {
+      totalMembers: stats?.totalMembers ?? 0,
+      presentMembers: stats?.presentMembers ?? 0,
+      absentMembers: stats?.absentMembers ?? 0,
+      attendanceRate: stats?.attendanceRate ?? 0,
+    };
   };
 
   const getStatusBadge = (meetupDateStr: string) => {
@@ -386,23 +480,25 @@ const FamilyMeetupsManagement: React.FC = () => {
               </span>
               {getStatusBadge(viewedBatch.meetup_date)}
               <Badge variant="outline">{stats.familyCount} families</Badge>
+              {formatBibleStudyLabel(
+                viewedBatch.bible_study_number,
+                viewedBatch.bible_study_questions,
+              ) && (
+                <span className="flex items-center gap-1">
+                  <BookOpen className="h-4 w-4" />
+                  {formatBibleStudyLabel(
+                    viewedBatch.bible_study_number,
+                    viewedBatch.bible_study_questions,
+                  )}
+                </span>
+              )}
             </div>
           }
           actions={
-            <div className="flex items-center space-x-2 shrink-0">
-              <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Batch
-              </Button>
-              <Button
-                variant="outline"
-                className="text-red-600 hover:text-red-700"
-                onClick={() => handleDelete(viewedBatch)}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </Button>
-            </div>
+            <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Batch
+            </Button>
           }
         />
 
@@ -435,6 +531,9 @@ const FamilyMeetupsManagement: React.FC = () => {
                       <th className="text-left p-3 font-semibold">Location</th>
                       <th className="text-left p-3 font-semibold">
                         Attendance
+                      </th>
+                      <th className="text-left p-3 font-semibold">
+                        Bible Study
                       </th>
                       <th className="text-left p-3 font-semibold">Status</th>
                     </tr>
@@ -481,6 +580,9 @@ const FamilyMeetupsManagement: React.FC = () => {
                                 {meetupStats.totalMembers}
                               </div>
                             </div>
+                          </td>
+                          <td className="p-3">
+                            {getStudyProgressBadge(meetup)}
                           </td>
                           <td className="p-3">
                             <Badge
@@ -577,6 +679,7 @@ const FamilyMeetupsManagement: React.FC = () => {
                   </PopoverContent>
                 </Popover>
               </div>
+              {renderBibleStudyFields("detail-edit")}
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
@@ -596,35 +699,6 @@ const FamilyMeetupsManagement: React.FC = () => {
             </form>
           </DialogContent>
         </Dialog>
-
-        <AlertDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will permanently delete the meetup batch &quot;
-                {batchPendingAction?.title}&quot; for all{" "}
-                {batchPendingAction?.meetups.length || 0} families, including
-                attendance records.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={deleting}
-              >
-                {deleting ? "Deleting..." : "Delete Batch"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
       </div>
     );
   }
@@ -784,23 +858,13 @@ const FamilyMeetupsManagement: React.FC = () => {
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => handleEdit(batch, e)}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => handleDelete(batch, e)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => handleEdit(batch, e)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
                           </td>
                         </tr>
                       );
@@ -908,6 +972,7 @@ const FamilyMeetupsManagement: React.FC = () => {
                 </PopoverContent>
               </Popover>
             </div>
+            {renderBibleStudyFields("create")}
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"
@@ -1002,6 +1067,7 @@ const FamilyMeetupsManagement: React.FC = () => {
                 </PopoverContent>
               </Popover>
             </div>
+            {renderBibleStudyFields("list-edit")}
             <div className="flex justify-end space-x-2">
               <Button
                 type="button"
@@ -1021,35 +1087,6 @@ const FamilyMeetupsManagement: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
-
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete the meetup batch &quot;
-              {batchPendingAction?.title}&quot; for all{" "}
-              {batchPendingAction?.meetups.length || 0} families, including
-              attendance records.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete Batch"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

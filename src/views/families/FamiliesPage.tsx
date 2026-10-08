@@ -36,26 +36,11 @@ import {
   genderSkewLabel,
   type FamilyPlacementNeed,
 } from "@/lib/familyPlacement";
-
-type FamilyCompletenessSummary = {
-  id: number;
-  memberCount: number;
-  completeMemberCount: number;
-  incompleteMemberCount: number;
-};
-
-const getActiveCompletionPercent = (
-  summary?: FamilyCompletenessSummary,
-): number | null => {
-  if (!summary || summary.memberCount <= 0) return null;
-  return Math.round((summary.completeMemberCount / summary.memberCount) * 100);
-};
-
-const completionBadgeClass = (percent: number) => {
-  if (percent >= 80) return "bg-green-100 text-green-900";
-  if (percent >= 50) return "bg-amber-100 text-amber-900";
-  return "bg-red-100 text-red-900";
-};
+import {
+  completionBadgeClass,
+  getActiveCompletionPercent,
+  type FamilyActiveCompletenessCounts,
+} from "@/lib/memberCompleteness";
 
 const FamiliesPage = () => {
   const navigate = useNavigate();
@@ -109,7 +94,10 @@ const FamiliesPage = () => {
   }, [placementData]);
 
   const completenessById = useMemo(() => {
-    const map = new Map<number, FamilyCompletenessSummary>();
+    const map = new Map<
+      number,
+      FamilyActiveCompletenessCounts & { id: number }
+    >();
     for (const summary of summariesData?.familySummaries || []) {
       map.set(summary.id, summary);
     }

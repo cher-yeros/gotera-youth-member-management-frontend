@@ -12,6 +12,8 @@ import {
   CLASS_SESSION_FRAGMENT,
   FAMILY_CHANGED_SUB,
   FAMILY_FRAGMENT,
+  FAMILY_MEETUP_BATCH_CHANGED_SUB,
+  FAMILY_MEETUP_BATCH_FRAGMENT,
   FAMILY_MEETUP_CHANGED_SUB,
   FAMILY_MEETUP_FRAGMENT,
   FAMILY_MEMBER_ATTENDANCE_FRAGMENT,
@@ -232,6 +234,25 @@ function RealtimeSubscriptions() {
         fragment: FAMILY_MEETUP_FRAGMENT,
         fragmentName: "FamilyMeetupFragment",
         listFields: [{ field: "familyMeetups", nestedKey: "meetups" }],
+      });
+    },
+  });
+
+  useSubscription(FAMILY_MEETUP_BATCH_CHANGED_SUB, {
+    onData: ({ client, data }) => {
+      const change = (data.data as any)?.familyMeetupBatchChanged;
+      if (!change) return;
+      applyEntityChange(client, {
+        typename: "FamilyMeetupBatch",
+        change: {
+          action: change.action,
+          id: change.id,
+          entity: change.familyMeetupBatch,
+        },
+        entity: change.familyMeetupBatch,
+        fragment: FAMILY_MEETUP_BATCH_FRAGMENT,
+        fragmentName: "FamilyMeetupBatchFragment",
+        listFields: [{ field: "familyMeetupBatches", nestedKey: "batches" }],
       });
     },
   });

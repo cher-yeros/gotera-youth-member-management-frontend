@@ -17,11 +17,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
+import { BookOpen, CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { CREATE_FAMILY_MEETUP_BATCH } from "@/graphql/operations";
 import { toast } from "react-toastify";
+import {
+  formatBibleStudyLabel,
+  formatBibleStudyLabelAm,
+  parseQuestionNumbers,
+} from "@/lib/bibleStudy";
 
 interface CreateFamilyMeetupModalProps {
   /** @deprecated Kept for call-site compatibility; realtime subscriptions refresh lists. */
@@ -38,6 +43,8 @@ export const CreateFamilyMeetupModal: React.FC<
     description: "",
     location: "",
     meetup_date: new Date(),
+    bible_study_number: "",
+    bible_study_questions: "",
   });
 
   const [createFamilyMeetupBatch, { loading }] = useMutation(
@@ -51,6 +58,8 @@ export const CreateFamilyMeetupModal: React.FC<
           description: "",
           location: "",
           meetup_date: new Date(),
+          bible_study_number: "",
+          bible_study_questions: "",
         });
       },
       onError: (error: {
@@ -82,6 +91,14 @@ export const CreateFamilyMeetupModal: React.FC<
       return;
     }
 
+    const questions = parseQuestionNumbers(formData.bible_study_questions);
+    const studyRaw = formData.bible_study_number.trim();
+    const studyNumber = studyRaw ? Number(studyRaw) : null;
+    if (studyRaw && (!Number.isInteger(studyNumber) || (studyNumber ?? 0) <= 0)) {
+      toast.error("Bible study number must be a positive integer");
+      return;
+    }
+
     try {
       await createFamilyMeetupBatch({
         variables: {
@@ -90,6 +107,8 @@ export const CreateFamilyMeetupModal: React.FC<
             description: formData.description,
             location: formData.location,
             meetup_date: formData.meetup_date.toISOString(),
+            bible_study_number: studyNumber,
+            bible_study_questions: questions.length > 0 ? questions : null,
           },
         },
       });
@@ -97,6 +116,19 @@ export const CreateFamilyMeetupModal: React.FC<
       console.log(error);
     }
   };
+
+  const bibleStudyPreviewEn = formatBibleStudyLabel(
+    formData.bible_study_number.trim()
+      ? Number(formData.bible_study_number)
+      : null,
+    parseQuestionNumbers(formData.bible_study_questions),
+  );
+  const bibleStudyPreviewAm = formatBibleStudyLabelAm(
+    formData.bible_study_number.trim()
+      ? Number(formData.bible_study_number)
+      : null,
+    parseQuestionNumbers(formData.bible_study_questions),
+  );
 
   const handleInputChange = (field: string, value: string | Date) => {
     setFormData((prev) => ({
@@ -188,6 +220,46 @@ export const CreateFamilyMeetupModal: React.FC<
               </PopoverContent>
             </Popover>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="bible-study-number">Bible Study Number</Label>
+              <Input
+                id="bible-study-number"
+                type="number"
+                min={1}
+                value={formData.bible_study_number}
+                onChange={(e) =>
+                  handleInputChange("bible_study_number", e.target.value)
+                }
+                placeholder="e.g. 2"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bible-study-questions">Question Numbers</Label>
+              <Input
+                id="bible-study-questions"
+                value={formData.bible_study_questions}
+                onChange={(e) =>
+                  handleInputChange("bible_study_questions", e.target.value)
+                }
+                placeholder="e.g. 1, 2, 3"
+              />
+            </div>
+          </div>
+          {bibleStudyPreviewEn && (
+            <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm space-y-0.5">
+              <div className="flex items-center gap-2 font-medium">
+                <BookOpen className="h-4 w-4 text-muted-foreground" />
+                {bibleStudyPreviewEn}
+              </div>
+              {bibleStudyPreviewAm && (
+                <div className="text-muted-foreground pl-6">
+                  {bibleStudyPreviewAm}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-end space-x-2">
             <Button

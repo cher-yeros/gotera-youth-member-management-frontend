@@ -87,6 +87,37 @@ export type FamilyCompletenessSummary = {
   hasUnfilledData: boolean;
 };
 
+/** Counts from GraphQL FamilySummary (active members only). */
+export type FamilyActiveCompletenessCounts = {
+  memberCount: number;
+  completeMemberCount: number;
+};
+
+export const getActiveCompletionPercent = (
+  summary?: FamilyActiveCompletenessCounts | null,
+): number | null => {
+  if (!summary || summary.memberCount <= 0) return null;
+  return Math.round((summary.completeMemberCount / summary.memberCount) * 100);
+};
+
+export const completionBadgeClass = (percent: number) => {
+  if (percent >= 80) return "bg-green-100 text-green-900";
+  if (percent >= 50) return "bg-amber-100 text-amber-900";
+  return "bg-red-100 text-red-900";
+};
+
+export const getOverallActiveCompletionPercent = (
+  summaries: FamilyActiveCompletenessCounts[],
+): number | null => {
+  let memberCount = 0;
+  let completeMemberCount = 0;
+  for (const summary of summaries) {
+    memberCount += summary.memberCount;
+    completeMemberCount += summary.completeMemberCount;
+  }
+  return getActiveCompletionPercent({ memberCount, completeMemberCount });
+};
+
 export const getFamilyCompleteness = <
   T extends CompletenessMember & { id: number },
 >(family: {

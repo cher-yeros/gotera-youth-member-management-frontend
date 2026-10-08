@@ -159,6 +159,16 @@ export const MEMBER_WITH_MINISTRY_FRAGMENT = gql`
     }
   }
 `;
+// Fragment for AttendanceStats
+export const ATTENDANCE_STATS_FRAGMENT = gql`
+  fragment AttendanceStatsFragment on AttendanceStats {
+    totalMembers
+    presentMembers
+    absentMembers
+    attendanceRate
+  }
+`;
+
 export const FAMILY_MEETUP_FRAGMENT = gql`
   fragment FamilyMeetupFragment on FamilyMeetup {
     id
@@ -168,6 +178,9 @@ export const FAMILY_MEETUP_FRAGMENT = gql`
     description
     meetup_date
     location
+    bible_study_number
+    bible_study_questions
+    completed_bible_study_questions
     created_by
     is_active
     createdAt
@@ -179,6 +192,9 @@ export const FAMILY_MEETUP_FRAGMENT = gql`
     creator {
       id
       full_name
+    }
+    attendanceStats {
+      ...AttendanceStatsFragment
     }
     attendances {
       id
@@ -197,6 +213,7 @@ export const FAMILY_MEETUP_FRAGMENT = gql`
       }
     }
   }
+  ${ATTENDANCE_STATS_FRAGMENT}
 `;
 
 export const FAMILY_MEETUP_BATCH_FRAGMENT = gql`
@@ -206,6 +223,8 @@ export const FAMILY_MEETUP_BATCH_FRAGMENT = gql`
     description
     meetup_date
     location
+    bible_study_number
+    bible_study_questions
     created_by
     is_active
     createdAt
@@ -221,10 +240,16 @@ export const FAMILY_MEETUP_BATCH_FRAGMENT = gql`
       description
       meetup_date
       location
+      bible_study_number
+      bible_study_questions
+      completed_bible_study_questions
       is_active
       family {
         id
         name
+      }
+      attendanceStats {
+        ...AttendanceStatsFragment
       }
       attendances {
         id
@@ -232,6 +257,7 @@ export const FAMILY_MEETUP_BATCH_FRAGMENT = gql`
       }
     }
   }
+  ${ATTENDANCE_STATS_FRAGMENT}
 `;
 
 export const GET_FAMILY_MEETUP_BATCH = gql`
@@ -271,16 +297,6 @@ export const FAMILY_MEMBER_ATTENDANCE_FRAGMENT = gql`
       id
       full_name
     }
-  }
-`;
-
-// Fragment for AttendanceStats
-export const ATTENDANCE_STATS_FRAGMENT = gql`
-  fragment AttendanceStatsFragment on AttendanceStats {
-    totalMembers
-    presentMembers
-    absentMembers
-    attendanceRate
   }
 `;
 
@@ -1304,6 +1320,17 @@ export const DELETE_FAMILY_MEETUP = gql`
   mutation DeleteFamilyMeetup($id: Int!) {
     deleteFamilyMeetup(id: $id)
   }
+`;
+
+export const UPDATE_FAMILY_MEETUP_BIBLE_STUDY_PROGRESS = gql`
+  mutation UpdateFamilyMeetupBibleStudyProgress(
+    $input: UpdateFamilyMeetupBibleStudyProgressInput!
+  ) {
+    updateFamilyMeetupBibleStudyProgress(input: $input) {
+      ...FamilyMeetupFragment
+    }
+  }
+  ${FAMILY_MEETUP_FRAGMENT}
 `;
 
 export const CREATE_ATTENDANCE = gql`
@@ -2466,6 +2493,19 @@ export const FAMILY_MEETUP_CHANGED_SUB = gql`
     }
   }
   ${FAMILY_MEETUP_FRAGMENT}
+`;
+
+export const FAMILY_MEETUP_BATCH_CHANGED_SUB = gql`
+  subscription FamilyMeetupBatchChanged {
+    familyMeetupBatchChanged {
+      action
+      id
+      familyMeetupBatch {
+        ...FamilyMeetupBatchFragment
+      }
+    }
+  }
+  ${FAMILY_MEETUP_BATCH_FRAGMENT}
 `;
 
 export const ATTENDANCE_CHANGED_SUB = gql`

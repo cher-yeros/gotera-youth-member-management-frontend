@@ -4,7 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import LoadingCard from "@/components/ui/loading-card";
 import { useGetFamilyMembers, useGetFamilyStats } from "@/hooks/useGraphQL";
-import { getMemberCompleteness } from "@/lib/memberCompleteness";
+import {
+  completionBadgeClass,
+  getActiveCompletionPercent,
+  getMemberCompleteness,
+  isActiveMember,
+} from "@/lib/memberCompleteness";
 import { useAuth } from "@/redux/useAuth";
 import type { Member } from "@/types/graphql";
 import {
@@ -40,9 +45,10 @@ const FamilyLeaderDashboard = () => {
   const totalMembers = members.length;
 
   // Status-based statistics
-  const activeMembers = members.filter(
-    (member: Member) => member.status?.name === "Active",
-  ).length;
+  const activeMemberList = members.filter((member: Member) =>
+    isActiveMember(member),
+  );
+  const activeMembers = activeMemberList.length;
   const notActiveMembers = members.filter(
     (member: Member) =>
       member.status?.name === "Not Active" ||
@@ -63,28 +69,32 @@ const FamilyLeaderDashboard = () => {
     return createdAt >= thirtyDaysAgo;
   }).length;
 
-  // Location statistics
-  const locationAllocated = members.filter(
+  // Allocation stats — Active members only (same scope as completeness)
+  const locationAllocated = activeMemberList.filter(
     (member: Member) => member.location?.id != null,
   ).length;
-  const locationUnallocated = members.filter(
+  const locationUnallocated = activeMemberList.filter(
     (member: Member) => member.location?.id == null,
   ).length;
 
-  // Profession statistics
-  const professionAllocated = members.filter(
-    (member: Member) => member.profession?.id != null,
+  const professionAllocated = activeMemberList.filter(
+    (member: Member) =>
+      member.profession?.id != null || member.not_employed === true,
   ).length;
-  const professionUnallocated = members.filter(
-    (member: Member) => member.profession?.id == null,
+  const professionUnallocated = activeMemberList.filter(
+    (member: Member) =>
+      member.profession?.id == null && member.not_employed !== true,
   ).length;
 
-  // Ministry statistics
-  const ministryAllocated = members.filter(
-    (member: Member) => member.ministries && member.ministries.length > 0,
+  const ministryAllocated = activeMemberList.filter(
+    (member: Member) =>
+      (member.ministries && member.ministries.length > 0) ||
+      member.no_ministry === true,
   ).length;
-  const ministryUnallocated = members.filter(
-    (member: Member) => !member.ministries || member.ministries.length === 0,
+  const ministryUnallocated = activeMemberList.filter(
+    (member: Member) =>
+      (!member.ministries || member.ministries.length === 0) &&
+      member.no_ministry !== true,
   ).length;
 
   // Profile completeness (Active members only)
@@ -102,6 +112,10 @@ const FamilyLeaderDashboard = () => {
   const isFullyUncompletedFamily =
     activeForCompleteness.length > 0 && completeMembers === 0;
   const hasUnfilledData = incompleteMembers.length > 0;
+  const completionPercent = getActiveCompletionPercent({
+    memberCount: activeForCompleteness.length,
+    completeMemberCount: completeMembers,
+  });
 
   // Get unique professions and locations
   const professions = [
@@ -289,7 +303,7 @@ const FamilyLeaderDashboard = () => {
                   }`}
                 >
                   {isFullyUncompletedFamily
-                    ? `None of the ${activeForCompleteness.length} active members in this family have a complete profile. Please fill in missing contact, gender, status, role, profession, location, and ministry.`
+                    ? `None of the ${activeForCompleteness.length} active members have a complete profile. Please fill in missing contact, gender, profession, location, and ministry.`
                     : `${incompleteMembers.length} of ${activeForCompleteness.length} active members have unfilled fields${
                         fullyIncompleteMembers.length > 0
                           ? `, including ${fullyIncompleteMembers.length} with mostly empty profiles`
@@ -386,55 +400,60 @@ const FamilyLeaderDashboard = () => {
           title="Incomplete Profiles"
           value={incompleteMembers.length}
           description={
-            isFullyUncompletedFamily
-              ? "Family fully incomplete"
-              : hasUnfilledData
-                ? "Need data filled"
-                : "All profiles complete"
+            activeForCompleteness.length === 0
+              ? "No active members to check"
+              : isFullyUncompletedFamily
+                ? "All active members incomplete"
+                : hasUnfilledData
+                  ? "Active members needing data"
+                  : "All active profiles complete"
           }
           icon={ClipboardList}
           tone={
-            hasUnfilledData
-              ? isFullyUncompletedFamily
-                ? "danger"
-                : "warning"
-              : "success"
+            activeForCompleteness.length === 0
+              ? "muted"
+              : hasUnfilledData
+                ? isFullyUncompletedFamily
+                  ? "danger"
+                  : "warning"
+                : "success"
           }
           valueClassName={
-            hasUnfilledData
-              ? isFullyUncompletedFamily
-                ? "text-red-600"
-                : "text-amber-600 dark:text-amber-400"
-              : "text-emerald-600 dark:text-emerald-400"
+            activeForCompleteness.length === 0
+              ? undefined
+              : hasUnfilledData
+                ? isFullyUncompletedFamily
+                  ? "text-red-600"
+                  : "text-amber-600 dark:text-amber-400"
+                : "text-emerald-600 dark:text-emerald-400"
           }
         />
       </div>
 
-      {/* Allocation Statistics Grid */}
+      {/* Allocation Statistics Grid — Active members only */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Location Allocation */}
         <Card className="shadow-brand">
           <CardHeader className="pb-4">
             <CardTitle className="text-brand-gradient text-lg">
               Location Allocation
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Members with and without location assignments
+              Among active members
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <StatCard
               variant="row"
-              title="Location Allocated"
-              description="Members with location assigned"
+              title="Allocated"
+              description="Have a location"
               value={locationAllocated}
               icon={MapPin}
               tone="success"
             />
             <StatCard
               variant="row"
-              title="Location Unallocated"
-              description="Members without location"
+              title="Unallocated"
+              description="Missing location"
               value={locationUnallocated}
               icon={AlertTriangle}
               tone={locationUnallocated > 0 ? "warning" : "success"}
@@ -447,29 +466,28 @@ const FamilyLeaderDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Profession Allocation */}
         <Card className="shadow-brand">
           <CardHeader className="pb-4">
             <CardTitle className="text-brand-gradient text-lg">
               Profession Allocation
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Members with and without profession assignments
+              Among active members
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <StatCard
               variant="row"
-              title="Profession Allocated"
-              description="Members with profession assigned"
+              title="Allocated"
+              description="Have a profession"
               value={professionAllocated}
               icon={Briefcase}
               tone="success"
             />
             <StatCard
               variant="row"
-              title="Profession Unallocated"
-              description="Members without profession"
+              title="Unallocated"
+              description="Missing profession"
               value={professionUnallocated}
               icon={AlertTriangle}
               tone={professionUnallocated > 0 ? "warning" : "success"}
@@ -482,29 +500,28 @@ const FamilyLeaderDashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Ministry Allocation */}
         <Card className="shadow-brand">
           <CardHeader className="pb-4">
             <CardTitle className="text-brand-gradient text-lg">
               Ministry Allocation
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Members with and without ministry assignments
+              Among active members
             </p>
           </CardHeader>
           <CardContent className="space-y-3">
             <StatCard
               variant="row"
-              title="Ministry Allocated"
-              description="Members in ministries"
+              title="Allocated"
+              description="In a ministry"
               value={ministryAllocated}
               icon={Activity}
               tone="success"
             />
             <StatCard
               variant="row"
-              title="Ministry Unallocated"
-              description="Members not in any ministry"
+              title="Unallocated"
+              description="Missing ministry"
               value={ministryUnallocated}
               icon={AlertTriangle}
               tone={ministryUnallocated > 0 ? "warning" : "success"}
@@ -527,7 +544,7 @@ const FamilyLeaderDashboard = () => {
               Family Members
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Manage your family members
+              Completeness is checked for Active members only
             </p>
           </CardHeader>
           <CardContent>
@@ -570,7 +587,7 @@ const FamilyLeaderDashboard = () => {
                           </p>
                           {!applicable ? (
                             <Badge className="text-xs bg-gray-100 text-gray-700">
-                              Not checked (inactive)
+                              Not checked ({member.status?.name || "no status"})
                             </Badge>
                           ) : isFullyIncomplete ? (
                             <Badge className="text-xs bg-red-100 text-red-800">
@@ -660,23 +677,26 @@ const FamilyLeaderDashboard = () => {
                 </Badge>
               </div>
 
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium">Data Completeness</span>
-                <Badge
-                  className={
-                    isFullyUncompletedFamily
-                      ? "bg-red-100 text-red-800"
-                      : hasUnfilledData
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-green-100 text-green-800"
-                  }
-                >
-                  {isFullyUncompletedFamily
-                    ? "Fully incomplete"
-                    : hasUnfilledData
-                      ? `${incompleteMembers.length} incomplete`
-                      : "All complete"}
-                </Badge>
+                {completionPercent !== null ? (
+                  <div className="text-right space-y-0.5">
+                    <Badge
+                      className={completionBadgeClass(completionPercent)}
+                      title={`${completeMembers} of ${activeForCompleteness.length} active members complete`}
+                    >
+                      {completionPercent}%
+                    </Badge>
+                    <p className="text-xs text-muted-foreground">
+                      {completeMembers}/{activeForCompleteness.length} active
+                      complete
+                    </p>
+                  </div>
+                ) : (
+                  <span className="text-xs text-muted-foreground">
+                    No active members
+                  </span>
+                )}
               </div>
 
               <div className="flex items-center justify-between">

@@ -8,6 +8,7 @@ import LoadingCard from "@/components/ui/loading-card";
 import type { Member } from "@/generated/graphql";
 import type { Ministry } from "@/types/graphql";
 import {
+  useGetFamilySummaries,
   useGetIncompleteFamilies,
   useGetMinistries,
   useGetOverviewStats,
@@ -16,6 +17,11 @@ import {
 import { useGetTeenOverviewStats } from "@/hooks/useTeenGraphQL";
 import { GET_FOLLOW_UP_DASHBOARD } from "@/graphql/operations";
 import { useQuery } from "@apollo/client/react";
+import {
+  completionBadgeClass,
+  getActiveCompletionPercent,
+  getOverallActiveCompletionPercent,
+} from "@/lib/memberCompleteness";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import {
@@ -35,6 +41,7 @@ import {
   UserCheck,
   Users,
 } from "lucide-react";
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 
 const Dashboard = () => {
@@ -48,6 +55,9 @@ const Dashboard = () => {
     useGetRecentMembers(3);
   const { data: incompleteFamiliesData, loading: incompleteFamiliesLoading } =
     useGetIncompleteFamilies(50);
+  // limit 0 = all families (same completeness logic as Families page)
+  const { data: familySummariesData, loading: familySummariesLoading } =
+    useGetFamilySummaries(0);
   const { data: ministriesData, loading: ministriesLoading } = useGetMinistries(
     { skip: isFamilyCoordinator },
   );
@@ -75,10 +85,18 @@ const Dashboard = () => {
     stats?.incompleteFamiliesCount ?? incompleteFamilies.length;
   const fullyIncompleteFamiliesCount =
     stats?.fullyIncompleteFamiliesCount ?? fullyUncompletedFamilies.length;
+  const overallCompletionPercent = useMemo(
+    () =>
+      getOverallActiveCompletionPercent(
+        familySummariesData?.familySummaries || [],
+      ),
+    [familySummariesData?.familySummaries],
+  );
   const isLoading =
     statsLoading ||
     recentMembersLoading ||
     incompleteFamiliesLoading ||
+    familySummariesLoading ||
     (!isFamilyCoordinator && ministriesLoading);
 
   const getInitials = (name: string) => {
@@ -218,9 +236,15 @@ const Dashboard = () => {
           title="Families"
           value={stats?.totalFamilies || 0}
           description={
-            incompleteFamiliesCount > 0
-              ? `${incompleteFamiliesCount} with incomplete info`
-              : "Registered families"
+            overallCompletionPercent !== null
+              ? `${overallCompletionPercent}% active complete${
+                  incompleteFamiliesCount > 0
+                    ? ` · ${incompleteFamiliesCount} incomplete`
+                    : ""
+                }`
+              : incompleteFamiliesCount > 0
+                ? `${incompleteFamiliesCount} with incomplete info`
+                : "Registered families"
           }
           icon={Home}
           tone={
@@ -230,6 +254,8 @@ const Dashboard = () => {
                 : "warning"
               : "secondary"
           }
+          href="/families"
+          linkLabel="View families"
         />
 
         {isFamilyCoordinator ? (
@@ -377,6 +403,14 @@ const Dashboard = () => {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
+              {overallCompletionPercent !== null && (
+                <Badge
+                  className={completionBadgeClass(overallCompletionPercent)}
+                  title="Share of active members with complete profiles across all families"
+                >
+                  {overallCompletionPercent}% active complete
+                </Badge>
+              )}
               <Badge className="bg-yellow-100 text-yellow-800">
                 {incompleteFamiliesCount} incomplete
               </Badge>
@@ -410,67 +444,78 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {incompleteFamilies.map((family: any) => (
-                <div
-                  key={family.id}
-                  className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border transition-colors ${
-                    family.isFullyIncomplete
-                      ? "border-red-500/50 bg-red-50/60 dark:bg-red-950/20"
-                      : "border-yellow-500/40 bg-yellow-50/50 dark:bg-yellow-950/10"
-                  }`}
-                >
+              {incompleteFamilies.map((family: any) => {
+                const completionPercent = getActiveCompletionPercent(family);
+                return (
                   <div
-                    className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
+                    key={family.id}
+                    className={`flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg border transition-colors ${
                       family.isFullyIncomplete
-                        ? "bg-red-100 dark:bg-red-900/40"
-                        : "bg-yellow-100 dark:bg-yellow-900/40"
+                        ? "border-red-500/50 bg-red-50/60 dark:bg-red-950/20"
+                        : "border-yellow-500/40 bg-yellow-50/50 dark:bg-yellow-950/10"
                     }`}
                   >
-                    <Home
-                      className={`h-5 w-5 ${
+                    <div
+                      className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${
                         family.isFullyIncomplete
-                          ? "text-red-600"
-                          : "text-yellow-700"
+                          ? "bg-red-100 dark:bg-red-900/40"
+                          : "bg-yellow-100 dark:bg-yellow-900/40"
                       }`}
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold truncate">{family.name}</p>
-                      {family.isFullyIncomplete ? (
-                        <Badge className="text-xs bg-red-100 text-red-800">
-                          Fully incomplete
-                        </Badge>
-                      ) : (
-                        <Badge className="text-xs bg-yellow-100 text-yellow-800">
-                          Incomplete
-                        </Badge>
-                      )}
+                    >
+                      <Home
+                        className={`h-5 w-5 ${
+                          family.isFullyIncomplete
+                            ? "text-red-600"
+                            : "text-yellow-700"
+                        }`}
+                      />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {family.incompleteMemberCount} of {family.memberCount}{" "}
-                      active members need data filled
-                      {family.fullyIncompleteMemberCount > 0
-                        ? ` · ${family.fullyIncompleteMemberCount} mostly empty`
-                        : ""}
-                    </p>
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold truncate">{family.name}</p>
+                        {completionPercent !== null && (
+                          <Badge
+                            className={`text-xs ${completionBadgeClass(completionPercent)}`}
+                            title={`${family.completeMemberCount} of ${family.memberCount} active members complete`}
+                          >
+                            {completionPercent}%
+                          </Badge>
+                        )}
+                        {family.isFullyIncomplete ? (
+                          <Badge className="text-xs bg-red-100 text-red-800">
+                            Fully incomplete
+                          </Badge>
+                        ) : (
+                          <Badge className="text-xs bg-yellow-100 text-yellow-800">
+                            Incomplete
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {family.completeMemberCount}/{family.memberCount} active
+                        complete
+                        {family.incompleteMemberCount > 0
+                          ? ` · ${family.incompleteMemberCount} need data`
+                          : ""}
+                        {family.fullyIncompleteMemberCount > 0
+                          ? ` · ${family.fullyIncompleteMemberCount} mostly empty`
+                          : ""}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link to={`/families/${family.id}/members`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-current"
+                        >
+                          View Members
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Badge variant="secondary" className="text-xs">
-                      {family.completeMemberCount} complete
-                    </Badge>
-                    <Link to={`/families/${family.id}/members`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-current"
-                      >
-                        View Members
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="pt-2">
                 <Link to="/families">
                   <Button

@@ -308,6 +308,8 @@ export type CreateFamilyInput = {
 };
 
 export type CreateFamilyMeetupBatchInput = {
+  bible_study_number?: InputMaybe<Scalars['Int']['input']>;
+  bible_study_questions?: InputMaybe<Array<Scalars['Int']['input']>>;
   description: Scalars['String']['input'];
   location: Scalars['String']['input'];
   meetup_date: Scalars['String']['input'];
@@ -315,6 +317,8 @@ export type CreateFamilyMeetupBatchInput = {
 };
 
 export type CreateFamilyMeetupInput = {
+  bible_study_number?: InputMaybe<Scalars['Int']['input']>;
+  bible_study_questions?: InputMaybe<Array<Scalars['Int']['input']>>;
   description: Scalars['String']['input'];
   family_id?: InputMaybe<Scalars['Int']['input']>;
   location: Scalars['String']['input'];
@@ -418,6 +422,9 @@ export type FamilyMeetup = {
   attendances?: Maybe<Array<FamilyMemberAttendance>>;
   batch?: Maybe<FamilyMeetupBatch>;
   batch_id?: Maybe<Scalars['Int']['output']>;
+  bible_study_number?: Maybe<Scalars['Int']['output']>;
+  bible_study_questions?: Maybe<Array<Scalars['Int']['output']>>;
+  completed_bible_study_questions: Array<Scalars['Int']['output']>;
   createdAt: Scalars['String']['output'];
   created_by: Scalars['Int']['output'];
   creator: Member;
@@ -434,6 +441,8 @@ export type FamilyMeetup = {
 
 export type FamilyMeetupBatch = {
   __typename?: 'FamilyMeetupBatch';
+  bible_study_number?: Maybe<Scalars['Int']['output']>;
+  bible_study_questions?: Maybe<Array<Scalars['Int']['output']>>;
   createdAt: Scalars['String']['output'];
   created_by: Scalars['Int']['output'];
   creator: Member;
@@ -874,6 +883,7 @@ export type Mutation = {
   updateFamily: Family;
   updateFamilyMeetup: FamilyMeetup;
   updateFamilyMeetupBatch: FamilyMeetupBatch;
+  updateFamilyMeetupBibleStudyProgress: FamilyMeetup;
   updateFollowUpCase: FollowUpCase;
   updateLocation: Location;
   updateMember: Member;
@@ -1191,6 +1201,11 @@ export type MutationUpdateFamilyMeetupArgs = {
 
 export type MutationUpdateFamilyMeetupBatchArgs = {
   input: UpdateFamilyMeetupBatchInput;
+};
+
+
+export type MutationUpdateFamilyMeetupBibleStudyProgressArgs = {
+  input: UpdateFamilyMeetupBibleStudyProgressInput;
 };
 
 
@@ -2067,6 +2082,8 @@ export type UpdateFamilyInput = {
 };
 
 export type UpdateFamilyMeetupBatchInput = {
+  bible_study_number?: InputMaybe<Scalars['Int']['input']>;
+  bible_study_questions?: InputMaybe<Array<Scalars['Int']['input']>>;
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['Int']['input'];
   is_active?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2075,7 +2092,14 @@ export type UpdateFamilyMeetupBatchInput = {
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateFamilyMeetupBibleStudyProgressInput = {
+  completed_bible_study_questions: Array<Scalars['Int']['input']>;
+  meetup_id: Scalars['Int']['input'];
+};
+
 export type UpdateFamilyMeetupInput = {
+  bible_study_number?: InputMaybe<Scalars['Int']['input']>;
+  bible_study_questions?: InputMaybe<Array<Scalars['Int']['input']>>;
   description?: InputMaybe<Scalars['String']['input']>;
   id: Scalars['Int']['input'];
   is_active?: InputMaybe<Scalars['Boolean']['input']>;
@@ -2198,16 +2222,16 @@ export type MemberBasicFragmentFragment = { __typename?: 'Member', id: number, f
 
 export type MemberWithMinistryFragmentFragment = { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, gender?: string | null, birth_date?: string | null, status_id?: number | null, family_id?: number | null, role_id?: number | null, profession_id?: number | null, location_id?: number | null, profession_name?: string | null, location_name?: string | null, no_ministry: boolean, not_employed: boolean, createdAt: string, updatedAt: string, family?: { __typename?: 'Family', id: number, name: string } | null, role?: { __typename?: 'Role', id: number, name: string, description: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string, description: string }>, status?: { __typename?: 'Status', id: number, name: string } | null, profession?: { __typename?: 'Profession', id: number, name: string } | null, location?: { __typename?: 'Location', id: number, name: string } | null, ministries: Array<{ __typename?: 'Ministry', id: number, name: string, description?: string | null, is_active: boolean }> };
 
-export type FamilyMeetupFragmentFragment = { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null };
+export type FamilyMeetupFragmentFragment = { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null };
 
-export type FamilyMeetupBatchFragmentFragment = { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> };
+export type FamilyMeetupBatchFragmentFragment = { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> };
 
 export type GetFamilyMeetupBatchQueryVariables = Exact<{
   id: Scalars['Int']['input'];
 }>;
 
 
-export type GetFamilyMeetupBatchQuery = { __typename?: 'Query', familyMeetupBatch?: { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> } | null };
+export type GetFamilyMeetupBatchQuery = { __typename?: 'Query', familyMeetupBatch?: { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> } | null };
 
 export type FamilyMemberAttendanceFragmentFragment = { __typename?: 'FamilyMemberAttendance', id: number, meetup_id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, updatedAt: string, meetup: { __typename?: 'FamilyMeetup', id: number, title: string, meetup_date: string, family: { __typename?: 'Family', id: number, name: string } }, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } };
 
@@ -2580,7 +2604,7 @@ export type GetFamilyMeetupQueryVariables = Exact<{
 }>;
 
 
-export type GetFamilyMeetupQuery = { __typename?: 'Query', familyMeetup?: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } | null };
+export type GetFamilyMeetupQuery = { __typename?: 'Query', familyMeetup?: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } | null };
 
 export type GetFamilyMeetupsQueryVariables = Exact<{
   filter?: InputMaybe<MeetupFilterInput>;
@@ -2588,7 +2612,7 @@ export type GetFamilyMeetupsQueryVariables = Exact<{
 }>;
 
 
-export type GetFamilyMeetupsQuery = { __typename?: 'Query', familyMeetups: { __typename?: 'PaginatedMeetups', total: number, page: number, limit: number, totalPages: number, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null }> } };
+export type GetFamilyMeetupsQuery = { __typename?: 'Query', familyMeetups: { __typename?: 'PaginatedMeetups', total: number, page: number, limit: number, totalPages: number, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null }> } };
 
 export type GetFamilyMeetupBatchesQueryVariables = Exact<{
   filter?: InputMaybe<MeetupFilterInput>;
@@ -2596,7 +2620,7 @@ export type GetFamilyMeetupBatchesQueryVariables = Exact<{
 }>;
 
 
-export type GetFamilyMeetupBatchesQuery = { __typename?: 'Query', familyMeetupBatches: { __typename?: 'PaginatedMeetupBatches', total: number, page: number, limit: number, totalPages: number, batches: Array<{ __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> }> } };
+export type GetFamilyMeetupBatchesQuery = { __typename?: 'Query', familyMeetupBatches: { __typename?: 'PaginatedMeetupBatches', total: number, page: number, limit: number, totalPages: number, batches: Array<{ __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> }> } };
 
 export type GetFamilyMemberAttendanceQueryVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -2625,14 +2649,14 @@ export type CreateFamilyMeetupBatchMutationVariables = Exact<{
 }>;
 
 
-export type CreateFamilyMeetupBatchMutation = { __typename?: 'Mutation', createFamilyMeetupBatch: { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> } };
+export type CreateFamilyMeetupBatchMutation = { __typename?: 'Mutation', createFamilyMeetupBatch: { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> } };
 
 export type UpdateFamilyMeetupBatchMutationVariables = Exact<{
   input: UpdateFamilyMeetupBatchInput;
 }>;
 
 
-export type UpdateFamilyMeetupBatchMutation = { __typename?: 'Mutation', updateFamilyMeetupBatch: { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> } };
+export type UpdateFamilyMeetupBatchMutation = { __typename?: 'Mutation', updateFamilyMeetupBatch: { __typename?: 'FamilyMeetupBatch', id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, creator: { __typename?: 'Member', id: number, full_name: string }, meetups: Array<{ __typename?: 'FamilyMeetup', id: number, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, is_active: boolean, family: { __typename?: 'Family', id: number, name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, is_present: boolean }> | null }> } };
 
 export type DeleteFamilyMeetupBatchMutationVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -2646,14 +2670,14 @@ export type CreateFamilyMeetupMutationVariables = Exact<{
 }>;
 
 
-export type CreateFamilyMeetupMutation = { __typename?: 'Mutation', createFamilyMeetup: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
+export type CreateFamilyMeetupMutation = { __typename?: 'Mutation', createFamilyMeetup: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
 
 export type UpdateFamilyMeetupMutationVariables = Exact<{
   input: UpdateFamilyMeetupInput;
 }>;
 
 
-export type UpdateFamilyMeetupMutation = { __typename?: 'Mutation', updateFamilyMeetup: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
+export type UpdateFamilyMeetupMutation = { __typename?: 'Mutation', updateFamilyMeetup: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
 
 export type DeleteFamilyMeetupMutationVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -2661,6 +2685,13 @@ export type DeleteFamilyMeetupMutationVariables = Exact<{
 
 
 export type DeleteFamilyMeetupMutation = { __typename?: 'Mutation', deleteFamilyMeetup: boolean };
+
+export type UpdateFamilyMeetupBibleStudyProgressMutationVariables = Exact<{
+  input: UpdateFamilyMeetupBibleStudyProgressInput;
+}>;
+
+
+export type UpdateFamilyMeetupBibleStudyProgressMutation = { __typename?: 'Mutation', updateFamilyMeetupBibleStudyProgress: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } };
 
 export type CreateAttendanceMutationVariables = Exact<{
   input: CreateAttendanceInput;
@@ -3147,7 +3178,7 @@ export type ClassSessionChangedSubscription = { __typename?: 'Subscription', cla
 export type FamilyMeetupChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FamilyMeetupChangedSubscription = { __typename?: 'Subscription', familyMeetupChanged: { __typename?: 'FamilyMeetupChangePayload', action: ChangeAction, id: number, familyMeetup?: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } | null } };
+export type FamilyMeetupChangedSubscription = { __typename?: 'Subscription', familyMeetupChanged: { __typename?: 'FamilyMeetupChangePayload', action: ChangeAction, id: number, familyMeetup?: { __typename?: 'FamilyMeetup', id: number, batch_id?: number | null, family_id: number, title: string, description: string, meetup_date: string, location: string, bible_study_number?: number | null, bible_study_questions?: Array<number> | null, completed_bible_study_questions: Array<number>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, family: { __typename?: 'Family', id: number, name: string }, creator: { __typename?: 'Member', id: number, full_name: string }, attendances?: Array<{ __typename?: 'FamilyMemberAttendance', id: number, member_id: number, is_present: boolean, notes?: string | null, recorded_by: number, createdAt: string, member: { __typename?: 'Member', id: number, full_name: string }, recorder: { __typename?: 'Member', id: number, full_name: string } }> | null } | null } };
 
 export type AttendanceChangedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 

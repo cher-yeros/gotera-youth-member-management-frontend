@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   BULK_CREATE_ATTENDANCE,
-  GET_FAMILY_MEMBERS,
   GET_FAMILY_MEMBER_ATTENDANCES,
+  GET_MEMBERS,
+  GET_STATUSES,
 } from "@/graphql/operations";
+import { ACTIVE_STATUS_NAME } from "@/lib/memberCompleteness";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { CheckCircle, Users, XCircle } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 interface AttendanceModalProps {
@@ -67,20 +69,36 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const [notes, setNotes] = useState<{ [key: number]: string }>({});
   const [hydrated, setHydrated] = useState(false);
 
-  const { data: familyData, loading: familyLoading } = useQuery(
-    GET_FAMILY_MEMBERS,
-    {
-      variables: { familyId },
-      skip: !open,
-    },
+  const { data: statusesData, loading: statusesLoading } = useQuery(
+    GET_STATUSES,
+    { skip: !open },
   );
+
+  const activeStatusId = useMemo(() => {
+    const statuses =
+      (statusesData as { statuses?: Array<{ id: number; name: string }> })
+        ?.statuses || [];
+    return statuses.find((s) => s.name === ACTIVE_STATUS_NAME)?.id;
+  }, [statusesData]);
+
+  const { data: membersData, loading: membersLoading } = useQuery(GET_MEMBERS, {
+    variables: {
+      filter: {
+        family_id: familyId,
+        status_id: activeStatusId,
+      },
+      pagination: { page: 1, limit: 200 },
+    },
+    skip: !open || !activeStatusId,
+    fetchPolicy: "network-only",
+  });
 
   const { data: existingAttendanceData, loading: attendanceLoading } = useQuery(
     GET_FAMILY_MEMBER_ATTENDANCES,
     {
       variables: {
         filter: { meetup_id: meetupId },
-        pagination: { page: 1, limit: 100 },
+        pagination: { page: 1, limit: 200 },
       },
       skip: !open,
       fetchPolicy: "network-only",
@@ -88,6 +106,16 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   );
 
   const [bulkCreateAttendance] = useMutation(BULK_CREATE_ATTENDANCE);
+
+  const activeMembers = useMemo(() => {
+    return (
+      (
+        membersData as {
+          members?: { members: Member[] };
+        }
+      )?.members?.members || []
+    );
+  }, [membersData]);
 
   // Load once when the modal opens — do not reset after optimistic saves
   useEffect(() => {
@@ -97,9 +125,16 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }
     if (hydrated) return;
 
-    const members = (familyData as { family?: { members: Member[] } })?.family
-      ?.members;
-    if (!members || attendanceLoading) return;
+    if (attendanceLoading || statusesLoading) return;
+    if (!activeStatusId) {
+      toast.error("Active status not found");
+      setAttendanceRecords([]);
+      setNotes({});
+      setHydrated(true);
+      return;
+    }
+    if (!membersData || membersLoading) return;
+    const members = activeMembers;
 
     const existingAttendances =
       (
@@ -124,13 +159,26 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
       }),
     );
 
+    const activeMemberIds = new Set(members.map((m) => m.id));
     const notesMap: { [key: number]: string } = {};
     existingAttendances.forEach((att) => {
-      notesMap[att.member_id] = att.notes || "";
+      if (activeMemberIds.has(att.member_id)) {
+        notesMap[att.member_id] = att.notes || "";
+      }
     });
     setNotes(notesMap);
     setHydrated(true);
-  }, [open, hydrated, familyData, existingAttendanceData, attendanceLoading]);
+  }, [
+    open,
+    hydrated,
+    membersData,
+    activeMembers,
+    activeStatusId,
+    existingAttendanceData,
+    attendanceLoading,
+    statusesLoading,
+    membersLoading,
+  ]);
 
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
@@ -219,12 +267,29 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const presentCount = recordedRecords.filter((r) => r.is_present).length;
   const absentCount = recordedRecords.filter((r) => !r.is_present).length;
   const totalCount = attendanceRecords.length;
+  const pendingCount = totalCount - recordedRecords.length;
+  const allMembersRecorded = pendingCount === 0;
   const attendanceRate =
     recordedRecords.length > 0
       ? (presentCount / recordedRecords.length) * 100
       : 0;
 
-  if (familyLoading || attendanceLoading || (open && !hydrated)) {
+  const handleDone = () => {
+    if (!allMembersRecorded) {
+      toast.error(
+        `Mark present or absent for all members (${pendingCount} remaining).`,
+      );
+      return;
+    }
+    handleOpenChange(false);
+  };
+
+  if (
+    statusesLoading ||
+    membersLoading ||
+    attendanceLoading ||
+    (open && !hydrated)
+  ) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>
@@ -307,11 +372,9 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
           {/* Member List */}
           <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Family Members</h3>
+            <h3 className="text-lg font-semibold">Active Family Members</h3>
             <div className="grid gap-3">
-              {(
-                familyData as { family?: { members: Member[] } }
-              )?.family?.members?.map((member: Member) => {
+              {activeMembers.map((member: Member) => {
                 const record = attendanceRecords.find(
                   (r) => r.member_id === member.id,
                 );
@@ -396,8 +459,19 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
             </div>
           </div>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t">
+            {!allMembersRecorded && (
+              <p className="text-sm text-amber-600">
+                Mark present or absent for all members ({pendingCount}{" "}
+                remaining) before finishing.
+              </p>
+            )}
+            <Button
+              variant="outline"
+              className="sm:ml-auto"
+              disabled={!allMembersRecorded}
+              onClick={handleDone}
+            >
               Done
             </Button>
           </div>

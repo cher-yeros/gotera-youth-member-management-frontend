@@ -1,4 +1,5 @@
 import { AttendanceModal } from "@/components/forms/AttendanceModal";
+import BibleStudyProgress from "@/components/forms/BibleStudyProgress";
 import { CreateFamilyMeetupModal } from "@/components/forms/CreateFamilyMeetupModal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,9 @@ interface FamilyMeetup {
   description: string;
   meetup_date: string;
   location: string;
+  bible_study_number?: number | null;
+  bible_study_questions?: number[] | null;
+  completed_bible_study_questions?: number[];
   is_active: boolean;
   createdAt: string;
   family: {
@@ -34,6 +38,12 @@ interface FamilyMeetup {
     id: number;
     full_name: string;
   };
+  attendanceStats?: {
+    totalMembers: number;
+    presentMembers: number;
+    absentMembers: number;
+    attendanceRate: number;
+  } | null;
   attendances: Array<{
     id: number;
     member_id: number;
@@ -155,19 +165,12 @@ const AttendanceManagement: React.FC = () => {
   };
 
   const getAttendanceStats = (meetup: FamilyMeetup) => {
-    const totalMembers = meetup.attendances.length;
-    const presentMembers = meetup.attendances.filter(
-      (a) => a.is_present,
-    ).length;
-    const absentMembers = totalMembers - presentMembers;
-    const attendanceRate =
-      totalMembers > 0 ? (presentMembers / totalMembers) * 100 : 0;
-
+    const stats = meetup.attendanceStats;
     return {
-      totalMembers,
-      presentMembers,
-      absentMembers,
-      attendanceRate,
+      totalMembers: stats?.totalMembers ?? 0,
+      presentMembers: stats?.presentMembers ?? 0,
+      absentMembers: stats?.absentMembers ?? 0,
+      attendanceRate: stats?.attendanceRate ?? 0,
     };
   };
 
@@ -355,6 +358,17 @@ const AttendanceManagement: React.FC = () => {
                                   </div>
                                 )}
 
+                                <BibleStudyProgress
+                                  meetupId={meetup.id}
+                                  bibleStudyNumber={meetup.bible_study_number}
+                                  bibleStudyQuestions={
+                                    meetup.bible_study_questions
+                                  }
+                                  completedQuestions={
+                                    meetup.completed_bible_study_questions
+                                  }
+                                />
+
                                 {/* Action buttons — attendance only for today's meetup */}
                                 <div className="flex space-x-2 pt-2">
                                   {isMeetupToday(meetup.meetup_date) ? (
@@ -408,6 +422,9 @@ const AttendanceManagement: React.FC = () => {
                             Status
                           </th>
                           <th className="text-left p-3 font-semibold">
+                            Bible Study
+                          </th>
+                          <th className="text-left p-3 font-semibold">
                             Attendance
                           </th>
                           <th className="text-left p-3 font-semibold">
@@ -448,6 +465,20 @@ const AttendanceManagement: React.FC = () => {
                                 </td>
                                 <td className="p-3">
                                   {getStatusBadge(meetup)}
+                                </td>
+                                <td className="p-3 min-w-[200px]">
+                                  <BibleStudyProgress
+                                    meetupId={meetup.id}
+                                    bibleStudyNumber={
+                                      meetup.bible_study_number
+                                    }
+                                    bibleStudyQuestions={
+                                      meetup.bible_study_questions
+                                    }
+                                    completedQuestions={
+                                      meetup.completed_bible_study_questions
+                                    }
+                                  />
                                 </td>
                                 <td className="p-3">
                                   <div className="text-sm">
@@ -619,6 +650,17 @@ const AttendanceManagement: React.FC = () => {
                                     </div>
                                   </div>
                                 )}
+
+                                <BibleStudyProgress
+                                  meetupId={meetup.id}
+                                  bibleStudyNumber={meetup.bible_study_number}
+                                  bibleStudyQuestions={
+                                    meetup.bible_study_questions
+                                  }
+                                  completedQuestions={
+                                    meetup.completed_bible_study_questions
+                                  }
+                                />
                               </div>
                             </CardContent>
                           </Card>
@@ -640,6 +682,9 @@ const AttendanceManagement: React.FC = () => {
                           </th>
                           <th className="text-left p-3 font-semibold">
                             Status
+                          </th>
+                          <th className="text-left p-3 font-semibold">
+                            Bible Study
                           </th>
                           <th className="text-left p-3 font-semibold">
                             Final Attendance
@@ -679,6 +724,20 @@ const AttendanceManagement: React.FC = () => {
                                 </td>
                                 <td className="p-3">
                                   {getStatusBadge(meetup)}
+                                </td>
+                                <td className="p-3 min-w-[200px]">
+                                  <BibleStudyProgress
+                                    meetupId={meetup.id}
+                                    bibleStudyNumber={
+                                      meetup.bible_study_number
+                                    }
+                                    bibleStudyQuestions={
+                                      meetup.bible_study_questions
+                                    }
+                                    completedQuestions={
+                                      meetup.completed_bible_study_questions
+                                    }
+                                  />
                                 </td>
                                 <td className="p-3">
                                   <div className="text-sm">

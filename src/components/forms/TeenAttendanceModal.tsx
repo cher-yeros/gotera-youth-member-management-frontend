@@ -255,10 +255,22 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
   const presentCount = recordedRecords.filter((r) => r.is_present).length;
   const absentCount = recordedRecords.filter((r) => !r.is_present).length;
   const totalCount = Math.max(attendanceRecords.length, teens.length);
+  const pendingCount = totalCount - recordedRecords.length;
+  const allTeensRecorded = readOnly || pendingCount === 0;
   const attendanceRate =
     recordedRecords.length > 0
       ? (presentCount / recordedRecords.length) * 100
       : 0;
+
+  const handleDone = () => {
+    if (!readOnly && !allTeensRecorded) {
+      toast.error(
+        `Mark present or absent for all teenagers (${pendingCount} remaining).`,
+      );
+      return;
+    }
+    handleOpenChange(false);
+  };
 
   const defaultTrigger = (
     <Button>
@@ -485,8 +497,19 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
             )}
           </div>
 
-          <div className="flex justify-end pt-4 border-t">
-            <Button variant="outline" onClick={() => handleOpenChange(false)}>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t">
+            {!readOnly && !allTeensRecorded && (
+              <p className="text-sm text-amber-600">
+                Mark present or absent for all teenagers ({pendingCount}{" "}
+                remaining) before finishing.
+              </p>
+            )}
+            <Button
+              variant="outline"
+              className="sm:ml-auto"
+              disabled={!allTeensRecorded}
+              onClick={handleDone}
+            >
               {readOnly ? "Close" : "Done"}
             </Button>
           </div>
