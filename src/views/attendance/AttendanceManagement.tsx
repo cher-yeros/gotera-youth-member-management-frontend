@@ -190,10 +190,7 @@ const AttendanceManagement: React.FC = () => {
   if (!familyId) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Attendance Management"
-          subtitle="Family meetups"
-        />
+        <PageHeader title="Attendance Management" subtitle="Family meetups" />
         <ListErrorState
           layout="page"
           title="No Family Assigned"
@@ -469,9 +466,7 @@ const AttendanceManagement: React.FC = () => {
                                 <td className="p-3 min-w-[200px]">
                                   <BibleStudyProgress
                                     meetupId={meetup.id}
-                                    bibleStudyNumber={
-                                      meetup.bible_study_number
-                                    }
+                                    bibleStudyNumber={meetup.bible_study_number}
                                     bibleStudyQuestions={
                                       meetup.bible_study_questions
                                     }
@@ -728,9 +723,7 @@ const AttendanceManagement: React.FC = () => {
                                 <td className="p-3 min-w-[200px]">
                                   <BibleStudyProgress
                                     meetupId={meetup.id}
-                                    bibleStudyNumber={
-                                      meetup.bible_study_number
-                                    }
+                                    bibleStudyNumber={meetup.bible_study_number}
                                     bibleStudyQuestions={
                                       meetup.bible_study_questions
                                     }
