@@ -13,6 +13,10 @@ export interface Member {
   location_id?: number;
   profession_name?: string;
   location_name?: string;
+  /** True when the member explicitly has no ministry. */
+  no_ministry?: boolean;
+  /** True when the member is explicitly not employed. */
+  not_employed?: boolean;
   createdAt: string;
   updatedAt: string;
   family?: Family;
@@ -159,6 +163,8 @@ export interface MemberFilterInput {
   ministry_ids?: number[];
   role_name?: string;
   search?: string;
+  no_ministry?: boolean;
+  not_employed?: boolean;
 }
 
 export interface PaginationInput {
