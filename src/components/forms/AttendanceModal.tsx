@@ -87,7 +87,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
         family_id: familyId,
         status_id: activeStatusId,
       },
-      pagination: { page: 1, limit: 200 },
+      pagination: { page: 1, limit: 100 },
     },
     skip: !open || !activeStatusId,
     fetchPolicy: "network-only",
@@ -98,7 +98,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     {
       variables: {
         filter: { meetup_id: meetupId },
-        pagination: { page: 1, limit: 200 },
+        pagination: { page: 1, limit: 100 },
       },
       skip: !open,
       fetchPolicy: "network-only",
