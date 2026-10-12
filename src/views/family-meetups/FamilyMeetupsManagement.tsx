@@ -3,6 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -18,6 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import {
   CREATE_FAMILY_MEETUP_BATCH,
+  DELETE_FAMILY_MEETUP_BATCH,
   GET_FAMILY_MEETUP_BATCHES,
   UPDATE_FAMILY_MEETUP_BATCH,
 } from "@/graphql/operations";
@@ -37,8 +48,10 @@ import {
   CheckCircle,
   ChevronRight,
   Edit,
+  Eye,
   MapPin,
   Plus,
+  Trash2,
   TrendingUp,
   Users,
   XCircle,
@@ -52,6 +65,7 @@ import {
   getBibleStudyProgress,
   parseQuestionNumbers,
 } from "@/lib/bibleStudy";
+import { AttendanceModal } from "@/components/forms/AttendanceModal";
 
 interface FamilyMeetupInBatch {
   id: number;
@@ -107,6 +121,9 @@ const FamilyMeetupsManagement: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [batchPendingAction, setBatchPendingAction] =
     useState<FamilyMeetupBatch | null>(null);
+  const [batchToDelete, setBatchToDelete] = useState<FamilyMeetupBatch | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -156,6 +173,32 @@ const FamilyMeetupsManagement: React.FC = () => {
       }) => {
         const errorMessage = err.graphQLErrors?.[0]?.message || err.message;
         toast.error(`Failed to update meetup batch: ${errorMessage}`);
+      },
+    },
+  );
+
+  const [deleteBatch, { loading: deleting }] = useMutation(
+    DELETE_FAMILY_MEETUP_BATCH,
+    {
+      refetchQueries: [
+        {
+          query: GET_FAMILY_MEETUP_BATCHES,
+          variables: {
+            filter: {},
+            pagination: { page: 1, limit: 1000 },
+          },
+        },
+      ],
+      onCompleted: () => {
+        toast.success("Meetup batch deleted");
+        setBatchToDelete(null);
+      },
+      onError: (err: {
+        message?: string;
+        graphQLErrors?: Array<{ message: string }>;
+      }) => {
+        const errorMessage = err.graphQLErrors?.[0]?.message || err.message;
+        toast.error(errorMessage || "Failed to delete meetup batch");
       },
     },
   );
@@ -227,6 +270,21 @@ const FamilyMeetupsManagement: React.FC = () => {
       ),
     });
     setIsEditModalOpen(true);
+  };
+
+  const batchHasAttendance = (batch: FamilyMeetupBatch | null) =>
+    !!batch?.meetups?.some((m) => (m.attendances?.length ?? 0) > 0);
+
+  const confirmDelete = async () => {
+    if (!batchToDelete || batchHasAttendance(batchToDelete)) return;
+    try {
+      await deleteBatch({ variables: { id: batchToDelete.id } });
+      if (viewedBatchId === batchToDelete.id) {
+        setViewedBatchId(null);
+      }
+    } catch {
+      // Error toast is handled by deleteBatch onError
+    }
   };
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -495,10 +553,26 @@ const FamilyMeetupsManagement: React.FC = () => {
             </div>
           }
           actions={
-            <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit Batch
-            </Button>
+            <div className="flex items-center space-x-2 shrink-0">
+              <Button variant="outline" onClick={() => handleEdit(viewedBatch)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit Batch
+              </Button>
+              <Button
+                variant="outline"
+                className="text-red-600 hover:text-red-700"
+                onClick={() => setBatchToDelete(viewedBatch)}
+                disabled={batchHasAttendance(viewedBatch)}
+                title={
+                  batchHasAttendance(viewedBatch)
+                    ? "Cannot delete: attendance has been recorded"
+                    : undefined
+                }
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            </div>
           }
         />
 
@@ -536,6 +610,7 @@ const FamilyMeetupsManagement: React.FC = () => {
                         Bible Study
                       </th>
                       <th className="text-left p-3 font-semibold">Status</th>
+                      <th className="text-left p-3 font-semibold">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -593,6 +668,19 @@ const FamilyMeetupsManagement: React.FC = () => {
                               {meetup.is_active ? "Active" : "Inactive"}
                             </Badge>
                           </td>
+                          <td className="p-3">
+                            <AttendanceModal
+                              meetupId={meetup.id}
+                              familyId={meetup.family_id}
+                              readOnly
+                              trigger={
+                                <Button variant="outline" size="sm">
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  View
+                                </Button>
+                              }
+                            />
+                          </td>
                         </tr>
                       );
                     })}
@@ -603,7 +691,51 @@ const FamilyMeetupsManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Edit / Delete dialogs shared below */}
+        <AlertDialog
+          open={!!batchToDelete}
+          onOpenChange={(open) => !open && setBatchToDelete(null)}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {batchHasAttendance(batchToDelete)
+                  ? "Cannot Delete Meetup Batch"
+                  : "Delete Meetup Batch"}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {batchHasAttendance(batchToDelete) ? (
+                  <>
+                    Meetup batch &quot;{batchToDelete?.title}&quot; has
+                    attendance recorded and cannot be deleted. Edit the batch
+                    instead.
+                  </>
+                ) : (
+                  <>
+                    This will permanently delete the meetup batch &quot;
+                    {batchToDelete?.title}&quot; for all{" "}
+                    {batchToDelete?.meetups?.length || 0} families.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => setBatchToDelete(null)}>
+                {batchHasAttendance(batchToDelete) ? "Close" : "Cancel"}
+              </AlertDialogCancel>
+              {!batchHasAttendance(batchToDelete) && (
+                <AlertDialogAction
+                  onClick={confirmDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete Batch"}
+                </AlertDialogAction>
+              )}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Edit dialog shared below */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
@@ -858,13 +990,32 @@ const FamilyMeetupsManagement: React.FC = () => {
                             </div>
                           </td>
                           <td className="p-3">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => handleEdit(batch, e)}
+                            <div
+                              className="flex items-center gap-2"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <Edit className="h-4 w-4" />
-                            </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={(e) => handleEdit(batch, e)}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 hover:text-red-700"
+                                onClick={() => setBatchToDelete(batch)}
+                                disabled={batchHasAttendance(batch)}
+                                title={
+                                  batchHasAttendance(batch)
+                                    ? "Cannot delete: attendance has been recorded"
+                                    : undefined
+                                }
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -991,6 +1142,49 @@ const FamilyMeetupsManagement: React.FC = () => {
           </form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog
+        open={!!batchToDelete}
+        onOpenChange={(open) => !open && setBatchToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {batchHasAttendance(batchToDelete)
+                ? "Cannot Delete Meetup Batch"
+                : "Delete Meetup Batch"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {batchHasAttendance(batchToDelete) ? (
+                <>
+                  Meetup batch &quot;{batchToDelete?.title}&quot; has attendance
+                  recorded and cannot be deleted. Edit the batch instead.
+                </>
+              ) : (
+                <>
+                  This will permanently delete the meetup batch &quot;
+                  {batchToDelete?.title}&quot; for all{" "}
+                  {batchToDelete?.meetups?.length || 0} families.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBatchToDelete(null)}>
+              {batchHasAttendance(batchToDelete) ? "Close" : "Cancel"}
+            </AlertDialogCancel>
+            {!batchHasAttendance(batchToDelete) && (
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete Batch"}
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
         <DialogContent className="sm:max-w-[500px]">

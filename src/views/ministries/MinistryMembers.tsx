@@ -29,7 +29,7 @@ import {
 import { formatMinistryProgram } from "@/lib/ministryProgram";
 import { useAuth } from "@/redux/useAuth";
 import { CalendarClock, UserPlus, Users } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 const MinistryMembers = () => {
@@ -46,6 +46,7 @@ const MinistryMembers = () => {
   } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
 
   // Determine if this is a ministry leader accessing their own ministry
   // Check both the route param and the pathname since /ministries/my-ministry doesn't have a param
@@ -81,9 +82,46 @@ const MinistryMembers = () => {
   const { updateMember } = useUpdateMember();
 
   const members = data?.ministryMembers || [];
-  const totalMembers = members.length;
+  const filteredMembers = useMemo(() => {
+    let list = members;
+    const search = searchFilters.search?.trim().toLowerCase();
+    if (search) {
+      list = list.filter(
+        (m) =>
+          m.full_name?.toLowerCase().includes(search) ||
+          m.contact_no?.toLowerCase().includes(search) ||
+          m.profession_name?.toLowerCase().includes(search) ||
+          m.location_name?.toLowerCase().includes(search) ||
+          m.profession?.name?.toLowerCase().includes(search) ||
+          m.location?.name?.toLowerCase().includes(search),
+      );
+    }
+    if (searchFilters.status_id) {
+      list = list.filter((m) => m.status?.id === searchFilters.status_id);
+    }
+    if (searchFilters.family_id) {
+      list = list.filter((m) => m.family?.id === searchFilters.family_id);
+    }
+    if (searchFilters.profession_id) {
+      list = list.filter(
+        (m) => m.profession?.id === searchFilters.profession_id,
+      );
+    }
+    if (searchFilters.not_employed) {
+      list = list.filter((m) => !m.profession?.id && !m.profession_name);
+    }
+    if (searchFilters.location_id) {
+      list = list.filter((m) => m.location?.id === searchFilters.location_id);
+    }
+    return list;
+  }, [members, searchFilters]);
+
+  const totalMembers = filteredMembers.length;
+  const hasSearchFilters = Object.values(searchFilters).some(
+    (v) => v !== undefined && v !== "" && v !== false,
+  );
   const totalPages = Math.max(1, Math.ceil(totalMembers / pageSize));
-  const paginatedMembers = members.slice(
+  const paginatedMembers = filteredMembers.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
@@ -93,16 +131,14 @@ const MinistryMembers = () => {
     ministry?.program_day,
   );
 
-  console.log({ effectiveMinistryId });
-
   const handleSearch = useCallback((filters: MemberFilterInput) => {
-    // Search functionality can be implemented here if needed
-    console.log("Search filters:", filters);
+    setSearchFilters(filters);
+    setCurrentPage(1);
   }, []);
 
   const handleClearSearch = useCallback(() => {
-    // Clear search functionality can be implemented here if needed
-    console.log("Clear search");
+    setSearchFilters({});
+    setCurrentPage(1);
   }, []);
 
   const confirmRemoveMember = async () => {
@@ -183,7 +219,10 @@ const MinistryMembers = () => {
   if (error) {
     return (
       <div className="space-y-6">
-        <PageHeader title={ministry.name} titleClassName="text-2xl sm:text-3xl" />
+        <PageHeader
+          title={ministry.name}
+          titleClassName="text-2xl sm:text-3xl"
+        />
         <ListErrorState
           layout="page"
           title="Error Loading Members"
@@ -239,15 +278,30 @@ const MinistryMembers = () => {
         <CardContent>
           {loading ? (
             <ListLoadingState message="Loading members..." />
-          ) : members.length === 0 ? (
+          ) : filteredMembers.length === 0 ? (
             <ListEmptyState
               icon={<Users className="h-8 w-8" />}
-              title="No members found in this ministry"
-              description={`Add members to the ${ministry.name} ministry to get started.`}
-              primaryAction={{
-                label: "Add First Member",
-                onClick: () => setIsNewMemberModalOpen(true),
-              }}
+              title={
+                hasSearchFilters
+                  ? "No members found matching your search"
+                  : "No members found in this ministry"
+              }
+              description={
+                hasSearchFilters
+                  ? "Try adjusting your search criteria or clear the filters."
+                  : `Add members to the ${ministry.name} ministry to get started.`
+              }
+              primaryAction={
+                hasSearchFilters
+                  ? {
+                      label: "Clear Filters",
+                      onClick: handleClearSearch,
+                    }
+                  : {
+                      label: "Add First Member",
+                      onClick: () => setIsNewMemberModalOpen(true),
+                    }
+              }
             />
           ) : (
             <div className="space-y-4">

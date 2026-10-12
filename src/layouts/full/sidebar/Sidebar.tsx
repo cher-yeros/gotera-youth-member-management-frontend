@@ -65,6 +65,7 @@ const adminNavigation: NavEntry[] = [
     children: [
       { name: "All Families", href: "/families", icon: UserCheck },
       { name: "Family Meetups", href: "/family-meetups", icon: CalendarCheck },
+      { name: "Attendance", href: "/attendance", icon: Calendar },
       { name: "Member Mapping", href: "/family-mapping", icon: Network },
     ],
   },
@@ -109,6 +110,7 @@ const fcNavigation: NavEntry[] = [
     children: [
       { name: "All Families", href: "/families", icon: UserCheck },
       { name: "Family Meetups", href: "/family-meetups", icon: CalendarCheck },
+      { name: "Attendance", href: "/attendance", icon: Calendar },
       { name: "Member Mapping", href: "/family-mapping", icon: Network },
     ],
   },

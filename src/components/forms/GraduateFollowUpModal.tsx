@@ -22,6 +22,8 @@ import {
   GRADUATE_FOLLOW_UP_CASE,
 } from "@/graphql/operations";
 import { CLOSE_STATUSES, FOLLOW_UP_STATUS_LABELS } from "@/lib/followUp";
+import { canPromoteFollowUpToFamily } from "@/lib/roles";
+import { useAuth } from "@/redux/useAuth";
 import { toast } from "react-toastify";
 
 interface GraduateFollowUpModalProps {
@@ -39,16 +41,19 @@ export const GraduateFollowUpModal: React.FC<GraduateFollowUpModalProps> = ({
   defaultFamilyId,
   onSuccess,
 }) => {
+  const { user } = useAuth();
+  const canPromote = canPromoteFollowUpToFamily(user);
   const [familyId, setFamilyId] = useState(
     defaultFamilyId ? String(defaultFamilyId) : "",
   );
   const [notes, setNotes] = useState("");
 
-  const { data: familiesData } = useQuery(GET_FAMILIES, { skip: !open });
+  const { data: familiesData } = useQuery(GET_FAMILIES, {
+    skip: !open || !canPromote,
+  });
   const families = (familiesData as any)?.families || [];
 
   const [graduate, { loading }] = useMutation(GRADUATE_FOLLOW_UP_CASE, {
-
     onCompleted: () => {
       toast.success("Newcomer promoted to family");
       onOpenChange(false);
@@ -62,6 +67,12 @@ export const GraduateFollowUpModal: React.FC<GraduateFollowUpModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canPromote) {
+      toast.error(
+        "Follow up and Follow Up Coordinators cannot promote to family",
+      );
+      return;
+    }
     if (!caseId || !familyId) {
       toast.error("Family is required");
       return;
@@ -78,6 +89,28 @@ export const GraduateFollowUpModal: React.FC<GraduateFollowUpModalProps> = ({
     });
   };
 
+  if (!canPromote) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Promote to Family</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Only administrators, main leaders, and family coordinators can
+            promote newcomers to a family. Follow up and Follow Up Coordinators
+            cannot.
+          </p>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -87,10 +120,7 @@ export const GraduateFollowUpModal: React.FC<GraduateFollowUpModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Family *</Label>
-            <Select
-              value={familyId || undefined}
-              onValueChange={setFamilyId}
-            >
+            <Select value={familyId || undefined} onValueChange={setFamilyId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select family" />
               </SelectTrigger>
@@ -146,7 +176,6 @@ export const CloseFollowUpModal: React.FC<CloseFollowUpModalProps> = ({
   const [notes, setNotes] = useState("");
 
   const [closeCase, { loading }] = useMutation(CLOSE_FOLLOW_UP_CASE, {
-
     onCompleted: () => {
       toast.success("Case closed");
       onOpenChange(false);

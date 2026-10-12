@@ -3,6 +3,7 @@ import { toast } from "react-toastify";
 import type { GetTeenagersQuery } from "@/generated/graphql";
 import {
   ASSIGN_CLASS_TEACHER,
+  ASSIGN_TEEN_ROLL_NUMBERS,
   BULK_CREATE_TEEN_ATTENDANCE,
   CREATE_CLASS_SESSION_BATCH,
   CREATE_TEEN_CLASS,
@@ -312,6 +313,23 @@ export const usePromoteTeenagerToMember = () => {
     promoteTeenagerToMember: async (input: any) => {
       const result = await mutate({ variables: { input } });
       return (result.data as any)?.promoteTeenagerToMember;
+    },
+    loading,
+  };
+};
+
+export const useAssignTeenRollNumbers = () => {
+  const [mutate, { loading }] = useMutation(ASSIGN_TEEN_ROLL_NUMBERS, {
+    onCompleted: (data: any) =>
+      toast.success(
+        data?.assignTeenRollNumbers?.message || "Roll numbers assigned",
+      ),
+    onError: (e) => toast.error(e.message),
+  });
+  return {
+    assignTeenRollNumbers: async (class_id: number) => {
+      const result = await mutate({ variables: { class_id } });
+      return (result.data as any)?.assignTeenRollNumbers;
     },
     loading,
   };

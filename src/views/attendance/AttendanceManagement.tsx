@@ -16,7 +16,7 @@ import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { useQuery } from "@apollo/client/react";
 import { format } from "date-fns";
-import { CheckCircle, TrendingUp, Users, XCircle } from "lucide-react";
+import { CheckCircle, Eye, TrendingUp, Users, XCircle } from "lucide-react";
 import React, { useState, useCallback } from "react";
 
 interface FamilyMeetup {
@@ -62,19 +62,26 @@ const AttendanceManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState("upcoming");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  // FC+FL: optional focus on the family they lead
+  const [myFamilyOnly, setMyFamilyOnly] = useState(false);
 
-  const familyId = user?.member?.family?.id;
-  const canCreateMeetup = hasAnyRole(user, [ROLE.ADMIN, ROLE.FC]);
+  const ownFamilyId = user?.member?.family?.id;
+  const ownFamilyName = user?.member?.family?.name;
+  // FC/Admin/MAIN see every family's meetups; FL alone is limited to their family
+  const isOrgWide = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
+  const isFamilyLeader = hasAnyRole(user, [ROLE.FL, ROLE.FUL]);
+  const canFocusOwnFamily = isOrgWide && isFamilyLeader && !!ownFamilyId;
+  const canCreateMeetup = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
 
   const { data, loading, error } = useQuery(GET_FAMILY_MEETUPS, {
     variables: {
       filter: {
-        family_id: familyId,
+        ...(isOrgWide ? {} : { family_id: ownFamilyId }),
         is_active: true,
       },
-      pagination: { page: 1, limit: 50 },
+      pagination: { page: 1, limit: isOrgWide ? 1000 : 50 },
     },
-    skip: !familyId,
+    skip: !isOrgWide && !ownFamilyId,
   });
 
   const meetups =
@@ -136,16 +143,22 @@ const AttendanceManagement: React.FC = () => {
   };
 
   const filteredMeetups = useCallback(
-    (meetups: FamilyMeetup[]) => {
-      if (!searchTerm) return meetups;
-      return meetups.filter(
+    (list: FamilyMeetup[]) => {
+      let result = list;
+      if (canFocusOwnFamily && myFamilyOnly && ownFamilyId) {
+        result = result.filter((meetup) => meetup.family.id === ownFamilyId);
+      }
+      if (!searchTerm) return result;
+      const term = searchTerm.toLowerCase();
+      return result.filter(
         (meetup: FamilyMeetup) =>
-          meetup.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          meetup.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          meetup.description.toLowerCase().includes(searchTerm.toLowerCase()),
+          meetup.title.toLowerCase().includes(term) ||
+          meetup.location.toLowerCase().includes(term) ||
+          meetup.description.toLowerCase().includes(term) ||
+          meetup.family.name.toLowerCase().includes(term),
       );
     },
-    [searchTerm],
+    [searchTerm, canFocusOwnFamily, myFamilyOnly, ownFamilyId],
   );
 
   const handleSearch = useCallback((search: string) => {
@@ -187,7 +200,7 @@ const AttendanceManagement: React.FC = () => {
     }
   };
 
-  if (!familyId) {
+  if (!isOrgWide && !ownFamilyId) {
     return (
       <div className="space-y-6">
         <PageHeader title="Attendance Management" subtitle="Family meetups" />
@@ -205,12 +218,12 @@ const AttendanceManagement: React.FC = () => {
       {/* Header */}
       <PageHeader
         title="Attendance Management"
-        subtitle={`${meetups.length} meetups`}
-        actions={
-          canCreateMeetup ? (
-            <CreateFamilyMeetupModal familyId={familyId} />
-          ) : undefined
+        subtitle={
+          isOrgWide
+            ? `${meetups.length} meetups across all families`
+            : `${meetups.length} meetups`
         }
+        actions={canCreateMeetup ? <CreateFamilyMeetupModal /> : undefined}
       />
 
       {/* Search */}
@@ -218,8 +231,38 @@ const AttendanceManagement: React.FC = () => {
         value={searchTerm}
         onChange={handleSearch}
         onClear={handleClearSearch}
-        placeholder="Search meetups..."
+        placeholder={
+          isOrgWide ? "Search meetups or families..." : "Search meetups..."
+        }
       />
+
+      {canFocusOwnFamily && (
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            size="sm"
+            variant={!myFamilyOnly ? "default" : "outline"}
+            onClick={() => {
+              setMyFamilyOnly(false);
+              setCurrentPage(1);
+            }}
+          >
+            All families
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant={myFamilyOnly ? "default" : "outline"}
+            onClick={() => {
+              setMyFamilyOnly(true);
+              setCurrentPage(1);
+            }}
+          >
+            My family
+            {ownFamilyName ? ` (${ownFamilyName})` : ""}
+          </Button>
+        </div>
+      )}
 
       {/* Tabs */}
       <Card className="shadow-brand">
@@ -288,8 +331,15 @@ const AttendanceManagement: React.FC = () => {
                               <div className="space-y-3">
                                 {/* Header with meetup title and status */}
                                 <div className="flex items-center justify-between">
-                                  <div className="font-semibold text-lg">
-                                    {meetup.title}
+                                  <div>
+                                    <div className="font-semibold text-lg">
+                                      {meetup.title}
+                                    </div>
+                                    {isOrgWide && (
+                                      <div className="text-sm text-muted-foreground">
+                                        {meetup.family.name}
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     {getStatusBadge(meetup)}
@@ -366,12 +416,12 @@ const AttendanceManagement: React.FC = () => {
                                   }
                                 />
 
-                                {/* Action buttons — attendance only for today's meetup */}
+                                {/* Action buttons — record today; view otherwise */}
                                 <div className="flex space-x-2 pt-2">
                                   {isMeetupToday(meetup.meetup_date) ? (
                                     <AttendanceModal
                                       meetupId={meetup.id}
-                                      familyId={familyId}
+                                      familyId={meetup.family.id}
                                       trigger={
                                         <Button
                                           variant="outline"
@@ -384,16 +434,21 @@ const AttendanceManagement: React.FC = () => {
                                       }
                                     />
                                   ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      disabled
-                                      className="flex-1"
-                                      title="Attendance can only be recorded on the meetup day"
-                                    >
-                                      <Users className="h-4 w-4 mr-1" />
-                                      Record Attendance
-                                    </Button>
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={meetup.family.id}
+                                      readOnly
+                                      trigger={
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="flex-1"
+                                        >
+                                          <Eye className="h-4 w-4 mr-1" />
+                                          View Attendance
+                                        </Button>
+                                      }
+                                    />
                                   )}
                                 </div>
                               </div>
@@ -411,6 +466,11 @@ const AttendanceManagement: React.FC = () => {
                           <th className="text-left p-3 font-semibold">
                             Meetup
                           </th>
+                          {isOrgWide && (
+                            <th className="text-left p-3 font-semibold">
+                              Family
+                            </th>
+                          )}
                           <th className="text-left p-3 font-semibold">Date</th>
                           <th className="text-left p-3 font-semibold">
                             Location
@@ -450,6 +510,13 @@ const AttendanceManagement: React.FC = () => {
                                     {meetup.description}
                                   </div>
                                 </td>
+                                {isOrgWide && (
+                                  <td className="p-3">
+                                    <div className="text-sm font-medium">
+                                      {meetup.family.name}
+                                    </div>
+                                  </td>
+                                )}
                                 <td className="p-3">
                                   <div className="text-sm">
                                     {formatMeetupDate(meetup.meetup_date)}
@@ -493,7 +560,7 @@ const AttendanceManagement: React.FC = () => {
                                   {isMeetupToday(meetup.meetup_date) ? (
                                     <AttendanceModal
                                       meetupId={meetup.id}
-                                      familyId={familyId}
+                                      familyId={meetup.family.id}
                                       trigger={
                                         <Button
                                           variant="outline"
@@ -506,15 +573,17 @@ const AttendanceManagement: React.FC = () => {
                                       }
                                     />
                                   ) : (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      disabled
-                                      title="Attendance can only be recorded on the meetup day"
-                                    >
-                                      <Users className="h-4 w-4 mr-1" />
-                                      Record
-                                    </Button>
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={meetup.family.id}
+                                      readOnly
+                                      trigger={
+                                        <Button variant="outline" size="sm">
+                                          <Eye className="h-4 w-4 mr-1" />
+                                          View
+                                        </Button>
+                                      }
+                                    />
                                   )}
                                 </td>
                               </tr>
@@ -579,8 +648,15 @@ const AttendanceManagement: React.FC = () => {
                               <div className="space-y-3">
                                 {/* Header with meetup title and status */}
                                 <div className="flex items-center justify-between">
-                                  <div className="font-semibold text-lg">
-                                    {meetup.title}
+                                  <div>
+                                    <div className="font-semibold text-lg">
+                                      {meetup.title}
+                                    </div>
+                                    {isOrgWide && (
+                                      <div className="text-sm text-muted-foreground">
+                                        {meetup.family.name}
+                                      </div>
+                                    )}
                                   </div>
                                   <div className="flex items-center space-x-2">
                                     {getStatusBadge(meetup)}
@@ -656,6 +732,24 @@ const AttendanceManagement: React.FC = () => {
                                     meetup.completed_bible_study_questions
                                   }
                                 />
+
+                                <div className="flex space-x-2 pt-2">
+                                  <AttendanceModal
+                                    meetupId={meetup.id}
+                                    familyId={meetup.family.id}
+                                    readOnly
+                                    trigger={
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1"
+                                      >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        View Attendance
+                                      </Button>
+                                    }
+                                  />
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -671,6 +765,11 @@ const AttendanceManagement: React.FC = () => {
                           <th className="text-left p-3 font-semibold">
                             Meetup
                           </th>
+                          {isOrgWide && (
+                            <th className="text-left p-3 font-semibold">
+                              Family
+                            </th>
+                          )}
                           <th className="text-left p-3 font-semibold">Date</th>
                           <th className="text-left p-3 font-semibold">
                             Location
@@ -683,6 +782,9 @@ const AttendanceManagement: React.FC = () => {
                           </th>
                           <th className="text-left p-3 font-semibold">
                             Final Attendance
+                          </th>
+                          <th className="text-left p-3 font-semibold">
+                            Actions
                           </th>
                         </tr>
                       </thead>
@@ -707,6 +809,13 @@ const AttendanceManagement: React.FC = () => {
                                     {meetup.description}
                                   </div>
                                 </td>
+                                {isOrgWide && (
+                                  <td className="p-3">
+                                    <div className="text-sm font-medium">
+                                      {meetup.family.name}
+                                    </div>
+                                  </td>
+                                )}
                                 <td className="p-3">
                                   <div className="text-sm">
                                     {formatMeetupDate(meetup.meetup_date)}
@@ -745,6 +854,19 @@ const AttendanceManagement: React.FC = () => {
                                       {stats.totalMembers} present
                                     </div>
                                   </div>
+                                </td>
+                                <td className="p-3">
+                                  <AttendanceModal
+                                    meetupId={meetup.id}
+                                    familyId={meetup.family.id}
+                                    readOnly
+                                    trigger={
+                                      <Button variant="outline" size="sm">
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        View
+                                      </Button>
+                                    }
+                                  />
                                 </td>
                               </tr>
                             );

@@ -14,8 +14,10 @@ type TeenagerViewModalProps = {
     full_name: string;
     contact_no?: string | null;
     gender?: string | null;
+    grade?: string | null;
     photo_url?: string | null;
     status?: string | null;
+    roll_no?: string | null;
     guardian_name?: string | null;
     guardian_relationship?: string | null;
     guardian_contact?: string | null;
@@ -65,6 +67,11 @@ const TeenagerViewModal = ({
             <div className="min-w-0 space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-xl font-semibold">{teenager.full_name}</h3>
+                {teenager.roll_no ? (
+                  <Badge variant="outline" className="font-mono">
+                    Roll {teenager.roll_no}
+                  </Badge>
+                ) : null}
                 {teenager.status ? <Badge>{teenager.status}</Badge> : null}
                 {teenager.teenClass?.name ? (
                   <Badge variant="secondary">{teenager.teenClass.name}</Badge>
@@ -72,12 +79,20 @@ const TeenagerViewModal = ({
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-1 text-sm">
                 <p>
+                  <span className="text-muted-foreground">Roll No: </span>
+                  <span className="font-mono">{teenager.roll_no || "—"}</span>
+                </p>
+                <p>
                   <span className="text-muted-foreground">Contact: </span>
                   {teenager.contact_no || "N/A"}
                 </p>
                 <p>
                   <span className="text-muted-foreground">Gender: </span>
                   <span className="capitalize">{teenager.gender || "N/A"}</span>
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Grade: </span>
+                  {teenager.grade ? `Grade ${teenager.grade}` : "N/A"}
                 </p>
                 <p>
                   <span className="text-muted-foreground">Location: </span>

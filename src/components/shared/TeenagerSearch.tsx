@@ -67,8 +67,10 @@ const TeenagerSearch = ({
       class_id: filters.class_id,
       location_id: filters.location_id,
       gender: filters.gender,
-      search: "",
+      search: filters.search?.trim() || undefined,
     });
+    // Intentionally omit filters.search so typing does not auto-submit.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filters.status,
     filters.class_id,

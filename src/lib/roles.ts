@@ -83,6 +83,16 @@ export function isFollowUpCoordinator(
   return hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FUC]);
 }
 
+/**
+ * Who may promote a follow-up newcomer into a family.
+ * Follow up (FUL) and Follow Up Coordinator (FUC) cannot — only Admin, Main, or FC.
+ */
+export function canPromoteFollowUpToFamily(
+  user: UserLike | null | undefined,
+): boolean {
+  return hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
+}
+
 /** Default landing path when a user holds several roles. */
 export function getDefaultPathForUser(
   user: UserLike | null | undefined,

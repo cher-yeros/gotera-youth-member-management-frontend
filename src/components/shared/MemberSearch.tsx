@@ -131,7 +131,7 @@ const MemberSearch = ({
     })),
   ];
 
-  // Trigger search when filters change (excluding search term)
+  // Trigger search when advanced filters change; keep the current text query
   useEffect(() => {
     onSearch({
       status_id: filters.status_id,
@@ -141,8 +141,11 @@ const MemberSearch = ({
       location_id: filters.location_id,
       ministry_id: filters.no_ministry ? undefined : filters.ministry_id,
       no_ministry: filters.no_ministry || undefined,
-      search: "",
+      search: filters.search?.trim() || undefined,
     });
+    // Intentionally omit filters.search so typing does not auto-submit;
+    // Enter / search button still call handleSearch with the latest term.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     filters.status_id,
     filters.family_id,

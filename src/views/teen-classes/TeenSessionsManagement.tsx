@@ -127,6 +127,9 @@ const TeenSessionsManagement = () => {
     };
   };
 
+  const batchHasAttendance = (batch: ClassSessionBatch | null) =>
+    !!batch && getBatchStats(batch).total > 0;
+
   const getStatusBadge = (sessionDate: string) => {
     const today = new Date().toISOString().slice(0, 10);
     if (sessionDate === today) {
@@ -171,11 +174,15 @@ const TeenSessionsManagement = () => {
   }, [viewedBatch, classSearchTerm]);
 
   const confirmDelete = async () => {
-    if (!batchToDelete) return;
-    await deleteClassSessionBatch(batchToDelete.id);
-    setBatchToDelete(null);
-    if (viewedBatchId === batchToDelete.id) {
-      setViewedBatchId(null);
+    if (!batchToDelete || batchHasAttendance(batchToDelete)) return;
+    try {
+      await deleteClassSessionBatch(batchToDelete.id);
+      setBatchToDelete(null);
+      if (viewedBatchId === batchToDelete.id) {
+        setViewedBatchId(null);
+      }
+    } catch {
+      // Error toast is handled by useDeleteClassSessionBatch
     }
   };
 
@@ -208,6 +215,12 @@ const TeenSessionsManagement = () => {
                 variant="outline"
                 className="text-red-600 hover:text-red-700"
                 onClick={() => setBatchToDelete(viewedBatch)}
+                disabled={batchHasAttendance(viewedBatch)}
+                title={
+                  batchHasAttendance(viewedBatch)
+                    ? "Cannot delete: attendance has been recorded"
+                    : undefined
+                }
               >
                 <Trash2 className="h-4 w-4 mr-2" />
                 Delete
@@ -350,25 +363,40 @@ const TeenSessionsManagement = () => {
         >
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Delete Session Batch</AlertDialogTitle>
+              <AlertDialogTitle>
+                {batchHasAttendance(batchToDelete)
+                  ? "Cannot Delete Session Batch"
+                  : "Delete Session Batch"}
+              </AlertDialogTitle>
               <AlertDialogDescription>
-                This will permanently delete the session batch &quot;
-                {batchToDelete?.title}&quot; for all{" "}
-                {batchToDelete?.sessions?.length || 0} classes, including
-                attendance records.
+                {batchHasAttendance(batchToDelete) ? (
+                  <>
+                    Session batch &quot;{batchToDelete?.title}&quot; has
+                    attendance recorded and cannot be deleted. Edit the batch
+                    instead.
+                  </>
+                ) : (
+                  <>
+                    This will permanently delete the session batch &quot;
+                    {batchToDelete?.title}&quot; for all{" "}
+                    {batchToDelete?.sessions?.length || 0} classes.
+                  </>
+                )}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel onClick={() => setBatchToDelete(null)}>
-                Cancel
+                {batchHasAttendance(batchToDelete) ? "Close" : "Cancel"}
               </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={confirmDelete}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={deleting}
-              >
-                {deleting ? "Deleting..." : "Delete Batch"}
-              </AlertDialogAction>
+              {!batchHasAttendance(batchToDelete) && (
+                <AlertDialogAction
+                  onClick={confirmDelete}
+                  className="bg-red-600 hover:bg-red-700"
+                  disabled={deleting}
+                >
+                  {deleting ? "Deleting..." : "Delete Batch"}
+                </AlertDialogAction>
+              )}
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
@@ -504,6 +532,12 @@ const TeenSessionsManagement = () => {
                                 e.stopPropagation();
                                 setBatchToDelete(batch);
                               }}
+                              disabled={batchHasAttendance(batch)}
+                              title={
+                                batchHasAttendance(batch)
+                                  ? "Cannot delete: attendance has been recorded"
+                                  : undefined
+                              }
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -623,6 +657,12 @@ const TeenSessionsManagement = () => {
                                 size="sm"
                                 onClick={() => setBatchToDelete(batch)}
                                 className="text-red-600 hover:text-red-700"
+                                disabled={batchHasAttendance(batch)}
+                                title={
+                                  batchHasAttendance(batch)
+                                    ? "Cannot delete: attendance has been recorded"
+                                    : undefined
+                                }
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -660,25 +700,39 @@ const TeenSessionsManagement = () => {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Session Batch</AlertDialogTitle>
+            <AlertDialogTitle>
+              {batchHasAttendance(batchToDelete)
+                ? "Cannot Delete Session Batch"
+                : "Delete Session Batch"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the session batch &quot;
-              {batchToDelete?.title}&quot; for all{" "}
-              {batchToDelete?.sessions?.length || 0} classes, including
-              attendance records.
+              {batchHasAttendance(batchToDelete) ? (
+                <>
+                  Session batch &quot;{batchToDelete?.title}&quot; has attendance
+                  recorded and cannot be deleted. Edit the batch instead.
+                </>
+              ) : (
+                <>
+                  This will permanently delete the session batch &quot;
+                  {batchToDelete?.title}&quot; for all{" "}
+                  {batchToDelete?.sessions?.length || 0} classes.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setBatchToDelete(null)}>
-              Cancel
+              {batchHasAttendance(batchToDelete) ? "Close" : "Cancel"}
             </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDelete}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete Batch"}
-            </AlertDialogAction>
+            {!batchHasAttendance(batchToDelete) && (
+              <AlertDialogAction
+                onClick={confirmDelete}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={deleting}
+              >
+                {deleting ? "Deleting..." : "Delete Batch"}
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

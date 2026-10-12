@@ -170,6 +170,8 @@ export interface MemberFilterInput {
 export interface PaginationInput {
   page?: number;
   limit?: number;
+  sort_by?: "FULL_NAME" | "CREATED_AT";
+  sort_order?: "ASC" | "DESC";
 }
 
 export interface PaginatedMembers {

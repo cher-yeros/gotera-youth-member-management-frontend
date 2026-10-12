@@ -22,7 +22,7 @@ import {
   followUpStatusBadgeClass,
   isFollowUpOverdue,
 } from "@/lib/followUp";
-import { hasAnyRole, isFollowUpCoordinator, ROLE } from "@/lib/roles";
+import { canPromoteFollowUpToFamily, isFollowUpCoordinator } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -33,8 +33,8 @@ const FollowUpCaseDetail: React.FC = () => {
   const canCoordinate = isFollowUpCoordinator(user);
   // Only Follow Up Coordinators (Admin/Main/FUC) may assign or reassign cases
   const canAssignFollowUp = canCoordinate;
-  // Promote to Family is admin/main only — not FUL or FUC
-  const canPromoteToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
+  // Promote to Family: admin/main/FC — FUL and FUC cannot
+  const canPromoteToFamily = canPromoteFollowUpToFamily(user);
   const myMemberId = user?.member?.id;
 
   const [assignOpen, setAssignOpen] = useState(false);

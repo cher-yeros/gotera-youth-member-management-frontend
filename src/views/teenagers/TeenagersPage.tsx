@@ -11,8 +11,18 @@ import PageHeader from "@/components/shared/PageHeader";
 import ListLoadingState from "@/components/shared/ListLoadingState";
 import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
-import ListPagination, { LIST_PAGE_SIZE_ALL } from "@/components/shared/ListPagination";
-import ProfileCompletenessBadge, { CompletenessPageSummary } from "@/components/shared/ProfileCompletenessBadge";
+import ListPagination, {
+  LIST_PAGE_SIZE_ALL,
+} from "@/components/shared/ListPagination";
+import ListSortSelect from "@/components/shared/ListSortSelect";
+import ProfileCompletenessBadge, {
+  CompletenessPageSummary,
+} from "@/components/shared/ProfileCompletenessBadge";
+import {
+  TEENAGER_SORT_OPTIONS,
+  sortPresetToPagination,
+  type ListSortPreset,
+} from "@/lib/listSort";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +59,7 @@ const statusDotClass = (status?: string | null) => {
 const TeenagersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortPreset, setSortPreset] = useState<ListSortPreset>("roll_no");
   const [searchFilters, setSearchFilters] = useState<TeenagerFilterInput>({});
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [viewTeen, setViewTeen] = useState<TeenListItem | null>(null);
@@ -63,13 +74,15 @@ const TeenagersPage = () => {
   const { data, loading, error, refetch } = useGetTeenagers(searchFilters, {
     page: currentPage,
     limit: pageSize,
+    ...sortPresetToPagination(sortPreset),
   });
   const { deleteTeenager } = useDeleteTeenager();
 
   const payload = data?.teenagers;
   const teens = payload?.teenagers || [];
   const total = payload?.total || 0;
-  const totalPages = pageSize === LIST_PAGE_SIZE_ALL ? 1 : Math.ceil(total / pageSize);
+  const totalPages =
+    pageSize === LIST_PAGE_SIZE_ALL ? 1 : Math.ceil(total / pageSize);
 
   const incompleteOnPage = teens.filter(
     (teen) => getTeenCompleteness(teen).isIncomplete,
@@ -112,7 +125,9 @@ const TeenagersPage = () => {
         <ListErrorState
           layout="page"
           title="Error Loading Teenagers"
-          message={error.message || "Failed to load teenagers. Please try again."}
+          message={
+            error.message || "Failed to load teenagers. Please try again."
+          }
           onRetry={() => refetch()}
         />
       </div>
@@ -146,12 +161,23 @@ const TeenagersPage = () => {
             <CardTitle className="text-brand-gradient">
               Teenagers List
             </CardTitle>
-            {!loading && teens.length > 0 && (
-              <CompletenessPageSummary
-                incompleteCount={incompleteOnPage}
-                totalOnPage={teens.length}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <ListSortSelect
+                value={sortPreset}
+                onChange={(next) => {
+                  setSortPreset(next);
+                  setCurrentPage(1);
+                }}
+                options={TEENAGER_SORT_OPTIONS}
+                disabled={loading}
               />
-            )}
+              {!loading && teens.length > 0 && (
+                <CompletenessPageSummary
+                  incompleteCount={incompleteOnPage}
+                  totalOnPage={teens.length}
+                />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -204,6 +230,11 @@ const TeenagersPage = () => {
                                 className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(teen.status)}`}
                               />
                               <div className="font-semibold text-lg truncate">
+                                {teen.roll_no ? (
+                                  <span className="text-muted-foreground font-mono mr-1.5">
+                                    {teen.roll_no}
+                                  </span>
+                                ) : null}
                                 {teen.full_name}
                               </div>
                             </div>
@@ -226,6 +257,14 @@ const TeenagersPage = () => {
                           </div>
 
                           <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                Roll No:
+                              </span>
+                              <span className="font-mono">
+                                {teen.roll_no || "—"}
+                              </span>
+                            </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">
                                 Class:
@@ -255,6 +294,14 @@ const TeenagersPage = () => {
                               </span>
                               <span className="capitalize">
                                 {teen.gender || "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                Grade:
+                              </span>
+                              <span>
+                                {teen.grade ? `Grade ${teen.grade}` : "N/A"}
                               </span>
                             </div>
                             <div className="flex justify-between">
@@ -357,11 +404,13 @@ const TeenagersPage = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-left p-3 font-semibold">Roll</th>
                       <th className="text-left p-3 font-semibold">Name</th>
                       <th className="text-left p-3 font-semibold">Info</th>
                       <th className="text-left p-3 font-semibold">Class</th>
                       <th className="text-left p-3 font-semibold">Contact</th>
                       <th className="text-left p-3 font-semibold">Gender</th>
+                      <th className="text-left p-3 font-semibold">Grade</th>
                       <th className="text-left p-3 font-semibold">Location</th>
                       <th className="text-left p-3 font-semibold">Guardian</th>
                       <th className="text-left p-3 font-semibold">Status</th>
@@ -382,6 +431,9 @@ const TeenagersPage = () => {
                                 : ""
                           }`}
                         >
+                          <td className="p-3 font-mono text-sm text-muted-foreground">
+                            {teen.roll_no || "—"}
+                          </td>
                           <td className="p-3">
                             <div className="flex items-center space-x-2">
                               <PersonAvatar
@@ -401,7 +453,8 @@ const TeenagersPage = () => {
                               completeness={{
                                 applicable: true,
                                 isIncomplete: completeness.isIncomplete,
-                                isFullyIncomplete: completeness.isFullyIncomplete,
+                                isFullyIncomplete:
+                                  completeness.isFullyIncomplete,
                                 missingFields: completeness.missing,
                               }}
                             />
@@ -428,6 +481,11 @@ const TeenagersPage = () => {
                           <td className="p-3">
                             <div className="text-sm capitalize">
                               {teen.gender || "N/A"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {teen.grade ? `Grade ${teen.grade}` : "N/A"}
                             </div>
                           </td>
                           <td className="p-3">

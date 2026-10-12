@@ -14,7 +14,7 @@ import {
   followUpPriorityBadgeClass,
   followUpStatusBadgeClass,
 } from "@/lib/followUp";
-import { hasAnyRole, ROLE } from "@/lib/roles";
+import { canPromoteFollowUpToFamily } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { cn } from "@/lib/utils";
 import { Phone, Search, UserPlus } from "lucide-react";
@@ -22,7 +22,8 @@ import { Phone, Search, UserPlus } from "lucide-react";
 const NewcomersPage = () => {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const canAssignToFamily = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN, ROLE.FC]);
+  // FUL and FUC cannot assign/promote newcomers to a family
+  const canAssignToFamily = canPromoteFollowUpToFamily(user);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [noFamilyOnly, setNoFamilyOnly] = useState(

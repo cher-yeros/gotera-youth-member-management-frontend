@@ -16,9 +16,15 @@ import ListErrorState from "@/components/shared/ListErrorState";
 import ListPagination, {
   LIST_PAGE_SIZE_ALL,
 } from "@/components/shared/ListPagination";
+import ListSortSelect from "@/components/shared/ListSortSelect";
 import ProfileCompletenessBadge, {
   CompletenessPageSummary,
 } from "@/components/shared/ProfileCompletenessBadge";
+import {
+  MEMBER_SORT_OPTIONS,
+  sortPresetToPagination,
+  type ListSortPreset,
+} from "@/lib/listSort";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +61,7 @@ const Members = () => {
   ]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortPreset, setSortPreset] = useState<ListSortPreset>("newest");
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
   const [isUpdateMemberModalOpen, setIsUpdateMemberModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
@@ -117,6 +124,7 @@ const Members = () => {
   const { data, loading, error, refetch } = useGetMembers(searchFilters, {
     page: currentPage,
     limit: pageSize, // Backend now handles 10000 as "all" option
+    ...sortPresetToPagination(sortPreset),
   });
 
   const { deleteMember } = useDeleteMember();
@@ -561,12 +569,23 @@ const Members = () => {
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <CardTitle className="text-brand-gradient">Members List</CardTitle>
-            {!loading && members.length > 0 && (
-              <CompletenessPageSummary
-                incompleteCount={incompleteOnPage}
-                totalOnPage={members.length}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <ListSortSelect
+                value={sortPreset}
+                onChange={(next) => {
+                  setSortPreset(next);
+                  setCurrentPage(1);
+                }}
+                options={MEMBER_SORT_OPTIONS}
+                disabled={loading}
               />
-            )}
+              {!loading && members.length > 0 && (
+                <CompletenessPageSummary
+                  incompleteCount={incompleteOnPage}
+                  totalOnPage={members.length}
+                />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>

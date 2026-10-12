@@ -26,6 +26,8 @@ interface AttendanceModalProps {
   meetupId: number;
   familyId: number;
   trigger?: React.ReactNode;
+  /** When true, show recorded attendance without editing */
+  readOnly?: boolean;
 }
 
 interface Member {
@@ -44,6 +46,7 @@ interface AttendanceRecord {
   notes?: string;
   /** True once this member has a saved attendance row */
   recorded: boolean;
+  recorder_name?: string;
 }
 
 interface ExistingAttendance {
@@ -55,12 +58,17 @@ interface ExistingAttendance {
     id: number;
     full_name: string;
   };
+  recorder?: {
+    id: number;
+    full_name: string;
+  };
 }
 
 export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   meetupId,
   familyId,
   trigger,
+  readOnly = false,
 }) => {
   const [open, setOpen] = useState(false);
   const [attendanceRecords, setAttendanceRecords] = useState<
@@ -155,6 +163,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
           is_present: existingAttendance?.is_present || false,
           notes: existingAttendance?.notes || "",
           recorded: !!existingAttendance,
+          recorder_name: existingAttendance?.recorder?.full_name,
         };
       }),
     );
@@ -188,6 +197,8 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     memberId: number,
     isPresent: boolean,
   ) => {
+    if (readOnly) return;
+
     const previous = attendanceRecords.find((r) => r.member_id === memberId);
 
     // Instant UI flip — API runs in the background
@@ -230,6 +241,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   };
 
   const handleNotesChange = (memberId: number, note: string) => {
+    if (readOnly) return;
     setNotes((prev) => ({
       ...prev,
       [memberId]: note,
@@ -237,6 +249,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   };
 
   const handleNotesBlur = async (memberId: number) => {
+    if (readOnly) return;
     const record = attendanceRecords.find((r) => r.member_id === memberId);
     if (!record?.recorded) return;
 
@@ -268,14 +281,14 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const absentCount = recordedRecords.filter((r) => !r.is_present).length;
   const totalCount = attendanceRecords.length;
   const pendingCount = totalCount - recordedRecords.length;
-  const allMembersRecorded = pendingCount === 0;
+  const allMembersRecorded = readOnly || pendingCount === 0;
   const attendanceRate =
     recordedRecords.length > 0
       ? (presentCount / recordedRecords.length) * 100
       : 0;
 
   const handleDone = () => {
-    if (!allMembersRecorded) {
+    if (!readOnly && !allMembersRecorded) {
       toast.error(
         `Mark present or absent for all members (${pendingCount} remaining).`,
       );
@@ -283,6 +296,13 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
     }
     handleOpenChange(false);
   };
+
+  const defaultTrigger = (
+    <Button>
+      <Users className="h-4 w-4 mr-2" />
+      {readOnly ? "View Attendance" : "Record Attendance"}
+    </Button>
+  );
 
   if (
     statusesLoading ||
@@ -292,14 +312,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   ) {
     return (
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogTrigger asChild>
-          {trigger || (
-            <Button>
-              <Users className="h-4 w-4 mr-2" />
-              Record Attendance
-            </Button>
-          )}
-        </DialogTrigger>
+        <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
           <div className="flex items-center justify-center p-8">
             <div className="text-center">Loading...</div>
@@ -311,23 +324,19 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button>
-            <Users className="h-4 w-4 mr-2" />
-            Record Attendance
-          </Button>
-        )}
-      </DialogTrigger>
+      <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Record Family Attendance</DialogTitle>
+          <DialogTitle>
+            {readOnly ? "View Family Attendance" : "Record Family Attendance"}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6">
           <p className="text-sm text-muted-foreground">
-            Click Present or Absent for each member — changes save
-            automatically.
+            {readOnly
+              ? "Attendance recorded by family leaders."
+              : "Click Present or Absent for each member — changes save automatically."}
           </p>
 
           {/* Attendance Summary */}
@@ -373,94 +382,138 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
           {/* Member List */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Active Family Members</h3>
-            <div className="grid gap-3">
-              {activeMembers.map((member: Member) => {
-                const record = attendanceRecords.find(
-                  (r) => r.member_id === member.id,
-                );
-                const isRecorded = record?.recorded || false;
-                const isPresent = isRecorded && (record?.is_present || false);
-                const isAbsent = isRecorded && !record?.is_present;
+            {activeMembers.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {readOnly
+                  ? "No attendance has been recorded for this meetup yet."
+                  : "No active members in this family."}
+              </p>
+            ) : (
+              <div className="grid gap-3">
+                {activeMembers.map((member: Member) => {
+                  const record = attendanceRecords.find(
+                    (r) => r.member_id === member.id,
+                  );
+                  const isRecorded = record?.recorded || false;
+                  const isPresent = isRecorded && (record?.is_present || false);
+                  const isAbsent = isRecorded && !record?.is_present;
 
-                return (
-                  <Card key={member.id} className="p-3 sm:p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium truncate">
-                          {member.full_name}
-                        </h4>
-                        {member.contact_no && (
-                          <p className="text-sm text-muted-foreground">
-                            {member.contact_no}
-                          </p>
-                        )}
-                        {member.role && (
-                          <Badge variant="secondary" className="text-xs mt-1">
-                            {member.role.name}
-                          </Badge>
-                        )}
+                  return (
+                    <Card key={member.id} className="p-3 sm:p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium truncate">
+                            {member.full_name}
+                          </h4>
+                          {member.contact_no && (
+                            <p className="text-sm text-muted-foreground">
+                              {member.contact_no}
+                            </p>
+                          )}
+                          {member.role && (
+                            <Badge variant="secondary" className="text-xs mt-1">
+                              {member.role.name}
+                            </Badge>
+                          )}
+                          {readOnly && record?.recorder_name && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Recorded by {record.recorder_name}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {readOnly ? (
+                            !isRecorded ? (
+                              <Badge variant="outline">Not recorded</Badge>
+                            ) : isPresent ? (
+                              <Badge className="bg-green-600 hover:bg-green-600 text-white">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Present
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-red-600 hover:bg-red-600 text-white">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Absent
+                              </Badge>
+                            )
+                          ) : (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isPresent ? "default" : "outline"}
+                                className={
+                                  isPresent
+                                    ? "bg-green-600 hover:bg-green-700 text-white min-w-[5.75rem] h-9 text-sm transition-colors"
+                                    : "min-w-[5.75rem] h-9 text-sm transition-colors"
+                                }
+                                onClick={() =>
+                                  handleAttendanceChange(member.id, true)
+                                }
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1.5" />
+                                Present
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={isAbsent ? "default" : "outline"}
+                                className={
+                                  isAbsent
+                                    ? "bg-red-600 hover:bg-red-700 text-white min-w-[5.75rem] h-9 text-sm transition-colors"
+                                    : "min-w-[5.75rem] h-9 text-sm transition-colors"
+                                }
+                                onClick={() =>
+                                  handleAttendanceChange(member.id, false)
+                                }
+                              >
+                                <XCircle className="h-4 w-4 mr-1.5" />
+                                Absent
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isPresent ? "default" : "outline"}
-                          className={
-                            isPresent
-                              ? "bg-green-600 hover:bg-green-700 text-white min-w-[5.75rem] h-9 text-sm transition-colors"
-                              : "min-w-[5.75rem] h-9 text-sm transition-colors"
-                          }
-                          onClick={() =>
-                            handleAttendanceChange(member.id, true)
-                          }
-                        >
-                          <CheckCircle className="h-4 w-4 mr-1.5" />
-                          Present
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={isAbsent ? "default" : "outline"}
-                          className={
-                            isAbsent
-                              ? "bg-red-600 hover:bg-red-700 text-white min-w-[5.75rem] h-9 text-sm transition-colors"
-                              : "min-w-[5.75rem] h-9 text-sm transition-colors"
-                          }
-                          onClick={() =>
-                            handleAttendanceChange(member.id, false)
-                          }
-                        >
-                          <XCircle className="h-4 w-4 mr-1.5" />
-                          Absent
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="mt-3">
-                      <Label htmlFor={`notes-${member.id}`} className="text-sm">
-                        Notes (optional)
-                      </Label>
-                      <Textarea
-                        id={`notes-${member.id}`}
-                        value={notes[member.id] || ""}
-                        onChange={(e) =>
-                          handleNotesChange(member.id, e.target.value)
-                        }
-                        onBlur={() => handleNotesBlur(member.id)}
-                        placeholder="Add notes for this member..."
-                        rows={2}
-                        className="mt-1"
-                      />
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
+                      {(readOnly
+                        ? !!(notes[member.id] || "").trim()
+                        : true) && (
+                        <div className="mt-3">
+                          <Label
+                            htmlFor={`notes-${member.id}`}
+                            className="text-sm"
+                          >
+                            Notes{readOnly ? "" : " (optional)"}
+                          </Label>
+                          {readOnly ? (
+                            <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
+                              {notes[member.id]}
+                            </p>
+                          ) : (
+                            <Textarea
+                              id={`notes-${member.id}`}
+                              value={notes[member.id] || ""}
+                              onChange={(e) =>
+                                handleNotesChange(member.id, e.target.value)
+                              }
+                              onBlur={() => handleNotesBlur(member.id)}
+                              placeholder="Add notes for this member..."
+                              rows={2}
+                              className="mt-1"
+                            />
+                          )}
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t">
-            {!allMembersRecorded && (
+            {!readOnly && !allMembersRecorded && (
               <p className="text-sm text-amber-600">
                 Mark present or absent for all members ({pendingCount}{" "}
                 remaining) before finishing.
@@ -472,7 +525,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
               disabled={!allMembersRecorded}
               onClick={handleDone}
             >
-              Done
+              {readOnly ? "Close" : "Done"}
             </Button>
           </div>
         </div>

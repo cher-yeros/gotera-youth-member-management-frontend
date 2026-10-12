@@ -1749,6 +1749,7 @@ export const TEEN_CLASS_FRAGMENT = gql`
       full_name
       contact_no
       gender
+      grade
       photo_url
       birth_date
       location_id
@@ -1757,6 +1758,7 @@ export const TEEN_CLASS_FRAGMENT = gql`
       guardian_relationship
       status
       class_id
+      roll_no
       location {
         id
         name
@@ -1786,6 +1788,7 @@ export const TEENAGER_FRAGMENT = gql`
     full_name
     contact_no
     gender
+    grade
     photo_url
     birth_date
     location_id
@@ -1793,6 +1796,7 @@ export const TEENAGER_FRAGMENT = gql`
     guardian_contact
     guardian_relationship
     class_id
+    roll_no
     status
     promoted_member_id
     createdAt
@@ -2200,6 +2204,20 @@ export const PROMOTE_TEENAGER_TO_MEMBER = gql`
     }
   }
   ${TEENAGER_FRAGMENT}
+`;
+
+export const ASSIGN_TEEN_ROLL_NUMBERS = gql`
+  mutation AssignTeenRollNumbers($class_id: Int!) {
+    assignTeenRollNumbers(class_id: $class_id) {
+      success
+      message
+      assigned
+      teenClass {
+        ...TeenClassFragment
+      }
+    }
+  }
+  ${TEEN_CLASS_FRAGMENT}
 `;
 
 // =====================

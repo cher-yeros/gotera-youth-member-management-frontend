@@ -1,6 +1,7 @@
 export type TeenLike = {
   contact_no?: string | null;
   gender?: string | null;
+  grade?: string | null;
   birth_date?: string | null;
   location_id?: number | null;
   guardian_name?: string | null;
@@ -14,6 +15,7 @@ export function getTeenCompleteness(teen: TeenLike) {
   const missing: string[] = [];
   if (!teen.contact_no?.trim()) missing.push("Contact");
   if (!teen.gender?.trim()) missing.push("Gender");
+  if (!teen.grade?.trim()) missing.push("Grade");
   if (!teen.birth_date) missing.push("Birth date");
   if (!teen.location_id) missing.push("Address");
   if (!teen.guardian_name?.trim()) missing.push("Guardian name");

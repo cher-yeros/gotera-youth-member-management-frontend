@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewTeenagerModalForm from "@/components/forms/NewTeenagerModalForm";
+import TeenagerViewModal from "@/components/forms/TeenagerViewModal";
 import AssignClassTeacherModal from "@/components/forms/AssignClassTeacherModal";
 import TransferTeenagerModal from "@/components/forms/TransferTeenagerModal";
 import PromoteTeenagerModal from "@/components/forms/PromoteTeenagerModal";
@@ -14,8 +15,12 @@ import ListLoadingState from "@/components/shared/ListLoadingState";
 import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
 import ListPagination from "@/components/shared/ListPagination";
-import ProfileCompletenessBadge, { CompletenessPageSummary } from "@/components/shared/ProfileCompletenessBadge";
+import InlineSearchRow from "@/components/shared/InlineSearchRow";
+import ProfileCompletenessBadge, {
+  CompletenessPageSummary,
+} from "@/components/shared/ProfileCompletenessBadge";
 import {
+  useAssignTeenRollNumbers,
   useGetMyTeenClasses,
   useGetTeenClass,
   useRemoveClassTeacher,
@@ -24,12 +29,23 @@ import { getTeenCompleteness } from "@/lib/teenCompleteness";
 import { useAuth } from "@/redux/useAuth";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { BookOpen } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type TeenItem = {
   id: number;
   full_name: string;
   contact_no?: string | null;
   gender?: string | null;
+  grade?: string | null;
   photo_url?: string | null;
   birth_date?: string | null;
   location_id?: number | null;
@@ -37,6 +53,7 @@ type TeenItem = {
   guardian_contact?: string | null;
   guardian_relationship?: string | null;
   class_id: number;
+  roll_no?: string | null;
   status?: string | null;
   location?: { id: number; name: string } | null;
 };
@@ -64,13 +81,22 @@ const TeenClassDetail = () => {
 
   const { data: myClassesData } = useGetMyTeenClasses();
   const myClasses =
-    (myClassesData as { myTeenClasses?: Array<{ id: number; name: string; teenCount?: number; teacherCount?: number }> })
-      ?.myTeenClasses || [];
+    (
+      myClassesData as {
+        myTeenClasses?: Array<{
+          id: number;
+          name: string;
+          teenCount?: number;
+          teacherCount?: number;
+        }>;
+      }
+    )?.myTeenClasses || [];
   const [selectedMyClassId, setSelectedMyClassId] = useState<number | null>(
     null,
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const effectiveClassId = isMyClasses
     ? selectedMyClassId || myClasses[0]?.id || 0
@@ -79,34 +105,65 @@ const TeenClassDetail = () => {
       : 0;
 
   const { data, loading, error, refetch } = useGetTeenClass(effectiveClassId);
-  const teenClass = (data as { teenClass?: {
-    id: number;
-    name: string;
-    teenagers?: TeenItem[];
-    teachers?: Array<{
-      id: number;
-      member_id: number;
-      member?: { full_name?: string | null } | null;
-    }>;
-  } })?.teenClass;
+  const teenClass = (
+    data as {
+      teenClass?: {
+        id: number;
+        name: string;
+        teenagers?: TeenItem[];
+        teachers?: Array<{
+          id: number;
+          member_id: number;
+          member?: { full_name?: string | null } | null;
+        }>;
+      };
+    }
+  )?.teenClass;
   const { removeClassTeacher } = useRemoveClassTeacher();
+  const { assignTeenRollNumbers, loading: assigningRollNos } =
+    useAssignTeenRollNumbers();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [viewTeen, setViewTeen] = useState<TeenItem | null>(null);
   const [editTeen, setEditTeen] = useState<TeenItem | null>(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferTeen, setTransferTeen] = useState<TeenItem | null>(null);
   const [promoteTeen, setPromoteTeen] = useState<TeenItem | null>(null);
+  const [confirmRollAssign, setConfirmRollAssign] = useState(false);
 
   const teens = teenClass?.teenagers || [];
   const teachers = teenClass?.teachers || [];
+
+  const filteredTeens = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return teens;
+    return teens.filter((teen) => {
+      const haystack = [
+        teen.full_name,
+        teen.contact_no,
+        teen.roll_no,
+        teen.guardian_name,
+        teen.guardian_contact,
+        teen.guardian_relationship,
+        teen.location?.name,
+        teen.status,
+        teen.gender,
+        teen.grade,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [teens, searchTerm]);
 
   const incompleteCount = useMemo(
     () => teens.filter((t) => getTeenCompleteness(t).isIncomplete).length,
     [teens],
   );
 
-  const totalPages = Math.ceil(teens.length / pageSize) || 1;
-  const paginatedTeens = teens.slice(
+  const totalPages = Math.ceil(filteredTeens.length / pageSize) || 1;
+  const paginatedTeens = filteredTeens.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize,
   );
@@ -115,11 +172,14 @@ const TeenClassDetail = () => {
     (teen) => getTeenCompleteness(teen).isIncomplete,
   ).length;
 
-  const handlePageChange = useCallback((page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  }, [totalPages]);
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (page >= 1 && page <= totalPages) {
+        setCurrentPage(page);
+      }
+    },
+    [totalPages],
+  );
 
   if (isMyClasses && myClasses.length > 1 && !selectedMyClassId) {
     return (
@@ -135,6 +195,7 @@ const TeenClassDetail = () => {
               className="shadow-brand cursor-pointer hover-brand-glow transition-all duration-300"
               onClick={() => {
                 setSelectedMyClassId(c.id);
+                setSearchTerm("");
                 setCurrentPage(1);
               }}
             >
@@ -179,11 +240,14 @@ const TeenClassDetail = () => {
         subtitle={`${teens.length} teenagers${incompleteCount > 0 ? ` · ${incompleteCount} incomplete` : ""}`}
         back={
           !isMyClasses
-            ? { label: "Back to classes", onClick: () => navigate("/teen-classes") }
+            ? {
+                label: "Back to classes",
+                onClick: () => navigate("/teen-classes"),
+              }
             : undefined
         }
         actions={
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 flex-wrap justify-end">
             <Button
               className="bg-brand-gradient hover:opacity-90 transition-opacity"
               onClick={() => setIsCreateOpen(true)}
@@ -191,9 +255,18 @@ const TeenClassDetail = () => {
               Add Teenager
             </Button>
             {isAdmin && (
-              <Button variant="outline" onClick={() => setAssignOpen(true)}>
-                Assign Teacher
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  disabled={!effectiveClassId || teens.length === 0}
+                  onClick={() => setConfirmRollAssign(true)}
+                >
+                  Assign Roll Nos
+                </Button>
+                <Button variant="outline" onClick={() => setAssignOpen(true)}>
+                  Assign Teacher
+                </Button>
+              </>
             )}
           </div>
         }
@@ -211,6 +284,7 @@ const TeenClassDetail = () => {
               }
               onClick={() => {
                 setSelectedMyClassId(c.id);
+                setSearchTerm("");
                 setCurrentPage(1);
               }}
             >
@@ -249,13 +323,23 @@ const TeenClassDetail = () => {
         </CardContent>
       </Card>
 
+      <InlineSearchRow
+        value={searchTerm}
+        onChange={(value) => {
+          setSearchTerm(value);
+          setCurrentPage(1);
+        }}
+        onClear={() => setCurrentPage(1)}
+        placeholder="Search by name, roll no, contact, or guardian..."
+      />
+
       <Card className="shadow-brand">
         <CardHeader>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <CardTitle className="text-brand-gradient">
               Teenagers List
             </CardTitle>
-            {!loading && teens.length > 0 && (
+            {!loading && filteredTeens.length > 0 && (
               <CompletenessPageSummary
                 incompleteCount={incompleteOnPage}
                 totalOnPage={paginatedTeens.length}
@@ -274,6 +358,19 @@ const TeenClassDetail = () => {
               primaryAction={{
                 label: "Add Teenager",
                 onClick: () => setIsCreateOpen(true),
+              }}
+            />
+          ) : filteredTeens.length === 0 ? (
+            <ListEmptyState
+              icon={<BookOpen className="h-8 w-8" />}
+              title="No teenagers found matching your search"
+              description="Try adjusting your search criteria or clear the search."
+              primaryAction={{
+                label: "Clear Search",
+                onClick: () => {
+                  setSearchTerm("");
+                  setCurrentPage(1);
+                },
               }}
             />
           ) : (
@@ -296,6 +393,11 @@ const TeenClassDetail = () => {
                                 className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(teen.status)}`}
                               />
                               <div className="font-semibold text-lg truncate">
+                                {teen.roll_no ? (
+                                  <span className="text-muted-foreground font-mono mr-1.5">
+                                    {teen.roll_no}
+                                  </span>
+                                ) : null}
                                 {teen.full_name}
                               </div>
                             </div>
@@ -320,6 +422,14 @@ const TeenClassDetail = () => {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">
+                                Roll No:
+                              </span>
+                              <span className="font-mono">
+                                {teen.roll_no || "—"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
                                 Contact:
                               </span>
                               <span>
@@ -337,6 +447,14 @@ const TeenClassDetail = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">
+                                Grade:
+                              </span>
+                              <span>
+                                {teen.grade ? `Grade ${teen.grade}` : "N/A"}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
                                 Location:
                               </span>
                               <span>{teen.location?.name || "N/A"}</span>
@@ -350,6 +468,14 @@ const TeenClassDetail = () => {
                           </div>
 
                           <div className="flex flex-wrap gap-2 pt-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 text-slate-700 hover:bg-slate-50 min-w-[80px]"
+                              onClick={() => setViewTeen(teen)}
+                            >
+                              View
+                            </Button>
                             <Button
                               variant="outline"
                               size="sm"
@@ -389,9 +515,11 @@ const TeenClassDetail = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b">
+                      <th className="text-left p-3 font-semibold">Roll</th>
                       <th className="text-left p-3 font-semibold">Name</th>
                       <th className="text-left p-3 font-semibold">Info</th>
                       <th className="text-left p-3 font-semibold">Contact</th>
+                      <th className="text-left p-3 font-semibold">Grade</th>
                       <th className="text-left p-3 font-semibold">Location</th>
                       <th className="text-left p-3 font-semibold">Guardian</th>
                       <th className="text-left p-3 font-semibold">Status</th>
@@ -412,6 +540,9 @@ const TeenClassDetail = () => {
                                 : ""
                           }`}
                         >
+                          <td className="p-3 font-mono text-sm text-muted-foreground">
+                            {teen.roll_no || "—"}
+                          </td>
                           <td className="p-3">
                             <div className="flex items-center space-x-2">
                               <PersonAvatar
@@ -431,7 +562,8 @@ const TeenClassDetail = () => {
                               completeness={{
                                 applicable: true,
                                 isIncomplete: completeness.isIncomplete,
-                                isFullyIncomplete: completeness.isFullyIncomplete,
+                                isFullyIncomplete:
+                                  completeness.isFullyIncomplete,
                                 missingFields: completeness.missing,
                               }}
                             />
@@ -448,6 +580,11 @@ const TeenClassDetail = () => {
                               ) : (
                                 "N/A"
                               )}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="text-sm">
+                              {teen.grade ? `Grade ${teen.grade}` : "N/A"}
                             </div>
                           </td>
                           <td className="p-3">
@@ -488,6 +625,14 @@ const TeenClassDetail = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="text-slate-700 hover:bg-slate-50"
+                                onClick={() => setViewTeen(teen)}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 className="text-blue-600 hover:bg-blue-50"
                                 onClick={() => setEditTeen(teen)}
                               >
@@ -523,13 +668,14 @@ const TeenClassDetail = () => {
               <ListPagination
                 currentPage={currentPage}
                 pageSize={pageSize}
-                totalItems={teens.length}
+                totalItems={filteredTeens.length}
                 onPageChange={handlePageChange}
                 onPageSizeChange={(size) => {
                   setPageSize(size);
                   setCurrentPage(1);
                 }}
                 itemLabel="teenagers"
+                filtered={!!searchTerm.trim()}
                 showPageNumbers={false}
                 hideWhenSinglePage
               />
@@ -537,6 +683,21 @@ const TeenClassDetail = () => {
           )}
         </CardContent>
       </Card>
+
+      <TeenagerViewModal
+        isOpen={!!viewTeen}
+        onClose={() => setViewTeen(null)}
+        teenager={
+          viewTeen
+            ? {
+                ...viewTeen,
+                teenClass: teenClass
+                  ? { id: teenClass.id, name: teenClass.name }
+                  : null,
+              }
+            : null
+        }
+      />
 
       <FullscreenModal
         isOpen={isCreateOpen}
@@ -601,6 +762,40 @@ const TeenClassDetail = () => {
           onClose={() => setPromoteTeen(null)}
         />
       )}
+
+      <AlertDialog open={confirmRollAssign} onOpenChange={setConfirmRollAssign}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Assign roll numbers?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This reassigns roll numbers 01–99 for all active teenagers in{" "}
+              <strong>{teenClass?.name || "this class"}</strong> by alphabetical
+              name order. Existing roll numbers will be updated. Use this after
+              new students join.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={assigningRollNos}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={assigningRollNos || !effectiveClassId}
+              onClick={async (e) => {
+                e.preventDefault();
+                try {
+                  await assignTeenRollNumbers(effectiveClassId);
+                  setConfirmRollAssign(false);
+                  await refetch();
+                } catch {
+                  // toast handled in hook
+                }
+              }}
+            >
+              {assigningRollNos ? "Assigning…" : "Assign Roll Nos"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

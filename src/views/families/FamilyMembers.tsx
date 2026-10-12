@@ -2,13 +2,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import FullscreenModal from "@/components/ui/fullscreen-modal";
 import NewMemberModalForm from "@/components/forms/NewMemberModalForm";
+import MemberViewModal from "@/components/forms/MemberViewModal";
 import MemberSearch from "@/components/shared/MemberSearch";
 import PageHeader from "@/components/shared/PageHeader";
 import ListLoadingState from "@/components/shared/ListLoadingState";
 import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
 import ListPagination from "@/components/shared/ListPagination";
-import ProfileCompletenessBadge, { CompletenessPageSummary } from "@/components/shared/ProfileCompletenessBadge";
+import ListSortSelect from "@/components/shared/ListSortSelect";
+import ProfileCompletenessBadge, {
+  CompletenessPageSummary,
+} from "@/components/shared/ProfileCompletenessBadge";
+import {
+  MEMBER_SORT_OPTIONS,
+  sortPresetToPagination,
+  type ListSortPreset,
+} from "@/lib/listSort";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,13 +46,15 @@ import {
   UPCOMING_BIRTHDAY_DAYS,
 } from "@/lib/upcomingBirthdays";
 import { useState, useCallback, useEffect, useMemo } from "react";
-import type { MemberFilterInput } from "@/generated/graphql";
+import type { GetMembersQuery, MemberFilterInput } from "@/generated/graphql";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/redux/useAuth";
 import { Cake } from "lucide-react";
+
+type MemberListItem = GetMembersQuery["members"]["members"][number];
 
 const FamilyMembers = () => {
   const { familyId } = useParams<{ familyId: string }>();
@@ -52,9 +63,11 @@ const FamilyMembers = () => {
   const { user } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [sortPreset, setSortPreset] = useState<ListSortPreset>("newest");
   const [isNewMemberModalOpen, setIsNewMemberModalOpen] = useState(false);
   const [isUpdateMemberModalOpen, setIsUpdateMemberModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
+  const [viewMember, setViewMember] = useState<MemberListItem | null>(null);
   const [includeNonActive, setIncludeNonActive] = useState(false);
   const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
   const [memberToDelete, setMemberToDelete] = useState<{
@@ -109,6 +122,7 @@ const FamilyMembers = () => {
   const { data, loading, error, refetch } = useGetMembers(searchFilters, {
     page: currentPage,
     limit: pageSize,
+    ...sortPresetToPagination(sortPreset),
   });
 
   const { deleteMember } = useDeleteMember();
@@ -182,6 +196,10 @@ const FamilyMembers = () => {
 
   const handleNewMemberCancel = () => {
     setIsNewMemberModalOpen(false);
+  };
+
+  const handleViewMember = (member: MemberListItem) => {
+    setViewMember(member);
   };
 
   const handleUpdateMember = (memberId: number) => {
@@ -332,12 +350,23 @@ const FamilyMembers = () => {
             <CardTitle className="text-brand-gradient">
               Family Members List
             </CardTitle>
-            {!loading && members.length > 0 && (
-              <CompletenessPageSummary
-                incompleteCount={incompleteOnPage}
-                totalOnPage={members.length}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <ListSortSelect
+                value={sortPreset}
+                onChange={(next) => {
+                  setSortPreset(next);
+                  setCurrentPage(1);
+                }}
+                options={MEMBER_SORT_OPTIONS}
+                disabled={loading}
               />
-            )}
+              {!loading && members.length > 0 && (
+                <CompletenessPageSummary
+                  incompleteCount={incompleteOnPage}
+                  totalOnPage={members.length}
+                />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -456,6 +485,14 @@ const FamilyMembers = () => {
 
                         {/* Action buttons */}
                         <div className="flex space-x-2 pt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 text-slate-700 hover:bg-slate-50"
+                            onClick={() => handleViewMember(member)}
+                          >
+                            View
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -587,6 +624,14 @@ const FamilyMembers = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
+                                className="text-slate-700 hover:bg-slate-50"
+                                onClick={() => handleViewMember(member)}
+                              >
+                                View
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
                                 className="text-blue-600 hover:bg-blue-50"
                                 onClick={() => handleUpdateMember(member.id)}
                               >
@@ -644,6 +689,12 @@ const FamilyMembers = () => {
           mode="update"
         />
       </FullscreenModal>
+
+      <MemberViewModal
+        isOpen={!!viewMember}
+        onClose={() => setViewMember(null)}
+        member={viewMember}
+      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog

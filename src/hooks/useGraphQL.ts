@@ -130,7 +130,7 @@ export const useGetMembers = (
     fetchPolicy: "cache-and-network",
     skip: options?.skip,
     context: {
-      queryKey: `members-${pagination?.page || 1}-${pagination?.limit || 10}`,
+      queryKey: `members-${pagination?.page || 1}-${pagination?.limit || 10}-${pagination?.sort_by || "default"}-${pagination?.sort_order || "default"}`,
     },
   });
 };

@@ -37,6 +37,21 @@ const GUARDIAN_RELATIONSHIPS = [
   "Other",
 ];
 
+const SCHOOL_GRADES = [
+  "1",
+  "2",
+  "3",
+  "4",
+  "5",
+  "6",
+  "7",
+  "8",
+  "9",
+  "10",
+  "11",
+  "12",
+];
+
 interface Props {
   mode?: "create" | "update";
   teenagerId?: number;
@@ -45,6 +60,7 @@ interface Props {
     full_name?: string;
     contact_no?: string | null;
     gender?: string | null;
+    grade?: string | null;
     photo_url?: string | null;
     birth_date?: string | null;
     location_id?: number | null;
@@ -80,6 +96,7 @@ const NewTeenagerModalForm = ({
     full_name: initial?.full_name || "",
     contact_no: toLocalPhone(initial?.contact_no),
     gender: initial?.gender || "",
+    grade: initial?.grade || "",
     photo_url: (initial?.photo_url ?? null) as string | null,
     birth_date: initial?.birth_date || "",
     location_id: initial?.location_id || undefined,
@@ -122,6 +139,7 @@ const NewTeenagerModalForm = ({
       full_name: form.full_name.trim(),
       contact_no: toE164Phone(form.contact_no),
       gender: form.gender || null,
+      grade: form.grade || null,
       photo_url: form.photo_url || null,
       birth_date: form.birth_date || null,
       location_id: form.location_id || null,
@@ -197,6 +215,25 @@ const NewTeenagerModalForm = ({
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
+          <Label>Grade</Label>
+          <Select
+            value={form.grade || undefined}
+            onValueChange={(v) => set("grade", v)}
+            disabled={loading}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select grade" />
+            </SelectTrigger>
+            <SelectContent>
+              {SCHOOL_GRADES.map((g) => (
+                <SelectItem key={g} value={g}>
+                  Grade {g}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
           <Label>Birth date</Label>
           <Input
             type="date"
@@ -205,23 +242,23 @@ const NewTeenagerModalForm = ({
             disabled={loading}
           />
         </div>
-        <div>
-          <Label>Address</Label>
-          <ComboBox
-            options={locations.map((l: any) => ({
-              value: l.id,
-              label: l.name,
-            }))}
-            value={form.location_id}
-            onValueChange={(value) =>
-              set("location_id", value ? Number(value) : undefined)
-            }
-            placeholder="Select address"
-            loading={locationsLoading}
-            loadingText="Loading addresses..."
-            disabled={loading}
-          />
-        </div>
+      </div>
+      <div>
+        <Label>Address</Label>
+        <ComboBox
+          options={locations.map((l: any) => ({
+            value: l.id,
+            label: l.name,
+          }))}
+          value={form.location_id}
+          onValueChange={(value) =>
+            set("location_id", value ? Number(value) : undefined)
+          }
+          placeholder="Select address"
+          loading={locationsLoading}
+          loadingText="Loading addresses..."
+          disabled={loading}
+        />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div>
