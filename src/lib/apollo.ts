@@ -55,7 +55,8 @@ const client = new ApolloClient({
       Query: {
         fields: {
           members: {
-            keyArgs: ["filter"],
+            // Include sort so newest/oldest/name don't share one cache slot
+            keyArgs: ["filter", ["pagination", ["sort_by", "sort_order"]]],
             merge(existing, incoming, { args }) {
               const { pagination } = args || {};
               const page = pagination?.page || 1;

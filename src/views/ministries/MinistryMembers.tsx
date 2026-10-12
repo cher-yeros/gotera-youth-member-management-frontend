@@ -6,6 +6,7 @@ import ListLoadingState from "@/components/shared/ListLoadingState";
 import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
 import ListPagination from "@/components/shared/ListPagination";
+import ListSortSelect from "@/components/shared/ListSortSelect";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +28,11 @@ import {
   useUpdateMember,
 } from "@/hooks/useGraphQL";
 import { formatMinistryProgram } from "@/lib/ministryProgram";
+import {
+  MEMBER_SORT_OPTIONS,
+  sortMembersByPreset,
+  type ListSortPreset,
+} from "@/lib/listSort";
 import { useAuth } from "@/redux/useAuth";
 import { CalendarClock, UserPlus, Users } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
@@ -47,6 +53,7 @@ const MinistryMembers = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchFilters, setSearchFilters] = useState<MemberFilterInput>({});
+  const [sortPreset, setSortPreset] = useState<ListSortPreset>("newest");
 
   // Determine if this is a ministry leader accessing their own ministry
   // Check both the route param and the pathname since /ministries/my-ministry doesn't have a param
@@ -113,8 +120,8 @@ const MinistryMembers = () => {
     if (searchFilters.location_id) {
       list = list.filter((m) => m.location?.id === searchFilters.location_id);
     }
-    return list;
-  }, [members, searchFilters]);
+    return sortMembersByPreset(list, sortPreset);
+  }, [members, searchFilters, sortPreset]);
 
   const totalMembers = filteredMembers.length;
   const hasSearchFilters = Object.values(searchFilters).some(
@@ -271,9 +278,20 @@ const MinistryMembers = () => {
 
       <Card className="shadow-brand">
         <CardHeader>
-          <CardTitle className="text-brand-gradient">
-            Ministry Members List
-          </CardTitle>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <CardTitle className="text-brand-gradient">
+              Ministry Members List
+            </CardTitle>
+            <ListSortSelect
+              value={sortPreset}
+              onChange={(next) => {
+                setSortPreset(next);
+                setCurrentPage(1);
+              }}
+              options={MEMBER_SORT_OPTIONS}
+              disabled={loading}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (

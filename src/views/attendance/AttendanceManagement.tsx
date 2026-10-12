@@ -107,6 +107,16 @@ const AttendanceManagement: React.FC = () => {
     return !!day && day.getTime() === startOfToday.getTime();
   };
 
+  // TEMPORARY: allow backdated attendance recording — undo when told
+  const ALLOW_BACKDATED_ATTENDANCE = true;
+  const canRecordAttendance = (meetupDate: string) => {
+    if (ALLOW_BACKDATED_ATTENDANCE) {
+      const day = getMeetupDay(meetupDate);
+      return !!day && day.getTime() <= startOfToday.getTime();
+    }
+    return isMeetupToday(meetupDate);
+  };
+
   // Upcoming: soonest first (today on top). Past: most recent day first.
   const byMeetupDateAsc = (a: FamilyMeetup, b: FamilyMeetup) =>
     parseInt(a.meetup_date) - parseInt(b.meetup_date);
@@ -416,9 +426,9 @@ const AttendanceManagement: React.FC = () => {
                                   }
                                 />
 
-                                {/* Action buttons — record today; view otherwise */}
+                                {/* Action buttons — record today/past (TEMPORARY backdate); view otherwise */}
                                 <div className="flex space-x-2 pt-2">
-                                  {isMeetupToday(meetup.meetup_date) ? (
+                                  {canRecordAttendance(meetup.meetup_date) ? (
                                     <AttendanceModal
                                       meetupId={meetup.id}
                                       familyId={meetup.family.id}
@@ -557,7 +567,7 @@ const AttendanceManagement: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="p-3">
-                                  {isMeetupToday(meetup.meetup_date) ? (
+                                  {canRecordAttendance(meetup.meetup_date) ? (
                                     <AttendanceModal
                                       meetupId={meetup.id}
                                       familyId={meetup.family.id}
@@ -734,21 +744,38 @@ const AttendanceManagement: React.FC = () => {
                                 />
 
                                 <div className="flex space-x-2 pt-2">
-                                  <AttendanceModal
-                                    meetupId={meetup.id}
-                                    familyId={meetup.family.id}
-                                    readOnly
-                                    trigger={
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="flex-1"
-                                      >
-                                        <Eye className="h-4 w-4 mr-1" />
-                                        View Attendance
-                                      </Button>
-                                    }
-                                  />
+                                  {canRecordAttendance(meetup.meetup_date) ? (
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={meetup.family.id}
+                                      trigger={
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="flex-1 text-green-600 hover:bg-green-50"
+                                        >
+                                          <Users className="h-4 w-4 mr-1" />
+                                          Record Attendance
+                                        </Button>
+                                      }
+                                    />
+                                  ) : (
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={meetup.family.id}
+                                      readOnly
+                                      trigger={
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="flex-1"
+                                        >
+                                          <Eye className="h-4 w-4 mr-1" />
+                                          View Attendance
+                                        </Button>
+                                      }
+                                    />
+                                  )}
                                 </div>
                               </div>
                             </CardContent>
@@ -856,17 +883,34 @@ const AttendanceManagement: React.FC = () => {
                                   </div>
                                 </td>
                                 <td className="p-3">
-                                  <AttendanceModal
-                                    meetupId={meetup.id}
-                                    familyId={meetup.family.id}
-                                    readOnly
-                                    trigger={
-                                      <Button variant="outline" size="sm">
-                                        <Eye className="h-4 w-4 mr-1" />
-                                        View
-                                      </Button>
-                                    }
-                                  />
+                                  {canRecordAttendance(meetup.meetup_date) ? (
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={meetup.family.id}
+                                      trigger={
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          className="text-green-600 hover:bg-green-50"
+                                        >
+                                          <Users className="h-4 w-4 mr-1" />
+                                          Record
+                                        </Button>
+                                      }
+                                    />
+                                  ) : (
+                                    <AttendanceModal
+                                      meetupId={meetup.id}
+                                      familyId={meetup.family.id}
+                                      readOnly
+                                      trigger={
+                                        <Button variant="outline" size="sm">
+                                          <Eye className="h-4 w-4 mr-1" />
+                                          View
+                                        </Button>
+                                      }
+                                    />
+                                  )}
                                 </td>
                               </tr>
                             );

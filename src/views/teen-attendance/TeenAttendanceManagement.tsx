@@ -17,13 +17,7 @@ import {
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useAuth } from "@/redux/useAuth";
 import { format, parseISO } from "date-fns";
-import {
-  CheckCircle,
-  Eye,
-  TrendingUp,
-  Users,
-  XCircle,
-} from "lucide-react";
+import { CheckCircle, Eye, TrendingUp, Users, XCircle } from "lucide-react";
 import React, { useCallback, useState } from "react";
 
 interface ClassSession {
@@ -76,6 +70,15 @@ const TeenAttendanceManagement: React.FC = () => {
   const today = new Date().toISOString().slice(0, 10);
 
   const isSessionToday = (sessionDate: string) => sessionDate === today;
+
+  // TEMPORARY: allow backdated attendance recording — undo when told
+  const ALLOW_BACKDATED_ATTENDANCE = true;
+  const canRecordSessionAttendance = (sessionDate: string) => {
+    if (ALLOW_BACKDATED_ATTENDANCE) {
+      return sessionDate <= today;
+    }
+    return isSessionToday(sessionDate);
+  };
 
   const bySessionDateAsc = (a: ClassSession, b: ClassSession) =>
     a.session_date.localeCompare(b.session_date);
@@ -151,8 +154,8 @@ const TeenAttendanceManagement: React.FC = () => {
     session: ClassSession,
     options: { fullWidth?: boolean },
   ) => {
-    const canRecord = isSessionToday(session.session_date);
-    // Admins can always view teacher-filled attendance; teachers record today only
+    const canRecord = canRecordSessionAttendance(session.session_date);
+    // Admins can always view teacher-filled attendance; teachers record today (or backdated while TEMPORARY flag is on)
     const canView = isAdmin || !canRecord;
 
     const attendanceAction = (() => {
@@ -430,10 +433,7 @@ const TeenAttendanceManagement: React.FC = () => {
   if (!classesLoading && myClasses.length === 0) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          title="Attendance Management"
-          subtitle="Class sessions"
-        />
+        <PageHeader title="Attendance Management" subtitle="Class sessions" />
         <ListErrorState
           layout="page"
           title={isAdmin ? "No Teen Classes" : "No Classes Assigned"}
