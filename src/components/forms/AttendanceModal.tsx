@@ -76,6 +76,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   >([]);
   const [notes, setNotes] = useState<{ [key: number]: string }>({});
   const [hydrated, setHydrated] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   const { data: statusesData, loading: statusesLoading } = useQuery(
     GET_STATUSES,
@@ -281,19 +282,53 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
   const absentCount = recordedRecords.filter((r) => !r.is_present).length;
   const totalCount = attendanceRecords.length;
   const pendingCount = totalCount - recordedRecords.length;
-  const allMembersRecorded = readOnly || pendingCount === 0;
   const attendanceRate =
     recordedRecords.length > 0
       ? (presentCount / recordedRecords.length) * 100
       : 0;
 
-  const handleDone = () => {
-    if (!readOnly && !allMembersRecorded) {
-      toast.error(
-        `Mark present or absent for all members (${pendingCount} remaining).`,
-      );
+  const handleDone = async () => {
+    if (readOnly) {
+      handleOpenChange(false);
       return;
     }
+
+    const pending = attendanceRecords.filter((r) => !r.recorded);
+    if (pending.length > 0) {
+      setFinishing(true);
+      try {
+        await bulkCreateAttendance({
+          variables: {
+            input: {
+              meetup_id: meetupId,
+              attendances: pending.map((record) => ({
+                meetup_id: meetupId,
+                member_id: record.member_id,
+                is_present: false,
+                notes: notes[record.member_id] || "",
+              })),
+            },
+          },
+        });
+        setAttendanceRecords((prev) =>
+          prev.map((record) =>
+            record.recorded
+              ? record
+              : { ...record, is_present: false, recorded: true },
+          ),
+        );
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to mark remaining members as absent";
+        toast.error(message);
+        setFinishing(false);
+        return;
+      }
+      setFinishing(false);
+    }
+
     handleOpenChange(false);
   };
 
@@ -336,7 +371,7 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
           <p className="text-sm text-muted-foreground">
             {readOnly
               ? "Attendance recorded by family leaders."
-              : "Click Present or Absent for each member — changes save automatically."}
+              : "Mark who is present — anyone not marked present is saved as absent when you finish."}
           </p>
 
           {/* Attendance Summary */}
@@ -513,19 +548,18 @@ export const AttendanceModal: React.FC<AttendanceModalProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t">
-            {!readOnly && !allMembersRecorded && (
-              <p className="text-sm text-amber-600">
-                Mark present or absent for all members ({pendingCount}{" "}
-                remaining) before finishing.
+            {!readOnly && pendingCount > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {pendingCount} not marked present will be saved as absent.
               </p>
             )}
             <Button
               variant="outline"
               className="sm:ml-auto"
-              disabled={!allMembersRecorded}
+              disabled={finishing}
               onClick={handleDone}
             >
-              {readOnly ? "Close" : "Done"}
+              {readOnly ? "Close" : finishing ? "Saving..." : "Done"}
             </Button>
           </div>
         </div>

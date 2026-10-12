@@ -21,6 +21,9 @@ type TeenagerViewModalProps = {
     guardian_name?: string | null;
     guardian_relationship?: string | null;
     guardian_contact?: string | null;
+    guardian2_name?: string | null;
+    guardian2_relationship?: string | null;
+    guardian2_contact?: string | null;
     teenClass?: { id: number; name: string } | null;
     location?: { id: number; name: string } | null;
   } | null;
@@ -99,18 +102,43 @@ const TeenagerViewModal = ({
                   {teenager.location?.name || "N/A"}
                 </p>
                 <p>
-                  <span className="text-muted-foreground">Guardian: </span>
+                  <span className="text-muted-foreground">Guardian 1: </span>
                   {teenager.guardian_name || "N/A"}
-                </p>
-                {(teenager.guardian_relationship ||
-                  teenager.guardian_contact) && (
-                  <p className="sm:col-span-2">
+                  {(teenager.guardian_relationship ||
+                    teenager.guardian_contact) && (
                     <span className="text-muted-foreground">
-                      Guardian info:{" "}
+                      {" "}
+                      (
+                      {[
+                        teenager.guardian_relationship,
+                        teenager.guardian_contact,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                      )
                     </span>
-                    {[teenager.guardian_relationship, teenager.guardian_contact]
-                      .filter(Boolean)
-                      .join(" · ")}
+                  )}
+                </p>
+                {(teenager.guardian2_name ||
+                  teenager.guardian2_relationship ||
+                  teenager.guardian2_contact) && (
+                  <p>
+                    <span className="text-muted-foreground">Guardian 2: </span>
+                    {teenager.guardian2_name || "N/A"}
+                    {(teenager.guardian2_relationship ||
+                      teenager.guardian2_contact) && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        (
+                        {[
+                          teenager.guardian2_relationship,
+                          teenager.guardian2_contact,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                        )
+                      </span>
+                    )}
                   </p>
                 )}
               </div>

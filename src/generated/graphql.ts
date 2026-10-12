@@ -410,6 +410,9 @@ export type CreateTeenagerInput = {
   full_name: Scalars["String"]["input"];
   gender?: InputMaybe<Scalars["String"]["input"]>;
   grade?: InputMaybe<Scalars["String"]["input"]>;
+  guardian2_contact?: InputMaybe<Scalars["String"]["input"]>;
+  guardian2_name?: InputMaybe<Scalars["String"]["input"]>;
+  guardian2_relationship?: InputMaybe<Scalars["String"]["input"]>;
   guardian_contact?: InputMaybe<Scalars["String"]["input"]>;
   guardian_name?: InputMaybe<Scalars["String"]["input"]>;
   guardian_relationship?: InputMaybe<Scalars["String"]["input"]>;
@@ -1905,6 +1908,10 @@ export type Teenager = {
   gender?: Maybe<Scalars["String"]["output"]>;
   /** School grade (e.g. 9, 10, 11, 12). */
   grade?: Maybe<Scalars["String"]["output"]>;
+  /** Optional second guardian. */
+  guardian2_contact?: Maybe<Scalars["String"]["output"]>;
+  guardian2_name?: Maybe<Scalars["String"]["output"]>;
+  guardian2_relationship?: Maybe<Scalars["String"]["output"]>;
   guardian_contact?: Maybe<Scalars["String"]["output"]>;
   guardian_name?: Maybe<Scalars["String"]["output"]>;
   guardian_relationship?: Maybe<Scalars["String"]["output"]>;
@@ -2121,6 +2128,9 @@ export type UpdateTeenagerInput = {
   full_name?: InputMaybe<Scalars["String"]["input"]>;
   gender?: InputMaybe<Scalars["String"]["input"]>;
   grade?: InputMaybe<Scalars["String"]["input"]>;
+  guardian2_contact?: InputMaybe<Scalars["String"]["input"]>;
+  guardian2_name?: InputMaybe<Scalars["String"]["input"]>;
+  guardian2_relationship?: InputMaybe<Scalars["String"]["input"]>;
   guardian_contact?: InputMaybe<Scalars["String"]["input"]>;
   guardian_name?: InputMaybe<Scalars["String"]["input"]>;
   guardian_relationship?: InputMaybe<Scalars["String"]["input"]>;
@@ -5540,6 +5550,9 @@ export type TeenClassFragmentFragment = {
     guardian_name?: string | null;
     guardian_contact?: string | null;
     guardian_relationship?: string | null;
+    guardian2_name?: string | null;
+    guardian2_contact?: string | null;
+    guardian2_relationship?: string | null;
     status: TeenStatus;
     class_id: number;
     roll_no?: string | null;
@@ -5574,6 +5587,9 @@ export type TeenagerFragmentFragment = {
   guardian_name?: string | null;
   guardian_contact?: string | null;
   guardian_relationship?: string | null;
+  guardian2_name?: string | null;
+  guardian2_contact?: string | null;
+  guardian2_relationship?: string | null;
   class_id: number;
   roll_no?: string | null;
   status: TeenStatus;
@@ -5705,6 +5721,9 @@ export type GetTeenClassesQuery = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       status: TeenStatus;
       class_id: number;
       roll_no?: string | null;
@@ -5753,6 +5772,9 @@ export type GetMyTeenClassesQuery = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       status: TeenStatus;
       class_id: number;
       roll_no?: string | null;
@@ -5803,6 +5825,9 @@ export type GetTeenClassQuery = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       status: TeenStatus;
       class_id: number;
       roll_no?: string | null;
@@ -5851,6 +5876,9 @@ export type GetTeenagersQuery = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       class_id: number;
       roll_no?: string | null;
       status: TeenStatus;
@@ -5887,6 +5915,9 @@ export type GetTeenagerQuery = {
     guardian_name?: string | null;
     guardian_contact?: string | null;
     guardian_relationship?: string | null;
+    guardian2_name?: string | null;
+    guardian2_contact?: string | null;
+    guardian2_relationship?: string | null;
     class_id: number;
     roll_no?: string | null;
     status: TeenStatus;
@@ -6174,6 +6205,9 @@ export type CreateTeenClassMutation = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       status: TeenStatus;
       class_id: number;
       roll_no?: string | null;
@@ -6224,6 +6258,9 @@ export type UpdateTeenClassMutation = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       status: TeenStatus;
       class_id: number;
       roll_no?: string | null;
@@ -6274,6 +6311,9 @@ export type CreateTeenagerMutation = {
     guardian_name?: string | null;
     guardian_contact?: string | null;
     guardian_relationship?: string | null;
+    guardian2_name?: string | null;
+    guardian2_contact?: string | null;
+    guardian2_relationship?: string | null;
     class_id: number;
     roll_no?: string | null;
     status: TeenStatus;
@@ -6309,6 +6349,9 @@ export type UpdateTeenagerMutation = {
     guardian_name?: string | null;
     guardian_contact?: string | null;
     guardian_relationship?: string | null;
+    guardian2_name?: string | null;
+    guardian2_contact?: string | null;
+    guardian2_relationship?: string | null;
     class_id: number;
     roll_no?: string | null;
     status: TeenStatus;
@@ -6357,6 +6400,9 @@ export type TransferTeenagerMutation = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       class_id: number;
       roll_no?: string | null;
       status: TeenStatus;
@@ -6601,6 +6647,9 @@ export type PromoteTeenagerToMemberMutation = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       class_id: number;
       roll_no?: string | null;
       status: TeenStatus;
@@ -6657,6 +6706,9 @@ export type AssignTeenRollNumbersMutation = {
         guardian_name?: string | null;
         guardian_contact?: string | null;
         guardian_relationship?: string | null;
+        guardian2_name?: string | null;
+        guardian2_contact?: string | null;
+        guardian2_relationship?: string | null;
         status: TeenStatus;
         class_id: number;
         roll_no?: string | null;
@@ -7309,6 +7361,9 @@ export type TeenagerChangedSubscription = {
       guardian_name?: string | null;
       guardian_contact?: string | null;
       guardian_relationship?: string | null;
+      guardian2_name?: string | null;
+      guardian2_contact?: string | null;
+      guardian2_relationship?: string | null;
       class_id: number;
       roll_no?: string | null;
       status: TeenStatus;
@@ -7358,6 +7413,9 @@ export type TeenClassChangedSubscription = {
         guardian_name?: string | null;
         guardian_contact?: string | null;
         guardian_relationship?: string | null;
+        guardian2_name?: string | null;
+        guardian2_contact?: string | null;
+        guardian2_relationship?: string | null;
         status: TeenStatus;
         class_id: number;
         roll_no?: string | null;

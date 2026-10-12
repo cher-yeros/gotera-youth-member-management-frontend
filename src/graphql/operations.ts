@@ -1756,6 +1756,9 @@ export const TEEN_CLASS_FRAGMENT = gql`
       guardian_name
       guardian_contact
       guardian_relationship
+      guardian2_name
+      guardian2_contact
+      guardian2_relationship
       status
       class_id
       roll_no
@@ -1795,6 +1798,9 @@ export const TEENAGER_FRAGMENT = gql`
     guardian_name
     guardian_contact
     guardian_relationship
+    guardian2_name
+    guardian2_contact
+    guardian2_relationship
     class_id
     roll_no
     status

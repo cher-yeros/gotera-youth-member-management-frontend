@@ -25,6 +25,7 @@ import { sanitizeLocalPhone, toE164Phone, toLocalPhone } from "@/lib/phone";
 import { formatPhoneOwner, usePhoneLookup } from "@/hooks/usePhoneLookup";
 import { toast } from "react-toastify";
 
+/** Father & Mother first for quick selection. */
 const GUARDIAN_RELATIONSHIPS = [
   "Father",
   "Mother",
@@ -67,6 +68,9 @@ interface Props {
     guardian_name?: string | null;
     guardian_contact?: string | null;
     guardian_relationship?: string | null;
+    guardian2_name?: string | null;
+    guardian2_contact?: string | null;
+    guardian2_relationship?: string | null;
     class_id?: number;
     status?: string | null;
   };
@@ -103,6 +107,9 @@ const NewTeenagerModalForm = ({
     guardian_name: initial?.guardian_name || "",
     guardian_contact: toLocalPhone(initial?.guardian_contact),
     guardian_relationship: initial?.guardian_relationship || "",
+    guardian2_name: initial?.guardian2_name || "",
+    guardian2_contact: toLocalPhone(initial?.guardian2_contact),
+    guardian2_relationship: initial?.guardian2_relationship || "",
     class_id: defaultClassId || initial?.class_id || undefined,
     status: initial?.status || "ACTIVE",
   });
@@ -146,6 +153,9 @@ const NewTeenagerModalForm = ({
       guardian_name: form.guardian_name || null,
       guardian_contact: toE164Phone(form.guardian_contact),
       guardian_relationship: form.guardian_relationship || null,
+      guardian2_name: form.guardian2_name || null,
+      guardian2_contact: toE164Phone(form.guardian2_contact),
+      guardian2_relationship: form.guardian2_relationship || null,
       class_id: form.class_id,
       status: form.status,
     };
@@ -260,51 +270,106 @@ const NewTeenagerModalForm = ({
           disabled={loading}
         />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div>
-          <Label>Guardian name</Label>
-          <Input
-            value={form.guardian_name}
-            onChange={(e) => set("guardian_name", e.target.value)}
-            disabled={loading}
-          />
-        </div>
-        <div>
-          <Label>Guardian contact</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
-              +251
-            </span>
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">Guardian 1</p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Name</Label>
             <Input
-              type="tel"
-              placeholder="9xxxxxxxx"
-              value={form.guardian_contact}
-              onChange={(e) =>
-                set("guardian_contact", sanitizeLocalPhone(e.target.value))
-              }
-              className="pl-14"
+              value={form.guardian_name}
+              onChange={(e) => set("guardian_name", e.target.value)}
               disabled={loading}
             />
           </div>
+          <div>
+            <Label>Contact</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                +251
+              </span>
+              <Input
+                type="tel"
+                placeholder="9xxxxxxxx"
+                value={form.guardian_contact}
+                onChange={(e) =>
+                  set("guardian_contact", sanitizeLocalPhone(e.target.value))
+                }
+                className="pl-14"
+                disabled={loading}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Relationship</Label>
+            <Select
+              value={form.guardian_relationship || undefined}
+              onValueChange={(v) => set("guardian_relationship", v)}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select relationship" />
+              </SelectTrigger>
+              <SelectContent>
+                {GUARDIAN_RELATIONSHIPS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div>
-          <Label>Guardian relationship</Label>
-          <Select
-            value={form.guardian_relationship || undefined}
-            onValueChange={(v) => set("guardian_relationship", v)}
-            disabled={loading}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select relationship" />
-            </SelectTrigger>
-            <SelectContent>
-              {GUARDIAN_RELATIONSHIPS.map((r) => (
-                <SelectItem key={r} value={r}>
-                  {r}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      </div>
+      <div className="space-y-3">
+        <p className="text-sm font-medium text-muted-foreground">
+          Guardian 2 (optional)
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label>Name</Label>
+            <Input
+              value={form.guardian2_name}
+              onChange={(e) => set("guardian2_name", e.target.value)}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <Label>Contact</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium pointer-events-none">
+                +251
+              </span>
+              <Input
+                type="tel"
+                placeholder="9xxxxxxxx"
+                value={form.guardian2_contact}
+                onChange={(e) =>
+                  set("guardian2_contact", sanitizeLocalPhone(e.target.value))
+                }
+                className="pl-14"
+                disabled={loading}
+              />
+            </div>
+          </div>
+          <div>
+            <Label>Relationship</Label>
+            <Select
+              value={form.guardian2_relationship || undefined}
+              onValueChange={(v) => set("guardian2_relationship", v)}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select relationship" />
+              </SelectTrigger>
+              <SelectContent>
+                {GUARDIAN_RELATIONSHIPS.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
       <div>

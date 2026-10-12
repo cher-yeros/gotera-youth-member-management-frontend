@@ -71,6 +71,7 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
   >([]);
   const [notes, setNotes] = useState<{ [key: number]: string }>({});
   const [hydrated, setHydrated] = useState(false);
+  const [finishing, setFinishing] = useState(false);
 
   const { data: teensData, loading: teensLoading } = useQuery(GET_TEENAGERS, {
     variables: {
@@ -256,19 +257,52 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
   const absentCount = recordedRecords.filter((r) => !r.is_present).length;
   const totalCount = Math.max(attendanceRecords.length, teens.length);
   const pendingCount = totalCount - recordedRecords.length;
-  const allTeensRecorded = readOnly || pendingCount === 0;
   const attendanceRate =
     recordedRecords.length > 0
       ? (presentCount / recordedRecords.length) * 100
       : 0;
 
-  const handleDone = () => {
-    if (!readOnly && !allTeensRecorded) {
-      toast.error(
-        `Mark present or absent for all teenagers (${pendingCount} remaining).`,
-      );
+  const handleDone = async () => {
+    if (readOnly) {
+      handleOpenChange(false);
       return;
     }
+
+    const pending = attendanceRecords.filter((r) => !r.recorded);
+    if (pending.length > 0) {
+      setFinishing(true);
+      try {
+        await bulkCreateTeenAttendance({
+          variables: {
+            input: {
+              session_id: sessionId,
+              attendances: pending.map((record) => ({
+                teenager_id: record.teenager_id,
+                is_present: false,
+                notes: notes[record.teenager_id] || "",
+              })),
+            },
+          },
+        });
+        setAttendanceRecords((prev) =>
+          prev.map((record) =>
+            record.recorded
+              ? record
+              : { ...record, is_present: false, recorded: true },
+          ),
+        );
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : "Failed to mark remaining teenagers as absent";
+        toast.error(message);
+        setFinishing(false);
+        return;
+      }
+      setFinishing(false);
+    }
+
     handleOpenChange(false);
   };
 
@@ -306,7 +340,7 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
           <p className="text-sm text-muted-foreground">
             {readOnly
               ? "Attendance recorded by class teachers."
-              : "Click Present or Absent for each teenager — changes save automatically."}
+              : "Mark who is present — anyone not marked present is saved as absent when you finish."}
           </p>
 
           {(
@@ -498,19 +532,18 @@ export const TeenAttendanceModal: React.FC<TeenAttendanceModalProps> = ({
           </div>
 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-4 border-t">
-            {!readOnly && !allTeensRecorded && (
-              <p className="text-sm text-amber-600">
-                Mark present or absent for all teenagers ({pendingCount}{" "}
-                remaining) before finishing.
+            {!readOnly && pendingCount > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {pendingCount} not marked present will be saved as absent.
               </p>
             )}
             <Button
               variant="outline"
               className="sm:ml-auto"
-              disabled={!allTeensRecorded}
+              disabled={finishing}
               onClick={handleDone}
             >
-              {readOnly ? "Close" : "Done"}
+              {readOnly ? "Close" : finishing ? "Saving..." : "Done"}
             </Button>
           </div>
         </div>

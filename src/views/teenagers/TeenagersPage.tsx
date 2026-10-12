@@ -312,30 +312,25 @@ const TeenagersPage = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">
-                                Guardian:
+                                Guardian 1:
                               </span>
-                              <span>{teen.guardian_name || "N/A"}</span>
+                              <span className="text-right text-xs">
+                                {teen.guardian_name || "N/A"}
+                                {teen.guardian_relationship
+                                  ? ` · ${teen.guardian_relationship}`
+                                  : ""}
+                              </span>
                             </div>
-                            {(teen.guardian_relationship ||
-                              teen.guardian_contact) && (
+                            {teen.guardian2_name && (
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">
-                                  Guardian phone:
+                                  Guardian 2:
                                 </span>
                                 <span className="text-right text-xs">
-                                  {teen.guardian_relationship
-                                    ? `${teen.guardian_relationship} · `
+                                  {teen.guardian2_name}
+                                  {teen.guardian2_relationship
+                                    ? ` · ${teen.guardian2_relationship}`
                                     : ""}
-                                  {teen.guardian_contact ? (
-                                    <a
-                                      href={`tel:${teen.guardian_contact}`}
-                                      className="text-blue-600 hover:text-blue-800 hover:underline"
-                                    >
-                                      {teen.guardian_contact}
-                                    </a>
-                                  ) : (
-                                    "N/A"
-                                  )}
                                 </span>
                               </div>
                             )}
@@ -511,6 +506,24 @@ const TeenagersPage = () => {
                                     {teen.guardian_contact}
                                   </a>
                                 ) : null}
+                              </div>
+                            )}
+                            {teen.guardian2_name && (
+                              <div className="mt-1 text-sm">
+                                {teen.guardian2_name}
+                                <div className="text-xs text-muted-foreground">
+                                  {teen.guardian2_relationship
+                                    ? `${teen.guardian2_relationship} · `
+                                    : ""}
+                                  {teen.guardian2_contact ? (
+                                    <a
+                                      href={`tel:${teen.guardian2_contact}`}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                                    >
+                                      {teen.guardian2_contact}
+                                    </a>
+                                  ) : null}
+                                </div>
                               </div>
                             )}
                           </td>

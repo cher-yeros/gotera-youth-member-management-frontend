@@ -52,6 +52,9 @@ type TeenItem = {
   guardian_name?: string | null;
   guardian_contact?: string | null;
   guardian_relationship?: string | null;
+  guardian2_name?: string | null;
+  guardian2_contact?: string | null;
+  guardian2_relationship?: string | null;
   class_id: number;
   roll_no?: string | null;
   status?: string | null;
@@ -145,6 +148,9 @@ const TeenClassDetail = () => {
         teen.guardian_name,
         teen.guardian_contact,
         teen.guardian_relationship,
+        teen.guardian2_name,
+        teen.guardian2_contact,
+        teen.guardian2_relationship,
         teen.location?.name,
         teen.status,
         teen.gender,
@@ -461,10 +467,28 @@ const TeenClassDetail = () => {
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">
-                                Guardian:
+                                Guardian 1:
                               </span>
-                              <span>{teen.guardian_name || "N/A"}</span>
+                              <span className="text-right text-xs">
+                                {teen.guardian_name || "N/A"}
+                                {teen.guardian_relationship
+                                  ? ` · ${teen.guardian_relationship}`
+                                  : ""}
+                              </span>
                             </div>
+                            {teen.guardian2_name && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Guardian 2:
+                                </span>
+                                <span className="text-right text-xs">
+                                  {teen.guardian2_name}
+                                  {teen.guardian2_relationship
+                                    ? ` · ${teen.guardian2_relationship}`
+                                    : ""}
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           <div className="flex flex-wrap gap-2 pt-2">
@@ -610,6 +634,24 @@ const TeenClassDetail = () => {
                                     {teen.guardian_contact}
                                   </a>
                                 ) : null}
+                              </div>
+                            )}
+                            {teen.guardian2_name && (
+                              <div className="mt-1 text-sm">
+                                {teen.guardian2_name}
+                                <div className="text-xs text-muted-foreground">
+                                  {teen.guardian2_relationship
+                                    ? `${teen.guardian2_relationship} · `
+                                    : ""}
+                                  {teen.guardian2_contact ? (
+                                    <a
+                                      href={`tel:${teen.guardian2_contact}`}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                                    >
+                                      {teen.guardian2_contact}
+                                    </a>
+                                  ) : null}
+                                </div>
                               </div>
                             )}
                           </td>
