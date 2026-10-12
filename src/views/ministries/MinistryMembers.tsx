@@ -81,7 +81,7 @@ const MinistryMembers = () => {
   );
   const { updateMember } = useUpdateMember();
 
-  const members = data?.ministryMembers || [];
+  const members: Member[] = data?.ministryMembers || [];
   const filteredMembers = useMemo(() => {
     let list = members;
     const search = searchFilters.search?.trim().toLowerCase();

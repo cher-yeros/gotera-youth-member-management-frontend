@@ -14,7 +14,7 @@ const NO_MINISTRY_FILTER = "__none__";
 const NOT_EMPLOYED_FILTER = "__not_employed__";
 
 interface SearchFilters {
-  search: string;
+  search?: string;
   status_id?: number;
   family_id?: number;
   profession_id?: number;
