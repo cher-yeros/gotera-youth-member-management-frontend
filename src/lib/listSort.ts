@@ -52,3 +52,48 @@ export function sortPresetToPagination(
       return {};
   }
 }
+
+type SortableTeen = {
+  full_name: string;
+  roll_no?: string | null;
+  createdAt?: string | null;
+  id?: number;
+};
+
+/** Client-side sort for class detail / offline-filtered teen lists. */
+export function sortTeensByPreset<T extends SortableTeen>(
+  teens: T[],
+  preset: ListSortPreset,
+): T[] {
+  const list = [...teens];
+  switch (preset) {
+    case "name_asc":
+      return list.sort((a, b) => a.full_name.localeCompare(b.full_name));
+    case "name_desc":
+      return list.sort((a, b) => b.full_name.localeCompare(a.full_name));
+    case "newest":
+      return list.sort((a, b) => {
+        const aTime = a.createdAt ? Date.parse(a.createdAt) : (a.id ?? 0);
+        const bTime = b.createdAt ? Date.parse(b.createdAt) : (b.id ?? 0);
+        return bTime - aTime;
+      });
+    case "oldest":
+      return list.sort((a, b) => {
+        const aTime = a.createdAt ? Date.parse(a.createdAt) : (a.id ?? 0);
+        const bTime = b.createdAt ? Date.parse(b.createdAt) : (b.id ?? 0);
+        return aTime - bTime;
+      });
+    case "roll_no":
+    default:
+      return list.sort((a, b) => {
+        const aRoll = a.roll_no;
+        const bRoll = b.roll_no;
+        if (aRoll && bRoll) {
+          const byRoll = aRoll.localeCompare(bRoll);
+          if (byRoll !== 0) return byRoll;
+        } else if (aRoll && !bRoll) return -1;
+        else if (!aRoll && bRoll) return 1;
+        return a.full_name.localeCompare(b.full_name);
+      });
+  }
+}

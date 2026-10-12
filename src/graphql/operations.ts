@@ -1762,6 +1762,7 @@ export const TEEN_CLASS_FRAGMENT = gql`
       status
       class_id
       roll_no
+      createdAt
       location {
         id
         name

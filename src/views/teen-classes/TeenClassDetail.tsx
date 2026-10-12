@@ -15,6 +15,7 @@ import ListLoadingState from "@/components/shared/ListLoadingState";
 import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
 import ListPagination from "@/components/shared/ListPagination";
+import ListSortSelect from "@/components/shared/ListSortSelect";
 import InlineSearchRow from "@/components/shared/InlineSearchRow";
 import ProfileCompletenessBadge, {
   CompletenessPageSummary,
@@ -26,6 +27,11 @@ import {
   useRemoveClassTeacher,
 } from "@/hooks/useTeenGraphQL";
 import { getTeenCompleteness } from "@/lib/teenCompleteness";
+import {
+  TEENAGER_SORT_OPTIONS,
+  sortTeensByPreset,
+  type ListSortPreset,
+} from "@/lib/listSort";
 import { useAuth } from "@/redux/useAuth";
 import { hasAnyRole, ROLE } from "@/lib/roles";
 import { BookOpen } from "lucide-react";
@@ -58,6 +64,7 @@ type TeenItem = {
   class_id: number;
   roll_no?: string | null;
   status?: string | null;
+  createdAt?: string | null;
   location?: { id: number; name: string } | null;
 };
 
@@ -100,6 +107,7 @@ const TeenClassDetail = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortPreset, setSortPreset] = useState<ListSortPreset>("roll_no");
 
   const effectiveClassId = isMyClasses
     ? selectedMyClassId || myClasses[0]?.id || 0
@@ -139,29 +147,31 @@ const TeenClassDetail = () => {
 
   const filteredTeens = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
-    if (!term) return teens;
-    return teens.filter((teen) => {
-      const haystack = [
-        teen.full_name,
-        teen.contact_no,
-        teen.roll_no,
-        teen.guardian_name,
-        teen.guardian_contact,
-        teen.guardian_relationship,
-        teen.guardian2_name,
-        teen.guardian2_contact,
-        teen.guardian2_relationship,
-        teen.location?.name,
-        teen.status,
-        teen.gender,
-        teen.grade,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(term);
-    });
-  }, [teens, searchTerm]);
+    const matched = !term
+      ? teens
+      : teens.filter((teen) => {
+          const haystack = [
+            teen.full_name,
+            teen.contact_no,
+            teen.roll_no,
+            teen.guardian_name,
+            teen.guardian_contact,
+            teen.guardian_relationship,
+            teen.guardian2_name,
+            teen.guardian2_contact,
+            teen.guardian2_relationship,
+            teen.location?.name,
+            teen.status,
+            teen.gender,
+            teen.grade,
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(term);
+        });
+    return sortTeensByPreset(matched, sortPreset);
+  }, [teens, searchTerm, sortPreset]);
 
   const incompleteCount = useMemo(
     () => teens.filter((t) => getTeenCompleteness(t).isIncomplete).length,
@@ -345,12 +355,23 @@ const TeenClassDetail = () => {
             <CardTitle className="text-brand-gradient">
               Teenagers List
             </CardTitle>
-            {!loading && filteredTeens.length > 0 && (
-              <CompletenessPageSummary
-                incompleteCount={incompleteOnPage}
-                totalOnPage={paginatedTeens.length}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+              <ListSortSelect
+                value={sortPreset}
+                onChange={(next) => {
+                  setSortPreset(next);
+                  setCurrentPage(1);
+                }}
+                options={TEENAGER_SORT_OPTIONS}
+                disabled={loading}
               />
-            )}
+              {!loading && filteredTeens.length > 0 && (
+                <CompletenessPageSummary
+                  incompleteCount={incompleteOnPage}
+                  totalOnPage={paginatedTeens.length}
+                />
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
