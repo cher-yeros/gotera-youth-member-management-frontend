@@ -96,54 +96,54 @@
 }
 
 .dark {
-  /* Gotera Youth Brand Colors - Dark Theme */
-  --background: #0a0a0a;
-  --foreground: #fafafa;
-  --card: #171717;
-  --card-foreground: #fafafa;
-  --popover: #171717;
-  --popover-foreground: #fafafa;
+  /* Dark theme — aligned with login page cool gray palette (Tailwind gray) */
+  --background: #111827; /* gray-900 */
+  --foreground: #f9fafb; /* gray-50 */
+  --card: #1f2937; /* gray-800 */
+  --card-foreground: #f9fafb;
+  --popover: #1f2937;
+  --popover-foreground: #f9fafb;
 
-  /* Primary Blue - Darker */
+  /* Primary Blue — matches login dark:text-blue-400 accents */
   --primary: #60a5fa;
   --primary-foreground: #172554;
 
-  /* Secondary Purple - Darker */
-  --secondary: #3b0764;
-  --secondary-foreground: #f3e8ff;
+  /* Secondary Indigo — matches login blue→indigo brand gradient */
+  --secondary: #1e1b4b; /* indigo-950 */
+  --secondary-foreground: #e0e7ff; /* indigo-100 */
 
-  /* Accent — muted surface for hovers (not a loud purple fill) */
-  --accent: #262626;
-  --accent-foreground: #fafafa;
+  /* Accent — gray-700 hover surfaces (login dark:hover:bg-gray-700) */
+  --accent: #374151;
+  --accent-foreground: #f9fafb;
 
-  /* Muted Colors - Darker */
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
+  /* Muted — gray-800 surfaces, gray-400 text */
+  --muted: #1f2937;
+  --muted-foreground: #9ca3af;
 
   /* Destructive */
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
 
-  /* Borders and Inputs — slightly lifted for contrast on dark surfaces */
-  --border: #404040;
-  --input: #404040;
+  /* Borders and Inputs — gray-700 (login dark:border-gray-600/700) */
+  --border: #374151;
+  --input: #374151;
   --ring: #60a5fa;
 
-  /* Chart Colors - Darker */
+  /* Chart Colors */
   --chart-1: #60a5fa;
-  --chart-2: #c084fc;
+  --chart-2: #818cf8;
   --chart-3: #22c55e;
   --chart-4: #f59e0b;
   --chart-5: #ef4444;
 
-  /* Sidebar Colors - Darker */
-  --sidebar: #111111;
-  --sidebar-foreground: #fafafa;
+  /* Sidebar — gray-900 / gray-800 to match page surfaces */
+  --sidebar: #111827;
+  --sidebar-foreground: #f9fafb;
   --sidebar-primary: #60a5fa;
   --sidebar-primary-foreground: #172554;
-  --sidebar-accent: #262626;
-  --sidebar-accent-foreground: #fafafa;
-  --sidebar-border: #404040;
+  --sidebar-accent: #1f2937;
+  --sidebar-accent-foreground: #f9fafb;
+  --sidebar-border: #374151;
   --sidebar-ring: #60a5fa;
 }
 
@@ -196,7 +196,7 @@
   }
 
   .dark .bg-brand-subtle {
-    background: linear-gradient(135deg, #172554 0%, #3b0764 100%);
+    background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
   }
 
   .text-brand-gradient {

@@ -96,22 +96,22 @@ export const brandTheme = {
   destructiveForeground: "#ffffff",
 };
 
-// Dark theme variant
+// Dark theme variant — aligned with login page cool gray / indigo palette
 export const brandThemeDark = {
   primary: brandColors.blue[400],
   primaryForeground: brandColors.blue[950],
-  secondary: brandColors.purple[950],
-  secondaryForeground: brandColors.purple[100],
-  accent: brandColors.neutral[800],
-  accentForeground: brandColors.neutral[50],
-  muted: brandColors.neutral[800],
-  mutedForeground: brandColors.neutral[400],
-  background: brandColors.neutral[950],
-  foreground: brandColors.neutral[50],
-  card: brandColors.neutral[900],
-  cardForeground: brandColors.neutral[50],
-  border: brandColors.neutral[700],
-  input: brandColors.neutral[700],
+  secondary: "#1e1b4b", // indigo-950
+  secondaryForeground: "#e0e7ff", // indigo-100
+  accent: "#374151", // gray-700
+  accentForeground: "#f9fafb", // gray-50
+  muted: "#1f2937", // gray-800
+  mutedForeground: "#9ca3af", // gray-400
+  background: "#111827", // gray-900
+  foreground: "#f9fafb",
+  card: "#1f2937", // gray-800
+  cardForeground: "#f9fafb",
+  border: "#374151", // gray-700
+  input: "#374151",
   ring: brandColors.blue[400],
   destructive: brandColors.error[500],
   destructiveForeground: "#ffffff",
@@ -122,7 +122,7 @@ export const gradients = {
   primary: `linear-gradient(135deg, ${brandColors.blue[500]} 0%, ${brandColors.purple[500]} 100%)`,
   secondary: `linear-gradient(135deg, ${brandColors.purple[400]} 0%, ${brandColors.blue[400]} 100%)`,
   subtle: `linear-gradient(135deg, ${brandColors.blue[50]} 0%, ${brandColors.purple[50]} 100%)`,
-  dark: `linear-gradient(135deg, ${brandColors.blue[900]} 0%, ${brandColors.purple[900]} 100%)`,
+  dark: `linear-gradient(135deg, #111827 0%, #1f2937 100%)`,
 };
 
 // Brand-specific spacing and typography
