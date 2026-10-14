@@ -35,6 +35,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeleteTeenager, useGetTeenagers } from "@/hooks/useTeenGraphQL";
 import { getTeenCompleteness } from "@/lib/teenCompleteness";
+import {
+  formatTeenStatus,
+  teenStatusBadgeClass,
+  teenStatusDotClass,
+} from "@/lib/teenStatus";
 import { useState, useCallback } from "react";
 import type {
   GetTeenagersQuery,
@@ -42,19 +47,6 @@ import type {
 } from "@/generated/graphql";
 
 type TeenListItem = GetTeenagersQuery["teenagers"]["teenagers"][number];
-
-const statusBadgeClass = (status?: string | null) => {
-  if (status === "ACTIVE") return "bg-green-100 text-green-800";
-  if (status === "PROMOTED") return "bg-blue-100 text-blue-800";
-  if (status === "INACTIVE") return "bg-red-100 text-red-800";
-  return "bg-yellow-100 text-yellow-800";
-};
-
-const statusDotClass = (status?: string | null) => {
-  if (status === "ACTIVE") return "bg-green-600";
-  if (status === "PROMOTED") return "bg-blue-500";
-  return "bg-red-500";
-};
 
 const TeenagersPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -227,7 +219,7 @@ const TeenagersPage = () => {
                                 photoUrl={teen.photo_url}
                               />
                               <div
-                                className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(teen.status)}`}
+                                className={`h-2 w-2 shrink-0 rounded-full ${teenStatusDotClass(teen.status)}`}
                               />
                               <div className="font-semibold text-lg truncate">
                                 {teen.roll_no ? (
@@ -239,9 +231,9 @@ const TeenagersPage = () => {
                               </div>
                             </div>
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(teen.status)}`}
+                              className={`px-2 py-1 rounded-full text-xs ${teenStatusBadgeClass(teen.status)}`}
                             >
-                              {teen.status || "N/A"}
+                              {formatTeenStatus(teen.status)}
                             </span>
                           </div>
 
@@ -310,27 +302,46 @@ const TeenagersPage = () => {
                               </span>
                               <span>{teen.location?.name || "N/A"}</span>
                             </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                Guardian 1:
-                              </span>
-                              <span className="text-right text-xs">
-                                {teen.guardian_name || "N/A"}
-                                {teen.guardian_relationship
-                                  ? ` · ${teen.guardian_relationship}`
-                                  : ""}
-                              </span>
-                            </div>
-                            {teen.guardian2_name && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">
+                            {(teen.guardian_name || teen.guardian_contact) && (
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground shrink-0">
+                                  Guardian 1:
+                                </span>
+                                <span className="text-right text-xs">
+                                  {teen.guardian_name || "N/A"}
+                                  {teen.guardian_contact ? (
+                                    <>
+                                      {" · "}
+                                      <a
+                                        href={`tel:${teen.guardian_contact}`}
+                                        className="text-blue-600 hover:text-blue-800 hover:underline"
+                                      >
+                                        {teen.guardian_contact}
+                                      </a>
+                                    </>
+                                  ) : null}
+                                </span>
+                              </div>
+                            )}
+                            {(teen.guardian2_name ||
+                              teen.guardian2_contact) && (
+                              <div className="flex justify-between gap-2">
+                                <span className="text-muted-foreground shrink-0">
                                   Guardian 2:
                                 </span>
                                 <span className="text-right text-xs">
-                                  {teen.guardian2_name}
-                                  {teen.guardian2_relationship
-                                    ? ` · ${teen.guardian2_relationship}`
-                                    : ""}
+                                  {teen.guardian2_name || "N/A"}
+                                  {teen.guardian2_contact ? (
+                                    <>
+                                      {" · "}
+                                      <a
+                                        href={`tel:${teen.guardian2_contact}`}
+                                        className="text-blue-600 hover:text-blue-800 hover:underline"
+                                      >
+                                        {teen.guardian2_contact}
+                                      </a>
+                                    </>
+                                  ) : null}
                                 </span>
                               </div>
                             )}
@@ -436,7 +447,7 @@ const TeenagersPage = () => {
                                 photoUrl={teen.photo_url}
                               />
                               <div
-                                className={`h-2 w-2 rounded-full ${statusDotClass(teen.status)}`}
+                                className={`h-2 w-2 rounded-full ${teenStatusDotClass(teen.status)}`}
                               />
                               <div className="font-medium">
                                 {teen.full_name}
@@ -489,49 +500,57 @@ const TeenagersPage = () => {
                             </div>
                           </td>
                           <td className="p-3">
-                            <div className="text-sm">
-                              {teen.guardian_name || "N/A"}
-                            </div>
-                            {(teen.guardian_relationship ||
-                              teen.guardian_contact) && (
-                              <div className="text-xs text-muted-foreground">
-                                {teen.guardian_relationship
-                                  ? `${teen.guardian_relationship} · `
-                                  : ""}
+                            {teen.guardian_name || teen.guardian_contact ? (
+                              <div>
+                                <div className="text-xs text-muted-foreground">
+                                  Guardian 1
+                                </div>
+                                <div className="text-sm">
+                                  {teen.guardian_name || "N/A"}
+                                </div>
                                 {teen.guardian_contact ? (
-                                  <a
-                                    href={`tel:${teen.guardian_contact}`}
-                                    className="text-blue-600 hover:text-blue-800 hover:underline"
-                                  >
-                                    {teen.guardian_contact}
-                                  </a>
+                                  <div className="text-xs">
+                                    <a
+                                      href={`tel:${teen.guardian_contact}`}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline"
+                                    >
+                                      {teen.guardian_contact}
+                                    </a>
+                                  </div>
                                 ) : null}
                               </div>
+                            ) : (
+                              <div className="text-sm text-muted-foreground">
+                                —
+                              </div>
                             )}
-                            {teen.guardian2_name && (
-                              <div className="mt-1 text-sm">
-                                {teen.guardian2_name}
+                            {(teen.guardian2_name ||
+                              teen.guardian2_contact) && (
+                              <div className="mt-2">
                                 <div className="text-xs text-muted-foreground">
-                                  {teen.guardian2_relationship
-                                    ? `${teen.guardian2_relationship} · `
-                                    : ""}
-                                  {teen.guardian2_contact ? (
+                                  Guardian 2
+                                </div>
+                                <div className="text-sm">
+                                  {teen.guardian2_name || "N/A"}
+                                </div>
+                                {teen.guardian2_contact ? (
+                                  <div className="text-xs">
                                     <a
                                       href={`tel:${teen.guardian2_contact}`}
                                       className="text-blue-600 hover:text-blue-800 hover:underline"
                                     >
                                       {teen.guardian2_contact}
                                     </a>
-                                  ) : null}
-                                </div>
+                                  </div>
+                                ) : null}
                               </div>
                             )}
                           </td>
                           <td className="p-3">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(teen.status)}`}
+                              className={`px-2 py-1 rounded-full text-xs ${teenStatusBadgeClass(teen.status)}`}
                             >
-                              {teen.status || "N/A"}
+                              {formatTeenStatus(teen.status)}
                             </span>
                           </td>
                           <td className="p-3">

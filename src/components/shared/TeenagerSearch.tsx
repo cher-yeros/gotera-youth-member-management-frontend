@@ -5,6 +5,7 @@ import SearchFilterCard from "@/components/shared/SearchFilterCard";
 import { useGetLocations } from "@/hooks/useGraphQL";
 import { useGetTeenClasses } from "@/hooks/useTeenGraphQL";
 import type { TeenStatus, TeenagerFilterInput } from "@/generated/graphql";
+import { TEEN_STATUS_FILTER_OPTIONS } from "@/lib/teenStatus";
 
 interface SearchFilters {
   search: string;
@@ -20,11 +21,7 @@ interface TeenagerSearchProps {
   isLoading?: boolean;
 }
 
-const STATUS_OPTIONS: ComboBoxOption[] = [
-  { value: "ACTIVE", label: "Active" },
-  { value: "PROMOTED", label: "Promoted" },
-  { value: "INACTIVE", label: "Inactive" },
-];
+const STATUS_OPTIONS: ComboBoxOption[] = TEEN_STATUS_FILTER_OPTIONS;
 
 const GENDER_OPTIONS: ComboBoxOption[] = [
   { value: "male", label: "Male" },

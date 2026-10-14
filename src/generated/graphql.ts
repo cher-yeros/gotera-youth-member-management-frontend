@@ -1895,7 +1895,12 @@ export type TeenOverviewStats = {
   totalTeenagers: Scalars["Int"]["output"];
 };
 
-export type TeenStatus = "ACTIVE" | "INACTIVE" | "PROMOTED";
+export type TeenStatus =
+  | "ACTIVE"
+  | "INACTIVE"
+  | "MOVED_OUT"
+  | "MOVED_TO_OTHER_CHURCH"
+  | "PROMOTED";
 
 export type Teenager = {
   __typename?: "Teenager";

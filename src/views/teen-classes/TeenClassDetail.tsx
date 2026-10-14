@@ -28,6 +28,11 @@ import {
 } from "@/hooks/useTeenGraphQL";
 import { getTeenCompleteness } from "@/lib/teenCompleteness";
 import {
+  formatTeenStatus,
+  teenStatusBadgeClass,
+  teenStatusDotClass,
+} from "@/lib/teenStatus";
+import {
   TEENAGER_SORT_OPTIONS,
   sortTeensByPreset,
   type ListSortPreset,
@@ -66,19 +71,6 @@ type TeenItem = {
   status?: string | null;
   createdAt?: string | null;
   location?: { id: number; name: string } | null;
-};
-
-const statusBadgeClass = (status?: string | null) => {
-  if (status === "ACTIVE") return "bg-green-100 text-green-800";
-  if (status === "PROMOTED") return "bg-blue-100 text-blue-800";
-  if (status === "INACTIVE") return "bg-red-100 text-red-800";
-  return "bg-yellow-100 text-yellow-800";
-};
-
-const statusDotClass = (status?: string | null) => {
-  if (status === "ACTIVE") return "bg-green-600";
-  if (status === "PROMOTED") return "bg-blue-500";
-  return "bg-red-500";
 };
 
 const TeenClassDetail = () => {
@@ -417,7 +409,7 @@ const TeenClassDetail = () => {
                                 photoUrl={teen.photo_url}
                               />
                               <div
-                                className={`h-2 w-2 shrink-0 rounded-full ${statusDotClass(teen.status)}`}
+                                className={`h-2 w-2 shrink-0 rounded-full ${teenStatusDotClass(teen.status)}`}
                               />
                               <div className="font-semibold text-lg truncate">
                                 {teen.roll_no ? (
@@ -429,9 +421,9 @@ const TeenClassDetail = () => {
                               </div>
                             </div>
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(teen.status)}`}
+                              className={`px-2 py-1 rounded-full text-xs ${teenStatusBadgeClass(teen.status)}`}
                             >
-                              {teen.status || "N/A"}
+                              {formatTeenStatus(teen.status)}
                             </span>
                           </div>
 
@@ -595,7 +587,7 @@ const TeenClassDetail = () => {
                                 photoUrl={teen.photo_url}
                               />
                               <div
-                                className={`h-2 w-2 rounded-full ${statusDotClass(teen.status)}`}
+                                className={`h-2 w-2 rounded-full ${teenStatusDotClass(teen.status)}`}
                               />
                               <div className="font-medium">
                                 {teen.full_name}
@@ -678,9 +670,9 @@ const TeenClassDetail = () => {
                           </td>
                           <td className="p-3">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs ${statusBadgeClass(teen.status)}`}
+                              className={`px-2 py-1 rounded-full text-xs ${teenStatusBadgeClass(teen.status)}`}
                             >
-                              {teen.status || "N/A"}
+                              {formatTeenStatus(teen.status)}
                             </span>
                           </td>
                           <td className="p-3">

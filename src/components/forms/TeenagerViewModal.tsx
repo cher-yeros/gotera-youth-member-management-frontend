@@ -5,6 +5,7 @@ import PersonAttendanceHistory, {
   type AttendanceHistoryPoint,
 } from "@/components/shared/PersonAttendanceHistory";
 import { useGetTeenAttendances } from "@/hooks/useTeenGraphQL";
+import { formatTeenStatus } from "@/lib/teenStatus";
 
 type TeenagerViewModalProps = {
   isOpen: boolean;
@@ -75,7 +76,9 @@ const TeenagerViewModal = ({
                     Roll {teenager.roll_no}
                   </Badge>
                 ) : null}
-                {teenager.status ? <Badge>{teenager.status}</Badge> : null}
+                {teenager.status ? (
+                  <Badge>{formatTeenStatus(teenager.status)}</Badge>
+                ) : null}
                 {teenager.teenClass?.name ? (
                   <Badge variant="secondary">{teenager.teenClass.name}</Badge>
                 ) : null}

@@ -22,6 +22,7 @@ import { ComboBox } from "@/components/ui/combo-box";
 import PhotoCaptureField from "@/components/forms/PhotoCaptureField";
 import PhoneExistsNotice from "@/components/forms/PhoneExistsNotice";
 import { sanitizeLocalPhone, toE164Phone, toLocalPhone } from "@/lib/phone";
+import { EDITABLE_TEEN_STATUSES, TEEN_STATUS_LABELS } from "@/lib/teenStatus";
 import { formatPhoneOwner, usePhoneLookup } from "@/hooks/usePhoneLookup";
 import { toast } from "react-toastify";
 
@@ -391,6 +392,33 @@ const NewTeenagerModalForm = ({
           </SelectContent>
         </Select>
       </div>
+      {mode === "update" && (
+        <div>
+          <Label>Status</Label>
+          <Select
+            value={form.status}
+            onValueChange={(v) => set("status", v)}
+            disabled={loading || form.status === "PROMOTED"}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {form.status === "PROMOTED" ? (
+                <SelectItem value="PROMOTED">
+                  {TEEN_STATUS_LABELS.PROMOTED}
+                </SelectItem>
+              ) : (
+                EDITABLE_TEEN_STATUSES.map((status) => (
+                  <SelectItem key={status} value={status}>
+                    {TEEN_STATUS_LABELS[status]}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
