@@ -1,8 +1,10 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
+  CalendarClock,
   Edit,
   ImagePlus,
+  Link2,
   ListOrdered,
   Loader2,
   MapPin,
@@ -48,6 +50,7 @@ import {
   DELETE_MEETING,
   GET_AGENDAS_BY_MEETING,
   GET_MEETINGS,
+  GET_PLANNED_AGENDAS,
   UPDATE_AGENDA,
   UPDATE_MEETING,
 } from "@/graphql/operations";
@@ -57,10 +60,11 @@ import { cn } from "@/lib/utils";
 
 interface AgendaItem {
   id: number;
-  meeting_id: number;
+  meeting_id?: number | null;
   title: string;
   body?: string | null;
   sort_order: number;
+  is_planned?: boolean;
 }
 
 interface MeetingItem {
@@ -139,6 +143,8 @@ const emptyAgendaForm = {
   title: "",
   body: "",
   sort_order: "",
+  /** When creating: attach to selected meeting, or save as planned. */
+  asPlanned: false,
 };
 
 const MeetingsManagement: React.FC = () => {
@@ -183,6 +189,13 @@ const MeetingsManagement: React.FC = () => {
     },
   );
 
+  const { data: plannedData, refetch: refetchPlanned } = useQuery(
+    GET_PLANNED_AGENDAS,
+    {
+      fetchPolicy: "cache-and-network",
+    },
+  );
+
   const [createMeeting, { loading: creating }] = useMutation(CREATE_MEETING);
   const [updateMeeting, { loading: updating }] = useMutation(UPDATE_MEETING);
   const [deleteMeeting, { loading: deleting }] = useMutation(DELETE_MEETING);
@@ -197,8 +210,14 @@ const MeetingsManagement: React.FC = () => {
   const meetings: MeetingItem[] = payload?.items || [];
   const total = payload?.total || 0;
   const agendas: AgendaItem[] = (agendasData as any)?.agendasByMeeting || [];
+  const plannedAgendas: AgendaItem[] =
+    (plannedData as any)?.plannedAgendas || [];
   const selectedMeeting =
     meetings.find((m) => m.id === selectedMeetingId) || null;
+
+  const refreshAgendaLists = async () => {
+    await Promise.all([refetchAgendas(), refetchPlanned(), refetch()]);
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -320,13 +339,12 @@ const MeetingsManagement: React.FC = () => {
     }
   };
 
-  const openCreateAgenda = () => {
-    if (!selectedMeetingId) {
-      toast.error("Select a meeting first");
-      return;
-    }
+  const openCreateAgenda = (asPlanned = false) => {
     setEditingAgenda(null);
-    setAgendaForm(emptyAgendaForm);
+    setAgendaForm({
+      ...emptyAgendaForm,
+      asPlanned: asPlanned || !selectedMeetingId,
+    });
     setAgendaDialogOpen(true);
   };
 
@@ -336,16 +354,20 @@ const MeetingsManagement: React.FC = () => {
       title: agenda.title,
       body: agenda.body || "",
       sort_order: String(agenda.sort_order),
+      asPlanned: Boolean(agenda.is_planned || agenda.meeting_id == null),
     });
     setAgendaDialogOpen(true);
   };
 
   const handleSaveAgenda = async () => {
-    if (!selectedMeetingId) return;
     if (!agendaForm.title.trim()) {
       toast.error("Agenda title is required");
       return;
     }
+
+    const saveAsPlanned =
+      agendaForm.asPlanned ||
+      (!selectedMeetingId && !editingAgenda?.meeting_id);
 
     try {
       if (editingAgenda) {
@@ -358,15 +380,20 @@ const MeetingsManagement: React.FC = () => {
               sort_order: agendaForm.sort_order
                 ? Number(agendaForm.sort_order)
                 : editingAgenda.sort_order,
+              meeting_id: saveAsPlanned
+                ? null
+                : (selectedMeetingId ?? editingAgenda.meeting_id ?? null),
             },
           },
         });
-        toast.success("Agenda updated");
+        toast.success(
+          saveAsPlanned ? "Planned agenda updated" : "Agenda updated",
+        );
       } else {
         await createAgenda({
           variables: {
             input: {
-              meeting_id: selectedMeetingId,
+              meeting_id: saveAsPlanned ? null : selectedMeetingId,
               title: agendaForm.title.trim(),
               body: agendaForm.body.trim() || null,
               sort_order: agendaForm.sort_order
@@ -375,13 +402,35 @@ const MeetingsManagement: React.FC = () => {
             },
           },
         });
-        toast.success("Agenda added");
+        toast.success(
+          saveAsPlanned
+            ? "Planned agenda saved for a future meeting"
+            : "Agenda added to meeting",
+        );
       }
       setAgendaDialogOpen(false);
-      await refetchAgendas();
-      await refetch();
+      await refreshAgendaLists();
     } catch (err: any) {
       toast.error(err?.message || "Failed to save agenda");
+    }
+  };
+
+  const assignPlannedToMeeting = async (agenda: AgendaItem) => {
+    if (!selectedMeetingId) {
+      toast.error("Select a meeting first");
+      return;
+    }
+    try {
+      await updateAgenda({
+        variables: {
+          id: agenda.id,
+          input: { meeting_id: selectedMeetingId },
+        },
+      });
+      toast.success(`Assigned to “${selectedMeeting?.title || "meeting"}”`);
+      await refreshAgendaLists();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to assign agenda");
     }
   };
 
@@ -391,8 +440,7 @@ const MeetingsManagement: React.FC = () => {
       await deleteAgenda({ variables: { id: agendaToDelete.id } });
       toast.success("Agenda deleted");
       setAgendaToDelete(null);
-      await refetchAgendas();
-      await refetch();
+      await refreshAgendaLists();
     } catch (err: any) {
       toast.error(err?.message || "Failed to delete agenda");
     }
@@ -407,7 +455,7 @@ const MeetingsManagement: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Meetings"
-        subtitle="Record meetings, agendas, and minutes screenshots"
+        subtitle="Record meetings, plan agendas ahead, and upload minutes screenshots"
         actions={
           <Button onClick={openCreate}>
             <Plus className="h-4 w-4 mr-2" />
@@ -537,80 +585,168 @@ const MeetingsManagement: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="h-fit lg:sticky lg:top-4">
-          <CardHeader className="pb-3">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <ListOrdered className="h-4 w-4" />
-                Agendas
-                {selectedMeeting ? (
-                  <span className="font-normal text-muted-foreground">
-                    · {selectedMeeting.title}
-                  </span>
-                ) : null}
-              </CardTitle>
-              <Button
-                size="sm"
-                onClick={openCreateAgenda}
-                disabled={!selectedMeetingId}
-              >
-                <Plus className="h-4 w-4 mr-1" />
-                Add
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {!selectedMeetingId ? (
-              <p className="text-sm text-muted-foreground">
-                Select a meeting to view and edit its agendas.
-              </p>
-            ) : agendas.length === 0 ? (
-              <ListEmptyState
-                title="No agendas yet"
-                description="Add agenda items for this meeting."
-              />
-            ) : (
-              <div className="space-y-2">
-                {agendas.map((agenda) => (
-                  <div
-                    key={agenda.id}
-                    className="flex items-start justify-between gap-3 rounded-md border px-3 py-2"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="shrink-0">
-                          #{agenda.sort_order}
-                        </Badge>
-                        <span className="font-medium">{agenda.title}</span>
-                      </div>
-                      {agenda.body && (
-                        <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
-                          {agenda.body}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openEditAgenda(agenda)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setAgendaToDelete(agenda)}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+        <div className="space-y-4 h-fit lg:sticky lg:top-4">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <ListOrdered className="h-4 w-4" />
+                  Meeting agendas
+                  {selectedMeeting ? (
+                    <span className="font-normal text-muted-foreground">
+                      · {selectedMeeting.title}
+                    </span>
+                  ) : null}
+                </CardTitle>
+                <Button
+                  size="sm"
+                  onClick={() => openCreateAgenda(false)}
+                  disabled={!selectedMeetingId}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {!selectedMeetingId ? (
+                <p className="text-sm text-muted-foreground">
+                  Select a meeting to view its agendas, or add a planned agenda
+                  below for a future meeting.
+                </p>
+              ) : agendas.length === 0 ? (
+                <ListEmptyState
+                  title="No agendas yet"
+                  description="Add agenda items for this meeting."
+                />
+              ) : (
+                <div className="space-y-2">
+                  {agendas.map((agenda) => (
+                    <div
+                      key={agenda.id}
+                      className="flex items-start justify-between gap-3 rounded-md border px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="shrink-0">
+                            #{agenda.sort_order}
+                          </Badge>
+                          <span className="font-medium">{agenda.title}</span>
+                        </div>
+                        {agenda.body && (
+                          <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
+                            {agenda.body}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditAgenda(agenda)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setAgendaToDelete(agenda)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200/80 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-900/50">
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CalendarClock className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                  Planned agendas
+                  {plannedAgendas.length > 0 ? (
+                    <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-100">
+                      {plannedAgendas.length}
+                    </Badge>
+                  ) : null}
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-amber-300"
+                  onClick={() => openCreateAgenda(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  Plan
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground pt-1">
+                Written ahead for a future meeting — not attached yet.
+              </p>
+            </CardHeader>
+            <CardContent>
+              {plannedAgendas.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No planned agendas. Use Plan to draft items for later.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {plannedAgendas.map((agenda) => (
+                    <div
+                      key={agenda.id}
+                      className="flex items-start justify-between gap-3 rounded-md border border-amber-200/70 bg-background/80 px-3 py-2"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 shrink-0 dark:bg-amber-900/50 dark:text-amber-100">
+                            Planned
+                          </Badge>
+                          <span className="font-medium">{agenda.title}</span>
+                        </div>
+                        {agenda.body && (
+                          <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
+                            {agenda.body}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-1 shrink-0">
+                        {selectedMeetingId ? (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            title={`Assign to ${selectedMeeting?.title || "meeting"}`}
+                            onClick={() => assignPlannedToMeeting(agenda)}
+                            disabled={updatingAgenda}
+                          >
+                            <Link2 className="h-4 w-4 text-amber-800 dark:text-amber-300" />
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditAgenda(agenda)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setAgendaToDelete(agenda)}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-600" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -742,7 +878,11 @@ const MeetingsManagement: React.FC = () => {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
-              {editingAgenda ? "Edit agenda" : "Add agenda"}
+              {editingAgenda
+                ? "Edit agenda"
+                : agendaForm.asPlanned
+                  ? "Plan agenda"
+                  : "Add agenda"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -779,6 +919,26 @@ const MeetingsManagement: React.FC = () => {
                 }
               />
             </div>
+            <label className="flex items-start gap-3 rounded-md border px-3 py-2.5 cursor-pointer hover:bg-muted/40">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={agendaForm.asPlanned}
+                onChange={(e) =>
+                  setAgendaForm((f) => ({ ...f, asPlanned: e.target.checked }))
+                }
+              />
+              <span className="text-sm">
+                <span className="font-medium">Planned for a future meeting</span>
+                <span className="block text-muted-foreground text-xs mt-0.5">
+                  Save without attaching
+                  {selectedMeeting
+                    ? ` (uncheck to attach to “${selectedMeeting.title}”)`
+                    : " — select a meeting later to assign it"}
+                  .
+                </span>
+              </span>
+            </label>
           </div>
           <DialogFooter>
             <Button
@@ -791,7 +951,7 @@ const MeetingsManagement: React.FC = () => {
               onClick={handleSaveAgenda}
               disabled={creatingAgenda || updatingAgenda}
             >
-              {editingAgenda ? "Save" : "Add"}
+              {editingAgenda ? "Save" : agendaForm.asPlanned ? "Plan" : "Add"}
             </Button>
           </DialogFooter>
         </DialogContent>

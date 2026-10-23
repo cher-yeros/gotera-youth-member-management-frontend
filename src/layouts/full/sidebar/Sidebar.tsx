@@ -51,8 +51,8 @@ const adminNavigation: NavEntry[] = [
   { name: "Overview", href: "/overview", icon: Home },
   { name: "Announcements", href: "/announcements", icon: Megaphone },
   {
-    name: "Programs",
-    icon: Calendar,
+    name: "Administration",
+    icon: Briefcase,
     children: [
       { name: "Programs", href: "/programs", icon: CalendarCheck },
       { name: "Meetings", href: "/meetings", icon: BookOpen },

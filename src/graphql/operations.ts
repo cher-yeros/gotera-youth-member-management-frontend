@@ -2633,6 +2633,7 @@ export const AGENDA_FRAGMENT = gql`
     sort_order
     created_by
     is_active
+    is_planned
     createdAt
     updatedAt
   }
@@ -2700,6 +2701,15 @@ export const GET_PROGRAM = gql`
 export const GET_AGENDAS_BY_MEETING = gql`
   query GetAgendasByMeeting($meetingId: Int!) {
     agendasByMeeting(meetingId: $meetingId) {
+      ...AgendaFragment
+    }
+  }
+  ${AGENDA_FRAGMENT}
+`;
+
+export const GET_PLANNED_AGENDAS = gql`
+  query GetPlannedAgendas {
+    plannedAgendas {
       ...AgendaFragment
     }
   }
