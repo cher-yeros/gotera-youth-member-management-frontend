@@ -2633,7 +2633,6 @@ export const AGENDA_FRAGMENT = gql`
     sort_order
     created_by
     is_active
-    is_planned
     createdAt
     updatedAt
   }

@@ -64,7 +64,10 @@ interface AgendaItem {
   title: string;
   body?: string | null;
   sort_order: number;
-  is_planned?: boolean;
+}
+
+function isPlannedAgenda(agenda: AgendaItem) {
+  return agenda.meeting_id == null;
 }
 
 interface MeetingItem {
@@ -354,7 +357,7 @@ const MeetingsManagement: React.FC = () => {
       title: agenda.title,
       body: agenda.body || "",
       sort_order: String(agenda.sort_order),
-      asPlanned: Boolean(agenda.is_planned || agenda.meeting_id == null),
+      asPlanned: isPlannedAgenda(agenda),
     });
     setAgendaDialogOpen(true);
   };
