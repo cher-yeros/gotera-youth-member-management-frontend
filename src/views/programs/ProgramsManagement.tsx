@@ -7,7 +7,6 @@ import {
   MapPin,
   Plus,
   Trash2,
-  ListOrdered,
 } from "lucide-react";
 import {
   addMonths,
@@ -60,13 +59,9 @@ import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListPagination from "@/components/shared/ListPagination";
 import InlineSearchRow from "@/components/shared/InlineSearchRow";
 import {
-  CREATE_AGENDA,
   CREATE_PROGRAM,
-  DELETE_AGENDA,
   DELETE_PROGRAM,
-  GET_AGENDAS_BY_PROGRAM,
   GET_PROGRAMS,
-  UPDATE_AGENDA,
   UPDATE_PROGRAM,
 } from "@/graphql/operations";
 import { cn } from "@/lib/utils";
@@ -75,14 +70,6 @@ const PROGRAM_STATUSES = ["SCHEDULED", "COMPLETED", "CANCELLED"] as const;
 
 type ProgramStatus = (typeof PROGRAM_STATUSES)[number];
 
-interface AgendaItem {
-  id: number;
-  program_id: number;
-  title: string;
-  body?: string | null;
-  sort_order: number;
-}
-
 interface ProgramItem {
   id: number;
   title: string;
@@ -90,7 +77,6 @@ interface ProgramItem {
   scheduled_at: string;
   location?: string | null;
   status: string;
-  agendas?: AgendaItem[];
 }
 
 function statusBadgeClass(status: string) {
@@ -104,15 +90,60 @@ function statusBadgeClass(status: string) {
   }
 }
 
+function parseAppDate(value: string | Date | null | undefined): Date | null {
+  if (value == null || value === "") return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  const trimmed = value.trim();
+  // ISO with timezone or ms → native parse
+  if (/[zZ]|[+-]\d{2}:?\d{2}$|\.\d{1,3}/.test(trimmed)) {
+    const d = new Date(trimmed);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  // datetime-local / MySQL "YYYY-MM-DD HH:mm:ss" → local wall time
+  const localMatch =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2}))?)?$/.exec(
+      trimmed,
+    );
+  if (localMatch) {
+    const d = new Date(
+      Number(localMatch[1]),
+      Number(localMatch[2]) - 1,
+      Number(localMatch[3]),
+      Number(localMatch[4] || 0),
+      Number(localMatch[5] || 0),
+      Number(localMatch[6] || 0),
+    );
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+  const d = new Date(trimmed);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function formatAppDate(
+  value: string | Date | null | undefined,
+  pattern: string,
+  fallback = "—",
+) {
+  const d = parseAppDate(value);
+  if (!d) return fallback;
+  return format(d, pattern);
+}
+
 function toDatetimeLocalValue(iso: string | Date) {
-  const d = typeof iso === "string" ? new Date(iso) : iso;
-  if (Number.isNaN(d.getTime())) return "";
+  const d = parseAppDate(iso);
+  if (!d) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function fromDatetimeLocalValue(value: string) {
-  return new Date(value).toISOString();
+  const d = parseAppDate(value);
+  if (!d) {
+    throw new Error("Invalid date and time");
+  }
+  return d.toISOString();
 }
 
 function dayKey(date: Date) {
@@ -133,12 +164,6 @@ const emptyProgramForm = {
   scheduled_at: "",
   location: "",
   status: "SCHEDULED" as ProgramStatus,
-};
-
-const emptyAgendaForm = {
-  title: "",
-  body: "",
-  sort_order: "",
 };
 
 const ProgramsManagement: React.FC = () => {
@@ -162,11 +187,6 @@ const ProgramsManagement: React.FC = () => {
   const [programToDelete, setProgramToDelete] = useState<ProgramItem | null>(
     null,
   );
-
-  const [agendaDialogOpen, setAgendaDialogOpen] = useState(false);
-  const [editingAgenda, setEditingAgenda] = useState<AgendaItem | null>(null);
-  const [agendaForm, setAgendaForm] = useState(emptyAgendaForm);
-  const [agendaToDelete, setAgendaToDelete] = useState<AgendaItem | null>(null);
 
   const dateFrom = startOfMonth(calendarMonth).toISOString();
   const dateTo = endOfMonth(calendarMonth).toISOString();
@@ -202,24 +222,9 @@ const ProgramsManagement: React.FC = () => {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: agendasData, refetch: refetchAgendas } = useQuery(
-    GET_AGENDAS_BY_PROGRAM,
-    {
-      variables: { programId: selectedProgramId },
-      skip: !selectedProgramId,
-      fetchPolicy: "cache-and-network",
-    },
-  );
-
   const [createProgram, { loading: creating }] = useMutation(CREATE_PROGRAM);
   const [updateProgram, { loading: updating }] = useMutation(UPDATE_PROGRAM);
   const [deleteProgram, { loading: deleting }] = useMutation(DELETE_PROGRAM);
-  const [createAgenda, { loading: creatingAgenda }] =
-    useMutation(CREATE_AGENDA);
-  const [updateAgenda, { loading: updatingAgenda }] =
-    useMutation(UPDATE_AGENDA);
-  const [deleteAgenda, { loading: deletingAgenda }] =
-    useMutation(DELETE_AGENDA);
 
   const payload = (data as any)?.programs;
   const programs: ProgramItem[] = payload?.items || [];
@@ -231,8 +236,8 @@ const ProgramsManagement: React.FC = () => {
   const programCountByDay = useMemo(() => {
     const map = new Map<string, number>();
     for (const p of calendarPrograms) {
-      const d = new Date(p.scheduled_at);
-      if (Number.isNaN(d.getTime())) continue;
+      const d = parseAppDate(p.scheduled_at);
+      if (!d) continue;
       const key = dayKey(d);
       map.set(key, (map.get(key) || 0) + 1);
     }
@@ -248,22 +253,15 @@ const ProgramsManagement: React.FC = () => {
     if (!selectedDate) return [];
     return calendarPrograms
       .filter((p) => {
-        const d = new Date(p.scheduled_at);
-        return !Number.isNaN(d.getTime()) && isSameDay(d, selectedDate);
+        const d = parseAppDate(p.scheduled_at);
+        return d != null && isSameDay(d, selectedDate);
       })
-      .sort(
-        (a, b) =>
-          new Date(a.scheduled_at).getTime() -
-          new Date(b.scheduled_at).getTime(),
-      );
+      .sort((a, b) => {
+        const da = parseAppDate(a.scheduled_at)?.getTime() ?? 0;
+        const db = parseAppDate(b.scheduled_at)?.getTime() ?? 0;
+        return da - db;
+      });
   }, [calendarPrograms, selectedDate]);
-
-  const agendas: AgendaItem[] = (agendasData as any)?.agendasByProgram || [];
-
-  const selectedProgram =
-    programs.find((p) => p.id === selectedProgramId) ||
-    calendarPrograms.find((p) => p.id === selectedProgramId) ||
-    null;
 
   const openCreateProgram = () => {
     setEditingProgram(null);
@@ -299,10 +297,18 @@ const ProgramsManagement: React.FC = () => {
       return;
     }
 
+    let scheduledAtIso: string;
+    try {
+      scheduledAtIso = fromDatetimeLocalValue(programForm.scheduled_at);
+    } catch {
+      toast.error("Invalid date and time");
+      return;
+    }
+
     const input = {
       title: programForm.title.trim(),
       description: programForm.description.trim() || null,
-      scheduled_at: fromDatetimeLocalValue(programForm.scheduled_at),
+      scheduled_at: scheduledAtIso,
       location: programForm.location.trim() || null,
       status: programForm.status,
     };
@@ -341,84 +347,6 @@ const ProgramsManagement: React.FC = () => {
     }
   };
 
-  const openCreateAgenda = () => {
-    if (!selectedProgramId) {
-      toast.error("Select a program first");
-      return;
-    }
-    setEditingAgenda(null);
-    setAgendaForm(emptyAgendaForm);
-    setAgendaDialogOpen(true);
-  };
-
-  const openEditAgenda = (agenda: AgendaItem) => {
-    setEditingAgenda(agenda);
-    setAgendaForm({
-      title: agenda.title,
-      body: agenda.body || "",
-      sort_order: String(agenda.sort_order),
-    });
-    setAgendaDialogOpen(true);
-  };
-
-  const handleSaveAgenda = async () => {
-    if (!selectedProgramId) return;
-    if (!agendaForm.title.trim()) {
-      toast.error("Agenda title is required");
-      return;
-    }
-
-    try {
-      if (editingAgenda) {
-        await updateAgenda({
-          variables: {
-            id: editingAgenda.id,
-            input: {
-              title: agendaForm.title.trim(),
-              body: agendaForm.body.trim() || null,
-              sort_order: agendaForm.sort_order
-                ? Number(agendaForm.sort_order)
-                : editingAgenda.sort_order,
-            },
-          },
-        });
-        toast.success("Agenda updated");
-      } else {
-        await createAgenda({
-          variables: {
-            input: {
-              program_id: selectedProgramId,
-              title: agendaForm.title.trim(),
-              body: agendaForm.body.trim() || null,
-              sort_order: agendaForm.sort_order
-                ? Number(agendaForm.sort_order)
-                : undefined,
-            },
-          },
-        });
-        toast.success("Agenda added");
-      }
-      setAgendaDialogOpen(false);
-      await refetchAgendas();
-      await refetch();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save agenda");
-    }
-  };
-
-  const confirmDeleteAgenda = async () => {
-    if (!agendaToDelete) return;
-    try {
-      await deleteAgenda({ variables: { id: agendaToDelete.id } });
-      toast.success("Agenda deleted");
-      setAgendaToDelete(null);
-      await refetchAgendas();
-      await refetch();
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to delete agenda");
-    }
-  };
-
   const handleSearch = useCallback((value: string) => {
     setSearch(value);
     setPage(1);
@@ -428,7 +356,7 @@ const ProgramsManagement: React.FC = () => {
     <div className="space-y-6">
       <PageHeader
         title="Programs"
-        subtitle="Schedule programs, view the calendar, and manage agendas"
+        subtitle="Schedule programs and view them on the calendar"
         actions={
           <Button onClick={openCreateProgram}>
             <Plus className="h-4 w-4 mr-2" />
@@ -541,7 +469,7 @@ const ProgramsManagement: React.FC = () => {
               </div>
             </div>
 
-            {/* Selected day agenda — large date + timed list + add CTA */}
+            {/* Selected day programs — large date + timed list + add CTA */}
             <div className="border-t pt-4 space-y-4">
               {selectedDate ? (
                 <>
@@ -565,46 +493,43 @@ const ProgramsManagement: React.FC = () => {
                         No programs scheduled this day
                       </p>
                     ) : (
-                      programsOnSelectedDate.map((p) => {
-                        const start = new Date(p.scheduled_at);
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            onClick={() => setSelectedProgramId(p.id)}
+                      programsOnSelectedDate.map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setSelectedProgramId(p.id)}
+                          className={cn(
+                            "flex w-full items-stretch gap-3 rounded-lg px-1 py-2.5 text-left transition-colors hover:bg-muted/50",
+                            selectedProgramId === p.id && "bg-primary/5",
+                          )}
+                        >
+                          <div className="flex w-12 shrink-0 flex-col items-end justify-center sm:w-14">
+                            <span className="text-sm font-semibold tabular-nums leading-none">
+                              {formatAppDate(p.scheduled_at, "h:mm")}
+                            </span>
+                            <span className="mt-0.5 text-[10px] uppercase text-muted-foreground">
+                              {formatAppDate(p.scheduled_at, "a")}
+                            </span>
+                          </div>
+                          <div
                             className={cn(
-                              "flex w-full items-stretch gap-3 rounded-lg px-1 py-2.5 text-left transition-colors hover:bg-muted/50",
-                              selectedProgramId === p.id && "bg-primary/5",
+                              "w-1 shrink-0 self-stretch rounded-full",
+                              selectedProgramId === p.id
+                                ? "bg-primary"
+                                : "bg-primary/40",
                             )}
-                          >
-                            <div className="flex w-12 shrink-0 flex-col items-end justify-center sm:w-14">
-                              <span className="text-sm font-semibold tabular-nums leading-none">
-                                {format(start, "h:mm")}
-                              </span>
-                              <span className="mt-0.5 text-[10px] uppercase text-muted-foreground">
-                                {format(start, "a")}
-                              </span>
-                            </div>
-                            <div
-                              className={cn(
-                                "w-1 shrink-0 self-stretch rounded-full",
-                                selectedProgramId === p.id
-                                  ? "bg-primary"
-                                  : "bg-primary/40",
-                              )}
-                            />
-                            <div className="min-w-0 flex-1 py-0.5">
-                              <p className="font-medium leading-snug line-clamp-2">
-                                {p.title}
-                              </p>
-                              <p className="mt-0.5 text-xs text-muted-foreground">
-                                {format(start, "h:mm a")}
-                                {p.location ? ` · ${p.location}` : ""}
-                              </p>
-                            </div>
-                          </button>
-                        );
-                      })
+                          />
+                          <div className="min-w-0 flex-1 py-0.5">
+                            <p className="font-medium leading-snug line-clamp-2">
+                              {p.title}
+                            </p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              {formatAppDate(p.scheduled_at, "h:mm a")}
+                              {p.location ? ` · ${p.location}` : ""}
+                            </p>
+                          </div>
+                        </button>
+                      ))
                     )}
                   </div>
 
@@ -694,8 +619,8 @@ const ProgramsManagement: React.FC = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {format(
-                              new Date(program.scheduled_at),
+                            {formatAppDate(
+                              program.scheduled_at,
                               "MMM d, yyyy · h:mm a",
                             )}
                             {program.location ? ` · ${program.location}` : ""}
@@ -705,14 +630,6 @@ const ProgramsManagement: React.FC = () => {
                               {program.description}
                             </p>
                           )}
-                          <p className="text-xs text-muted-foreground">
-                            {(program.agendas?.length ?? 0) ||
-                              (selectedProgramId === program.id
-                                ? agendas.length
-                                : 0)}{" "}
-                            agenda item
-                            {(program.agendas?.length ?? 0) === 1 ? "" : "s"}
-                          </p>
                         </div>
                         <div
                           className="flex gap-1"
@@ -747,81 +664,6 @@ const ProgramsManagement: React.FC = () => {
                     }}
                     itemLabel="programs"
                   />
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <ListOrdered className="h-4 w-4" />
-                  Agendas
-                  {selectedProgram ? (
-                    <span className="font-normal text-muted-foreground">
-                      · {selectedProgram.title}
-                    </span>
-                  ) : null}
-                </CardTitle>
-                <Button
-                  size="sm"
-                  onClick={openCreateAgenda}
-                  disabled={!selectedProgramId}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add agenda
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {!selectedProgramId ? (
-                <p className="text-sm text-muted-foreground">
-                  Select a program to view and edit its agendas.
-                </p>
-              ) : agendas.length === 0 ? (
-                <ListEmptyState
-                  title="No agendas yet"
-                  description="Add agenda items for this program."
-                />
-              ) : (
-                <div className="space-y-2">
-                  {agendas.map((agenda) => (
-                    <div
-                      key={agenda.id}
-                      className="flex items-start justify-between gap-3 rounded-md border px-3 py-2"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="shrink-0">
-                            #{agenda.sort_order}
-                          </Badge>
-                          <span className="font-medium">{agenda.title}</span>
-                        </div>
-                        {agenda.body && (
-                          <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">
-                            {agenda.body}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditAgenda(agenda)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setAgendaToDelete(agenda)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </CardContent>
@@ -928,65 +770,6 @@ const ProgramsManagement: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={agendaDialogOpen} onOpenChange={setAgendaDialogOpen}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editingAgenda ? "Edit agenda" : "Add agenda"}
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="agenda-title">Title</Label>
-              <Input
-                id="agenda-title"
-                value={agendaForm.title}
-                onChange={(e) =>
-                  setAgendaForm((f) => ({ ...f, title: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="agenda-order">Sort order</Label>
-              <Input
-                id="agenda-order"
-                type="number"
-                value={agendaForm.sort_order}
-                onChange={(e) =>
-                  setAgendaForm((f) => ({ ...f, sort_order: e.target.value }))
-                }
-                placeholder="Auto if empty"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="agenda-body">Details</Label>
-              <Textarea
-                id="agenda-body"
-                rows={4}
-                value={agendaForm.body}
-                onChange={(e) =>
-                  setAgendaForm((f) => ({ ...f, body: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setAgendaDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSaveAgenda}
-              disabled={creatingAgenda || updatingAgenda}
-            >
-              {editingAgenda ? "Save" : "Add"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
       <AlertDialog
         open={!!programToDelete}
         onOpenChange={(open) => !open && setProgramToDelete(null)}
@@ -995,7 +778,7 @@ const ProgramsManagement: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete program?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will remove “{programToDelete?.title}” and its agendas.
+              This will remove “{programToDelete?.title}”.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1003,29 +786,6 @@ const ProgramsManagement: React.FC = () => {
             <AlertDialogAction
               onClick={confirmDeleteProgram}
               disabled={deleting}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={!!agendaToDelete}
-        onOpenChange={(open) => !open && setAgendaToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete agenda?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will remove “{agendaToDelete?.title}”.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDeleteAgenda}
-              disabled={deletingAgenda}
             >
               Delete
             </AlertDialogAction>

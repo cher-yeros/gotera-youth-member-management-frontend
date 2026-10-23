@@ -2627,7 +2627,7 @@ export const STATUS_CHANGED_SUB = gql`
 export const AGENDA_FRAGMENT = gql`
   fragment AgendaFragment on Agenda {
     id
-    program_id
+    meeting_id
     title
     body
     sort_order
@@ -2650,11 +2650,7 @@ export const PROGRAM_FRAGMENT = gql`
     is_active
     createdAt
     updatedAt
-    agendas {
-      ...AgendaFragment
-    }
   }
-  ${AGENDA_FRAGMENT}
 `;
 
 export const MEETING_FRAGMENT = gql`
@@ -2670,7 +2666,11 @@ export const MEETING_FRAGMENT = gql`
     is_active
     createdAt
     updatedAt
+    agendas {
+      ...AgendaFragment
+    }
   }
+  ${AGENDA_FRAGMENT}
 `;
 
 export const GET_PROGRAMS = gql`
@@ -2697,9 +2697,9 @@ export const GET_PROGRAM = gql`
   ${PROGRAM_FRAGMENT}
 `;
 
-export const GET_AGENDAS_BY_PROGRAM = gql`
-  query GetAgendasByProgram($programId: Int!) {
-    agendasByProgram(programId: $programId) {
+export const GET_AGENDAS_BY_MEETING = gql`
+  query GetAgendasByMeeting($meetingId: Int!) {
+    agendasByMeeting(meetingId: $meetingId) {
       ...AgendaFragment
     }
   }
