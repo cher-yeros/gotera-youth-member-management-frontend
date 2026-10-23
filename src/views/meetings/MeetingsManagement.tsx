@@ -932,7 +932,9 @@ const MeetingsManagement: React.FC = () => {
                 }
               />
               <span className="text-sm">
-                <span className="font-medium">Planned for a future meeting</span>
+                <span className="font-medium">
+                  Planned for a future meeting
+                </span>
                 <span className="block text-muted-foreground text-xs mt-0.5">
                   Save without attaching
                   {selectedMeeting
