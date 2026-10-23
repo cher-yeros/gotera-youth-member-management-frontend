@@ -1,8 +1,9 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   CalendarClock,
   Edit,
+  GripVertical,
   ImagePlus,
   Link2,
   ListOrdered,
@@ -168,6 +169,10 @@ const MeetingsManagement: React.FC = () => {
   const [editingAgenda, setEditingAgenda] = useState<AgendaItem | null>(null);
   const [agendaForm, setAgendaForm] = useState(emptyAgendaForm);
   const [agendaToDelete, setAgendaToDelete] = useState<AgendaItem | null>(null);
+  const [plannedList, setPlannedList] = useState<AgendaItem[]>([]);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [dragOverId, setDragOverId] = useState<number | null>(null);
+  const [reorderingPlanned, setReorderingPlanned] = useState(false);
 
   const filter = useMemo(() => {
     const f: { search?: string } = {};
@@ -213,13 +218,50 @@ const MeetingsManagement: React.FC = () => {
   const meetings: MeetingItem[] = payload?.items || [];
   const total = payload?.total || 0;
   const agendas: AgendaItem[] = (agendasData as any)?.agendasByMeeting || [];
-  const plannedAgendas: AgendaItem[] =
-    (plannedData as any)?.plannedAgendas || [];
   const selectedMeeting =
     meetings.find((m) => m.id === selectedMeetingId) || null;
 
+  useEffect(() => {
+    setPlannedList((plannedData as any)?.plannedAgendas || []);
+  }, [plannedData]);
+
   const refreshAgendaLists = async () => {
     await Promise.all([refetchAgendas(), refetchPlanned(), refetch()]);
+  };
+
+  const reorderPlannedAgendas = async (fromId: number, toId: number) => {
+    if (fromId === toId || reorderingPlanned) return;
+    const fromIdx = plannedList.findIndex((a) => a.id === fromId);
+    const toIdx = plannedList.findIndex((a) => a.id === toId);
+    if (fromIdx < 0 || toIdx < 0) return;
+
+    const next = [...plannedList];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    const withOrder = next.map((item, index) => ({
+      ...item,
+      sort_order: index + 1,
+    }));
+    setPlannedList(withOrder);
+    setReorderingPlanned(true);
+    try {
+      await Promise.all(
+        withOrder.map((item, index) =>
+          updateAgenda({
+            variables: {
+              id: item.id,
+              input: { sort_order: index + 1 },
+            },
+          }),
+        ),
+      );
+      await refetchPlanned();
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to save order");
+      await refetchPlanned();
+    } finally {
+      setReorderingPlanned(false);
+    }
   };
 
   const openCreate = () => {
@@ -671,9 +713,9 @@ const MeetingsManagement: React.FC = () => {
                 <CardTitle className="text-base flex items-center gap-2">
                   <CalendarClock className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                   Planned agendas
-                  {plannedAgendas.length > 0 ? (
+                  {plannedList.length > 0 ? (
                     <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-100">
-                      {plannedAgendas.length}
+                      {plannedList.length}
                     </Badge>
                   ) : null}
                 </CardTitle>
@@ -688,25 +730,72 @@ const MeetingsManagement: React.FC = () => {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground pt-1">
-                Written ahead for a future meeting — not attached yet.
+                Written ahead for a future meeting — drag to reorder.
               </p>
             </CardHeader>
             <CardContent>
-              {plannedAgendas.length === 0 ? (
+              {plannedList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No planned agendas. Use Plan to draft items for later.
                 </p>
               ) : (
                 <div className="space-y-2">
-                  {plannedAgendas.map((agenda) => (
+                  {plannedList.map((agenda) => (
                     <div
                       key={agenda.id}
-                      className="flex items-start justify-between gap-3 rounded-md border border-amber-200/70 bg-background/80 px-3 py-2"
+                      draggable={!reorderingPlanned}
+                      onDragStart={(e) => {
+                        setDraggingId(agenda.id);
+                        e.dataTransfer.effectAllowed = "move";
+                        e.dataTransfer.setData("text/plain", String(agenda.id));
+                      }}
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDragOverId(null);
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        if (dragOverId !== agenda.id) setDragOverId(agenda.id);
+                      }}
+                      onDragLeave={() => {
+                        if (dragOverId === agenda.id) setDragOverId(null);
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const fromId = Number(
+                          e.dataTransfer.getData("text/plain") || draggingId,
+                        );
+                        setDragOverId(null);
+                        setDraggingId(null);
+                        if (!Number.isFinite(fromId)) return;
+                        void reorderPlannedAgendas(fromId, agenda.id);
+                      }}
+                      className={cn(
+                        "flex items-start gap-2 rounded-md border border-amber-200/70 bg-background/80 px-2 py-2 transition-colors",
+                        draggingId === agenda.id && "opacity-50",
+                        dragOverId === agenda.id &&
+                          draggingId !== agenda.id &&
+                          "border-amber-500 ring-2 ring-amber-400/40",
+                        reorderingPlanned && "pointer-events-none opacity-80",
+                      )}
                     >
-                      <div className="min-w-0">
+                      <button
+                        type="button"
+                        className="mt-1 cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+                        aria-label="Drag to reorder"
+                        title="Drag to reorder"
+                        onMouseDown={(e) => e.stopPropagation()}
+                      >
+                        <GripVertical className="h-4 w-4" />
+                      </button>
+                      <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <Badge className="bg-amber-100 text-amber-900 hover:bg-amber-100 shrink-0 dark:bg-amber-900/50 dark:text-amber-100">
                             Planned
+                          </Badge>
+                          <Badge variant="outline" className="shrink-0 text-xs">
+                            #{agenda.sort_order}
                           </Badge>
                           <span className="font-medium">{agenda.title}</span>
                         </div>
@@ -723,7 +812,7 @@ const MeetingsManagement: React.FC = () => {
                             size="icon"
                             title={`Assign to ${selectedMeeting?.title || "meeting"}`}
                             onClick={() => assignPlannedToMeeting(agenda)}
-                            disabled={updatingAgenda}
+                            disabled={updatingAgenda || reorderingPlanned}
                           >
                             <Link2 className="h-4 w-4 text-amber-800 dark:text-amber-300" />
                           </Button>
@@ -732,6 +821,7 @@ const MeetingsManagement: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => openEditAgenda(agenda)}
+                          disabled={reorderingPlanned}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -739,6 +829,7 @@ const MeetingsManagement: React.FC = () => {
                           variant="ghost"
                           size="icon"
                           onClick={() => setAgendaToDelete(agenda)}
+                          disabled={reorderingPlanned}
                         >
                           <Trash2 className="h-4 w-4 text-red-600" />
                         </Button>
