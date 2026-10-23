@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -61,10 +62,10 @@ const CreateClassSessionBatchModal = ({ trigger, onSuccess }: Props) => {
           </div>
           <div>
             <Label>Date *</Label>
-            <Input
-              type="date"
+            <EthiopianDatePicker
               value={sessionDate}
-              onChange={(e) => setSessionDate(e.target.value)}
+              onChange={setSessionDate}
+              placeholder="Pick session date"
             />
           </div>
           <div>

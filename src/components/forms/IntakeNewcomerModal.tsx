@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { ComboBoxOption } from "@/components/ui/combo-box";
 import { ComboBox } from "@/components/ui/combo-box";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -298,24 +299,25 @@ export const IntakeNewcomerModal: React.FC<IntakeNewcomerModalProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="first_visit_date">First visit</Label>
-              <Input
+              <EthiopianDatePicker
                 id="first_visit_date"
-                type="date"
                 value={form.first_visit_date}
-                onChange={(e) =>
-                  setForm({ ...form, first_visit_date: e.target.value })
+                onChange={(value) =>
+                  setForm({ ...form, first_visit_date: value })
                 }
+                placeholder="Pick first visit date"
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="next_follow_up_at">Next follow-up</Label>
-              <Input
+              <EthiopianDatePicker
                 id="next_follow_up_at"
-                type="datetime-local"
+                mode="datetime"
                 value={form.next_follow_up_at}
-                onChange={(e) =>
-                  setForm({ ...form, next_follow_up_at: e.target.value })
+                onChange={(value) =>
+                  setForm({ ...form, next_follow_up_at: value })
                 }
+                placeholder="Pick follow-up date"
               />
             </div>
           </div>

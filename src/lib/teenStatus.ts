@@ -6,6 +6,7 @@ export const EDITABLE_TEEN_STATUSES = [
   "INACTIVE",
   "MOVED_OUT",
   "MOVED_TO_OTHER_CHURCH",
+  "MOVED_TO_UNIVERSITY",
 ] as const satisfies readonly TeenStatus[];
 
 export const TEEN_STATUS_LABELS: Record<string, string> = {
@@ -14,6 +15,7 @@ export const TEEN_STATUS_LABELS: Record<string, string> = {
   INACTIVE: "Inactive",
   MOVED_OUT: "Moved out",
   MOVED_TO_OTHER_CHURCH: "Moved to other church",
+  MOVED_TO_UNIVERSITY: "Moved to University",
 };
 
 export const TEEN_STATUS_FILTER_OPTIONS = [
@@ -24,6 +26,10 @@ export const TEEN_STATUS_FILTER_OPTIONS = [
   {
     value: "MOVED_TO_OTHER_CHURCH",
     label: TEEN_STATUS_LABELS.MOVED_TO_OTHER_CHURCH,
+  },
+  {
+    value: "MOVED_TO_UNIVERSITY",
+    label: TEEN_STATUS_LABELS.MOVED_TO_UNIVERSITY,
   },
 ];
 
@@ -36,6 +42,7 @@ export const teenStatusBadgeClass = (status?: string | null) => {
   if (status === "INACTIVE") return "bg-red-100 text-red-800";
   if (status === "MOVED_OUT") return "bg-orange-100 text-orange-800";
   if (status === "MOVED_TO_OTHER_CHURCH") return "bg-amber-100 text-amber-800";
+  if (status === "MOVED_TO_UNIVERSITY") return "bg-purple-100 text-purple-800";
   return "bg-yellow-100 text-yellow-800";
 };
 
@@ -44,5 +51,6 @@ export const teenStatusDotClass = (status?: string | null) => {
   if (status === "PROMOTED") return "bg-blue-500";
   if (status === "MOVED_OUT") return "bg-orange-500";
   if (status === "MOVED_TO_OTHER_CHURCH") return "bg-amber-500";
+  if (status === "MOVED_TO_UNIVERSITY") return "bg-purple-500";
   return "bg-red-500";
 };

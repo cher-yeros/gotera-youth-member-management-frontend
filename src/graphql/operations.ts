@@ -2623,3 +2623,190 @@ export const STATUS_CHANGED_SUB = gql`
   }
   ${STATUS_FRAGMENT}
 `;
+
+export const AGENDA_FRAGMENT = gql`
+  fragment AgendaFragment on Agenda {
+    id
+    program_id
+    title
+    body
+    sort_order
+    created_by
+    is_active
+    createdAt
+    updatedAt
+  }
+`;
+
+export const PROGRAM_FRAGMENT = gql`
+  fragment ProgramFragment on Program {
+    id
+    title
+    description
+    scheduled_at
+    location
+    status
+    created_by
+    is_active
+    createdAt
+    updatedAt
+    agendas {
+      ...AgendaFragment
+    }
+  }
+  ${AGENDA_FRAGMENT}
+`;
+
+export const MEETING_FRAGMENT = gql`
+  fragment MeetingFragment on Meeting {
+    id
+    title
+    description
+    meeting_at
+    location
+    notes
+    minutes_screenshot_urls
+    created_by
+    is_active
+    createdAt
+    updatedAt
+  }
+`;
+
+export const GET_PROGRAMS = gql`
+  query GetPrograms($filter: ProgramFilterInput, $pagination: PaginationInput) {
+    programs(filter: $filter, pagination: $pagination) {
+      items {
+        ...ProgramFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${PROGRAM_FRAGMENT}
+`;
+
+export const GET_PROGRAM = gql`
+  query GetProgram($id: Int!) {
+    program(id: $id) {
+      ...ProgramFragment
+    }
+  }
+  ${PROGRAM_FRAGMENT}
+`;
+
+export const GET_AGENDAS_BY_PROGRAM = gql`
+  query GetAgendasByProgram($programId: Int!) {
+    agendasByProgram(programId: $programId) {
+      ...AgendaFragment
+    }
+  }
+  ${AGENDA_FRAGMENT}
+`;
+
+export const CREATE_PROGRAM = gql`
+  mutation CreateProgram($input: CreateProgramInput!) {
+    createProgram(input: $input) {
+      ...ProgramFragment
+    }
+  }
+  ${PROGRAM_FRAGMENT}
+`;
+
+export const UPDATE_PROGRAM = gql`
+  mutation UpdateProgram($id: Int!, $input: UpdateProgramInput!) {
+    updateProgram(id: $id, input: $input) {
+      ...ProgramFragment
+    }
+  }
+  ${PROGRAM_FRAGMENT}
+`;
+
+export const DELETE_PROGRAM = gql`
+  mutation DeleteProgram($id: Int!) {
+    deleteProgram(id: $id)
+  }
+`;
+
+export const CREATE_AGENDA = gql`
+  mutation CreateAgenda($input: CreateAgendaInput!) {
+    createAgenda(input: $input) {
+      ...AgendaFragment
+    }
+  }
+  ${AGENDA_FRAGMENT}
+`;
+
+export const UPDATE_AGENDA = gql`
+  mutation UpdateAgenda($id: Int!, $input: UpdateAgendaInput!) {
+    updateAgenda(id: $id, input: $input) {
+      ...AgendaFragment
+    }
+  }
+  ${AGENDA_FRAGMENT}
+`;
+
+export const DELETE_AGENDA = gql`
+  mutation DeleteAgenda($id: Int!) {
+    deleteAgenda(id: $id)
+  }
+`;
+
+export const GET_MEETINGS = gql`
+  query GetMeetings($filter: MeetingFilterInput, $pagination: PaginationInput) {
+    meetings(filter: $filter, pagination: $pagination) {
+      items {
+        ...MeetingFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${MEETING_FRAGMENT}
+`;
+
+export const GET_MEETING = gql`
+  query GetMeeting($id: Int!) {
+    meeting(id: $id) {
+      ...MeetingFragment
+    }
+  }
+  ${MEETING_FRAGMENT}
+`;
+
+export const CREATE_MEETING = gql`
+  mutation CreateMeeting($input: CreateMeetingInput!) {
+    createMeeting(input: $input) {
+      ...MeetingFragment
+    }
+  }
+  ${MEETING_FRAGMENT}
+`;
+
+export const UPDATE_MEETING = gql`
+  mutation UpdateMeeting($id: Int!, $input: UpdateMeetingInput!) {
+    updateMeeting(id: $id, input: $input) {
+      ...MeetingFragment
+    }
+  }
+  ${MEETING_FRAGMENT}
+`;
+
+export const DELETE_MEETING = gql`
+  mutation DeleteMeeting($id: Int!) {
+    deleteMeeting(id: $id)
+  }
+`;
+
+export const UPDATE_MEETING_MINUTES = gql`
+  mutation UpdateMeetingMinutes($id: Int!, $urls: [String!]!) {
+    updateMeetingMinutes(id: $id, urls: $urls) {
+      ...MeetingFragment
+    }
+  }
+  ${MEETING_FRAGMENT}
+`;

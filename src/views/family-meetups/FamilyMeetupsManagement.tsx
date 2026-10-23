@@ -1,6 +1,5 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   AlertDialog,
@@ -18,13 +17,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import {
   CREATE_FAMILY_MEETUP_BATCH,
@@ -38,13 +33,11 @@ import ListEmptyState from "@/components/shared/ListEmptyState";
 import ListErrorState from "@/components/shared/ListErrorState";
 import ListPagination from "@/components/shared/ListPagination";
 import InlineSearchRow from "@/components/shared/InlineSearchRow";
-import { cn } from "@/lib/utils";
 import { useMutation, useQuery } from "@apollo/client/react";
 import { format } from "date-fns";
 import {
   BookOpen,
   Calendar,
-  CalendarIcon,
   CheckCircle,
   ChevronRight,
   Edit,
@@ -781,35 +774,17 @@ const FamilyMeetupsManagement: React.FC = () => {
               </div>
               <div className="space-y-2">
                 <Label>Meetup Date *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !formData.meetup_date && "text-muted-foreground",
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.meetup_date
-                        ? format(formData.meetup_date, "PPP")
-                        : "Pick a date"}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <CalendarComponent
-                      mode="single"
-                      selected={formData.meetup_date}
-                      onSelect={(date) =>
-                        setFormData({
-                          ...formData,
-                          meetup_date: date || new Date(),
-                        })
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
+                <EthiopianDatePicker
+                  mode="date-object"
+                  value={formData.meetup_date}
+                  onChange={(date) =>
+                    setFormData({
+                      ...formData,
+                      meetup_date: date || new Date(),
+                    })
+                  }
+                  placeholder="Pick meetup date"
+                />
               </div>
               {renderBibleStudyFields("detail-edit")}
               <div className="flex justify-end space-x-2">
@@ -1091,37 +1066,17 @@ const FamilyMeetupsManagement: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>Meetup Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.meetup_date && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.meetup_date ? (
-                      format(formData.meetup_date, "PPP")
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
-                    mode="single"
-                    selected={formData.meetup_date}
-                    onSelect={(date) =>
-                      setFormData({
-                        ...formData,
-                        meetup_date: date || new Date(),
-                      })
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <EthiopianDatePicker
+                mode="date-object"
+                value={formData.meetup_date}
+                onChange={(date) =>
+                  setFormData({
+                    ...formData,
+                    meetup_date: date || new Date(),
+                  })
+                }
+                placeholder="Pick meetup date"
+              />
             </div>
             {renderBibleStudyFields("create")}
             <div className="flex justify-end space-x-2">
@@ -1231,35 +1186,17 @@ const FamilyMeetupsManagement: React.FC = () => {
             </div>
             <div className="space-y-2">
               <Label>Meetup Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.meetup_date && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.meetup_date
-                      ? format(formData.meetup_date, "PPP")
-                      : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <CalendarComponent
-                    mode="single"
-                    selected={formData.meetup_date}
-                    onSelect={(date) =>
-                      setFormData({
-                        ...formData,
-                        meetup_date: date || new Date(),
-                      })
-                    }
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
+              <EthiopianDatePicker
+                mode="date-object"
+                value={formData.meetup_date}
+                onChange={(date) =>
+                  setFormData({
+                    ...formData,
+                    meetup_date: date || new Date(),
+                  })
+                }
+                placeholder="Pick meetup date"
+              />
             </div>
             {renderBibleStudyFields("list-edit")}
             <div className="flex justify-end space-x-2">

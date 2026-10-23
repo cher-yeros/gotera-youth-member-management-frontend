@@ -1900,6 +1900,7 @@ export type TeenStatus =
   | "INACTIVE"
   | "MOVED_OUT"
   | "MOVED_TO_OTHER_CHURCH"
+  | "MOVED_TO_UNIVERSITY"
   | "PROMOTED";
 
 export type Teenager = {

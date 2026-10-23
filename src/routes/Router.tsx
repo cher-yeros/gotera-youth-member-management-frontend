@@ -55,6 +55,12 @@ const AnnouncementDetail = lazy(
 const ManageAnnouncements = lazy(
   () => import("../views/announcements/ManageAnnouncements"),
 );
+const ProgramsManagement = lazy(
+  () => import("../views/programs/ProgramsManagement"),
+);
+const MeetingsManagement = lazy(
+  () => import("../views/meetings/MeetingsManagement"),
+);
 const TeenagersPage = lazy(() => import("../views/teenagers/TeenagersPage"));
 const TeenClassesPage = lazy(
   () => import("../views/teen-classes/TeenClassesPage"),
@@ -266,6 +272,22 @@ const Router = [
         element: (
           <ProtectedRoute allowedRoles={["ADMIN", "MAIN"]}>
             <ManageAnnouncements />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/programs",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN"]}>
+            <ProgramsManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/meetings",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN"]}>
+            <MeetingsManagement />
           </ProtectedRoute>
         ),
       },

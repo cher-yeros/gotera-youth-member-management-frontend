@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -71,10 +72,10 @@ const EditClassSessionBatchModal = ({ batch, trigger, onSuccess }: Props) => {
           </div>
           <div>
             <Label>Date *</Label>
-            <Input
-              type="date"
+            <EthiopianDatePicker
               value={sessionDate}
-              onChange={(e) => setSessionDate(e.target.value)}
+              onChange={setSessionDate}
+              placeholder="Pick session date"
             />
             <p className="text-xs text-muted-foreground mt-1">
               Changing the date updates every class session in this batch.

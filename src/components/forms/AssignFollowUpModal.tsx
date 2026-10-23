@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -60,7 +60,6 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
   const [assign, { loading }] = useMutation(
     isReassign ? REASSIGN_FOLLOW_UP_CASE : ASSIGN_FOLLOW_UP_CASE,
     {
-
       onCompleted: () => {
         toast.success(isReassign ? "Case reassigned" : "Case assigned");
         onOpenChange(false);
@@ -145,11 +144,12 @@ export const AssignFollowUpModal: React.FC<AssignFollowUpModalProps> = ({
           </div>
           <div className="space-y-2">
             <Label htmlFor="next">Next follow-up</Label>
-            <Input
+            <EthiopianDatePicker
               id="next"
-              type="datetime-local"
+              mode="datetime"
               value={nextFollowUp}
-              onChange={(e) => setNextFollowUp(e.target.value)}
+              onChange={setNextFollowUp}
+              placeholder="Pick follow-up date"
             />
           </div>
           <div className="space-y-2">

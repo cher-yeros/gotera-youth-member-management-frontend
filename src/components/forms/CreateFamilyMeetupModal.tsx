@@ -8,18 +8,11 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { BookOpen, CalendarIcon, Plus } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import { BookOpen, Plus } from "lucide-react";
 import { CREATE_FAMILY_MEETUP_BATCH } from "@/graphql/operations";
 import { toast } from "react-toastify";
 import {
@@ -94,7 +87,10 @@ export const CreateFamilyMeetupModal: React.FC<
     const questions = parseQuestionNumbers(formData.bible_study_questions);
     const studyRaw = formData.bible_study_number.trim();
     const studyNumber = studyRaw ? Number(studyRaw) : null;
-    if (studyRaw && (!Number.isInteger(studyNumber) || (studyNumber ?? 0) <= 0)) {
+    if (
+      studyRaw &&
+      (!Number.isInteger(studyNumber) || (studyNumber ?? 0) <= 0)
+    ) {
       toast.error("Bible study number must be a positive integer");
       return;
     }
@@ -191,34 +187,14 @@ export const CreateFamilyMeetupModal: React.FC<
 
           <div className="space-y-2">
             <Label>Meetup Date *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !formData.meetup_date && "text-muted-foreground",
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.meetup_date ? (
-                    format(formData.meetup_date, "PPP")
-                  ) : (
-                    <span>Pick a date</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.meetup_date}
-                  onSelect={(date) =>
-                    handleInputChange("meetup_date", date || new Date())
-                  }
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+            <EthiopianDatePicker
+              mode="date-object"
+              value={formData.meetup_date}
+              onChange={(date) =>
+                handleInputChange("meetup_date", date || new Date())
+              }
+              placeholder="Pick meetup date"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">

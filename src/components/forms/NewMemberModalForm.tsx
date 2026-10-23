@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import type { ComboBoxOption } from "@/components/ui/combo-box";
 import { ComboBox } from "@/components/ui/combo-box";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import type {
   CreateMemberInput,
@@ -449,14 +450,12 @@ const NewMemberModalForm: React.FC<NewMemberModalFormProps> = ({
               >
                 Birth date
               </label>
-              <Input
+              <EthiopianDatePicker
                 id="birth_date"
-                type="date"
                 value={formData.birth_date || ""}
-                onChange={(e) =>
-                  handleInputChange("birth_date", e.target.value)
-                }
+                onChange={(value) => handleInputChange("birth_date", value)}
                 disabled={isSubmitting}
+                placeholder="Pick birth date"
               />
             </div>
           </div>

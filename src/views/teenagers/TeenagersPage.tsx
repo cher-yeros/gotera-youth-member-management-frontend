@@ -40,6 +40,8 @@ import {
   teenStatusBadgeClass,
   teenStatusDotClass,
 } from "@/lib/teenStatus";
+import { useAuth } from "@/redux/useAuth";
+import { hasAnyRole, ROLE } from "@/lib/roles";
 import { useState, useCallback } from "react";
 import type {
   GetTeenagersQuery,
@@ -49,6 +51,8 @@ import type {
 type TeenListItem = GetTeenagersQuery["teenagers"]["teenagers"][number];
 
 const TeenagersPage = () => {
+  const { user } = useAuth();
+  const canDeleteTeen = hasAnyRole(user, [ROLE.ADMIN, ROLE.MAIN]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortPreset, setSortPreset] = useState<ListSortPreset>("roll_no");
@@ -384,19 +388,21 @@ const TeenagersPage = () => {
                                 </Button>
                               </>
                             )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1 text-red-600 hover:bg-red-50 min-w-[80px]"
-                              onClick={() =>
-                                setTeenToDelete({
-                                  id: teen.id,
-                                  name: teen.full_name,
-                                })
-                              }
-                            >
-                              Delete
-                            </Button>
+                            {canDeleteTeen && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 text-red-600 hover:bg-red-50 min-w-[80px]"
+                                onClick={() =>
+                                  setTeenToDelete({
+                                    id: teen.id,
+                                    name: teen.full_name,
+                                  })
+                                }
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -591,19 +597,21 @@ const TeenagersPage = () => {
                                   </Button>
                                 </>
                               )}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="text-red-600 hover:bg-red-50"
-                                onClick={() =>
-                                  setTeenToDelete({
-                                    id: teen.id,
-                                    name: teen.full_name,
-                                  })
-                                }
-                              >
-                                Delete
-                              </Button>
+                              {canDeleteTeen && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:bg-red-50"
+                                  onClick={() =>
+                                    setTeenToDelete({
+                                      id: teen.id,
+                                      name: teen.full_name,
+                                    })
+                                  }
+                                >
+                                  Delete
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>

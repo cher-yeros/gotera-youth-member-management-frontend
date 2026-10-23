@@ -51,6 +51,14 @@ const adminNavigation: NavEntry[] = [
   { name: "Overview", href: "/overview", icon: Home },
   { name: "Announcements", href: "/announcements", icon: Megaphone },
   {
+    name: "Programs",
+    icon: Calendar,
+    children: [
+      { name: "Programs", href: "/programs", icon: CalendarCheck },
+      { name: "Meetings", href: "/meetings", icon: BookOpen },
+    ],
+  },
+  {
     name: "Members",
     icon: Users,
     children: [
@@ -145,12 +153,41 @@ const memberNavigation: NavItem[] = [
   { name: "Announcements", href: "/announcements", icon: Megaphone },
 ];
 
-function isPathActive(pathname: string, href: string) {
+/** True if pathname matches href, or is a nested path under it. */
+function pathMatchesHref(pathname: string, href: string) {
   return pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
 }
 
-function groupHasActiveChild(pathname: string, group: NavGroup) {
-  return group.children.some((child) => isPathActive(pathname, child.href));
+/**
+ * Prefer the longest matching nav href so /families/my-family activates
+ * "My Family" only, not also "All Families" (/families).
+ */
+function isPathActive(
+  pathname: string,
+  href: string,
+  allHrefs: Iterable<string>,
+) {
+  if (!pathMatchesHref(pathname, href)) return false;
+  let best = href;
+  for (const candidate of allHrefs) {
+    if (
+      pathMatchesHref(pathname, candidate) &&
+      candidate.length > best.length
+    ) {
+      best = candidate;
+    }
+  }
+  return best === href;
+}
+
+function groupHasActiveChild(
+  pathname: string,
+  group: NavGroup,
+  allHrefs: Iterable<string>,
+) {
+  return group.children.some((child) =>
+    isPathActive(pathname, child.href, allHrefs),
+  );
 }
 
 function collectHrefs(entries: NavEntry[]): Set<string> {
@@ -244,6 +281,7 @@ const Sidebar = () => {
   }, [user]);
 
   const hasGroupedNav = navigation.some(isNavGroup);
+  const allNavHrefs = useMemo(() => collectHrefs(navigation), [navigation]);
 
   // Keep the group that contains the current route expanded
   useEffect(() => {
@@ -254,7 +292,7 @@ const Sidebar = () => {
       for (const entry of navigation) {
         if (
           isNavGroup(entry) &&
-          groupHasActiveChild(location.pathname, entry) &&
+          groupHasActiveChild(location.pathname, entry, allNavHrefs) &&
           !next[entry.name]
         ) {
           next[entry.name] = true;
@@ -263,7 +301,7 @@ const Sidebar = () => {
       }
       return changed ? next : prev;
     });
-  }, [hasGroupedNav, navigation, location.pathname]);
+  }, [hasGroupedNav, navigation, location.pathname, allNavHrefs]);
 
   const toggleGroup = (name: string) => {
     setOpenGroups((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -346,6 +384,7 @@ const Sidebar = () => {
                 const groupActive = groupHasActiveChild(
                   location.pathname,
                   entry,
+                  allNavHrefs,
                 );
 
                 return (
@@ -378,6 +417,7 @@ const Sidebar = () => {
                           const isActive = isPathActive(
                             location.pathname,
                             child.href,
+                            allNavHrefs,
                           );
                           return (
                             <Link
@@ -400,7 +440,11 @@ const Sidebar = () => {
                 );
               }
 
-              const isActive = isPathActive(location.pathname, entry.href);
+              const isActive = isPathActive(
+                location.pathname,
+                entry.href,
+                allNavHrefs,
+              );
               return (
                 <Link
                   key={entry.href}

@@ -7,7 +7,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -49,7 +49,6 @@ export const LogFollowUpContactModal: React.FC<
   });
 
   const [logContact, { loading }] = useMutation(LOG_FOLLOW_UP_CONTACT, {
-
     onCompleted: () => {
       toast.success("Contact logged");
       onOpenChange(false);
@@ -135,24 +134,24 @@ export const LogFollowUpContactModal: React.FC<
           </div>
           <div className="space-y-2">
             <Label htmlFor="contacted_at">Contacted at</Label>
-            <Input
+            <EthiopianDatePicker
               id="contacted_at"
-              type="datetime-local"
+              mode="datetime"
               value={form.contacted_at}
-              onChange={(e) =>
-                setForm({ ...form, contacted_at: e.target.value })
-              }
+              onChange={(value) => setForm({ ...form, contacted_at: value })}
+              placeholder="Pick contact date"
             />
           </div>
           <div className="space-y-2">
             <Label htmlFor="next_follow_up_at">Next follow-up</Label>
-            <Input
+            <EthiopianDatePicker
               id="next_follow_up_at"
-              type="datetime-local"
+              mode="datetime"
               value={form.next_follow_up_at}
-              onChange={(e) =>
-                setForm({ ...form, next_follow_up_at: e.target.value })
+              onChange={(value) =>
+                setForm({ ...form, next_follow_up_at: value })
               }
+              placeholder="Pick follow-up date"
             />
           </div>
           <div className="space-y-2">

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { EthiopianDatePicker } from "@/components/ui/ethiopian-date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -246,11 +247,11 @@ const NewTeenagerModalForm = ({
         </div>
         <div>
           <Label>Birth date</Label>
-          <Input
-            type="date"
+          <EthiopianDatePicker
             value={form.birth_date || ""}
-            onChange={(e) => set("birth_date", e.target.value)}
+            onChange={(value) => set("birth_date", value)}
             disabled={loading}
+            placeholder="Pick birth date"
           />
         </div>
       </div>

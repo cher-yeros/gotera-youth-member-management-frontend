@@ -22,6 +22,7 @@ import ProfileCompletenessBadge, {
 } from "@/components/shared/ProfileCompletenessBadge";
 import {
   useAssignTeenRollNumbers,
+  useDeleteTeenager,
   useGetMyTeenClasses,
   useGetTeenClass,
   useRemoveClassTeacher,
@@ -125,6 +126,7 @@ const TeenClassDetail = () => {
   const { removeClassTeacher } = useRemoveClassTeacher();
   const { assignTeenRollNumbers, loading: assigningRollNos } =
     useAssignTeenRollNumbers();
+  const { deleteTeenager } = useDeleteTeenager();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [viewTeen, setViewTeen] = useState<TeenItem | null>(null);
@@ -132,6 +134,10 @@ const TeenClassDetail = () => {
   const [assignOpen, setAssignOpen] = useState(false);
   const [transferTeen, setTransferTeen] = useState<TeenItem | null>(null);
   const [promoteTeen, setPromoteTeen] = useState<TeenItem | null>(null);
+  const [teenToDelete, setTeenToDelete] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [confirmRollAssign, setConfirmRollAssign] = useState(false);
 
   const teens = teenClass?.teenagers || [];
@@ -539,6 +545,21 @@ const TeenClassDetail = () => {
                                 Promote
                               </Button>
                             )}
+                            {isAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="flex-1 text-red-600 hover:bg-red-50 min-w-[80px]"
+                                onClick={() =>
+                                  setTeenToDelete({
+                                    id: teen.id,
+                                    name: teen.full_name,
+                                  })
+                                }
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -711,6 +732,21 @@ const TeenClassDetail = () => {
                                   Promote
                                 </Button>
                               )}
+                              {isAdmin && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-red-600 hover:bg-red-50"
+                                  onClick={() =>
+                                    setTeenToDelete({
+                                      id: teen.id,
+                                      name: teen.full_name,
+                                    })
+                                  }
+                                >
+                                  Delete
+                                </Button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -847,6 +883,42 @@ const TeenClassDetail = () => {
               }}
             >
               {assigningRollNos ? "Assigning…" : "Assign Roll Nos"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!teenToDelete}
+        onOpenChange={() => setTeenToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Teenager</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete{" "}
+              <strong>{teenToDelete?.name}</strong>? This action cannot be
+              undone and will permanently remove the teenager from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTeenToDelete(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={async () => {
+                if (!teenToDelete) return;
+                try {
+                  await deleteTeenager(teenToDelete.id);
+                  setTeenToDelete(null);
+                  await refetch();
+                } catch {
+                  // toast handled in hook
+                }
+              }}
+            >
+              Delete Teenager
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
