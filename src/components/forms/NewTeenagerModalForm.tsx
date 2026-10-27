@@ -106,6 +106,7 @@ const NewTeenagerModalForm = ({
     photo_url: (initial?.photo_url ?? null) as string | null,
     birth_date: initial?.birth_date || "",
     location_id: initial?.location_id || undefined,
+    location_name: "",
     guardian_name: initial?.guardian_name || "",
     guardian_contact: toLocalPhone(initial?.guardian_contact),
     guardian_relationship: initial?.guardian_relationship || "",
@@ -144,6 +145,7 @@ const NewTeenagerModalForm = ({
       return;
     }
 
+    const locationName = form.location_name.trim();
     const payload = {
       full_name: form.full_name.trim(),
       contact_no: toE164Phone(form.contact_no),
@@ -151,7 +153,8 @@ const NewTeenagerModalForm = ({
       grade: form.grade || null,
       photo_url: form.photo_url || null,
       birth_date: form.birth_date || null,
-      location_id: form.location_id || null,
+      location_id: locationName ? null : form.location_id || null,
+      location_name: locationName || null,
       guardian_name: form.guardian_name || null,
       guardian_contact: toE164Phone(form.guardian_contact),
       guardian_relationship: form.guardian_relationship || null,
@@ -255,7 +258,7 @@ const NewTeenagerModalForm = ({
           />
         </div>
       </div>
-      <div>
+      <div className="space-y-2">
         <Label>Address</Label>
         <ComboBox
           options={locations.map((l: any) => ({
@@ -264,13 +267,39 @@ const NewTeenagerModalForm = ({
           }))}
           value={form.location_id}
           onValueChange={(value) =>
-            set("location_id", value ? Number(value) : undefined)
+            setForm((prev) => ({
+              ...prev,
+              location_id: value ? Number(value) : undefined,
+              // Selecting from the list clears a typed custom name
+              location_name: value ? "" : prev.location_name,
+            }))
           }
           placeholder="Select address"
+          searchPlaceholder="Search addresses..."
+          emptyText="No address found. Type a custom name below."
           loading={locationsLoading}
           loadingText="Loading addresses..."
           disabled={loading}
         />
+        <Input
+          id="location_name"
+          value={form.location_name}
+          onChange={(e) =>
+            setForm((prev) => ({
+              ...prev,
+              location_name: e.target.value,
+              // Typing a custom name clears the list selection
+              location_id: e.target.value.trim()
+                ? undefined
+                : prev.location_id,
+            }))
+          }
+          placeholder="Or type address if not in the list"
+          disabled={loading}
+        />
+        <p className="text-xs text-muted-foreground">
+          Select from the list, or type a custom address name.
+        </p>
       </div>
       <div className="space-y-3">
         <p className="text-sm font-medium text-muted-foreground">Guardian 1</p>
