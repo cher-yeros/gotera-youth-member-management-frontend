@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   CalendarClock,
@@ -188,21 +194,23 @@ const MeetingsManagement: React.FC = () => {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: agendasData, refetch: refetchAgendas } = useQuery(
-    GET_AGENDAS_BY_MEETING,
-    {
-      variables: { meetingId: selectedMeetingId },
-      skip: !selectedMeetingId,
-      fetchPolicy: "cache-and-network",
-    },
-  );
+  const {
+    data: agendasData,
+    loading: loadingAgendas,
+    refetch: refetchAgendas,
+  } = useQuery(GET_AGENDAS_BY_MEETING, {
+    variables: { meetingId: selectedMeetingId },
+    skip: !selectedMeetingId,
+    fetchPolicy: "cache-and-network",
+  });
 
-  const { data: plannedData, refetch: refetchPlanned } = useQuery(
-    GET_PLANNED_AGENDAS,
-    {
-      fetchPolicy: "cache-and-network",
-    },
-  );
+  const {
+    data: plannedData,
+    loading: loadingPlanned,
+    refetch: refetchPlanned,
+  } = useQuery(GET_PLANNED_AGENDAS, {
+    fetchPolicy: "cache-and-network",
+  });
 
   const [createMeeting, { loading: creating }] = useMutation(CREATE_MEETING);
   const [updateMeeting, { loading: updating }] = useMutation(UPDATE_MEETING);
@@ -659,6 +667,8 @@ const MeetingsManagement: React.FC = () => {
                   Select a meeting to view its agendas, or add a planned agenda
                   below for a future meeting.
                 </p>
+              ) : loadingAgendas && agendas.length === 0 ? (
+                <ListLoadingState message="Loading agendas..." />
               ) : agendas.length === 0 ? (
                 <ListEmptyState
                   title="No agendas yet"
@@ -734,7 +744,9 @@ const MeetingsManagement: React.FC = () => {
               </p>
             </CardHeader>
             <CardContent>
-              {plannedList.length === 0 ? (
+              {loadingPlanned && plannedList.length === 0 ? (
+                <ListLoadingState message="Loading planned agendas..." />
+              ) : plannedList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No planned agendas. Use Plan to draft items for later.
                 </p>
