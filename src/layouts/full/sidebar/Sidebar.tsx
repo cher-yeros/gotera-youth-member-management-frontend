@@ -20,6 +20,7 @@ import {
   BookOpen,
   ChevronDown,
   Megaphone,
+  ListTodo,
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,7 @@ const adminNavigation: NavEntry[] = [
     children: [
       { name: "Programs", href: "/programs", icon: CalendarCheck },
       { name: "Meetings", href: "/meetings", icon: BookOpen },
+      { name: "Tasks", href: "/tasks", icon: ListTodo },
     ],
   },
   {

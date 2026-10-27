@@ -2819,3 +2819,120 @@ export const UPDATE_MEETING_MINUTES = gql`
   }
   ${MEETING_FRAGMENT}
 `;
+
+export const TASK_FRAGMENT = gql`
+  fragment TaskFragment on Task {
+    id
+    title
+    description
+    status
+    due_at
+    assigned_to
+    created_by
+    completed_at
+    is_active
+    createdAt
+    updatedAt
+    assignee {
+      id
+      full_name
+      contact_no
+      role {
+        id
+        name
+      }
+      roles {
+        id
+        name
+      }
+    }
+    creator {
+      id
+      full_name
+      contact_no
+      role {
+        id
+        name
+      }
+      roles {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const GET_TASKS = gql`
+  query GetTasks($filter: TaskFilterInput, $pagination: PaginationInput) {
+    tasks(filter: $filter, pagination: $pagination) {
+      items {
+        ...TaskFragment
+      }
+      total
+      page
+      limit
+      totalPages
+    }
+  }
+  ${TASK_FRAGMENT}
+`;
+
+export const GET_TASK = gql`
+  query GetTask($id: Int!) {
+    task(id: $id) {
+      ...TaskFragment
+    }
+  }
+  ${TASK_FRAGMENT}
+`;
+
+export const GET_TASK_ASSIGNEES = gql`
+  query GetTaskAssignees {
+    taskAssignees {
+      id
+      full_name
+      contact_no
+      role {
+        id
+        name
+      }
+      roles {
+        id
+        name
+      }
+    }
+  }
+`;
+
+export const CREATE_TASK = gql`
+  mutation CreateTask($input: CreateTaskInput!) {
+    createTask(input: $input) {
+      ...TaskFragment
+    }
+  }
+  ${TASK_FRAGMENT}
+`;
+
+export const UPDATE_TASK = gql`
+  mutation UpdateTask($id: Int!, $input: UpdateTaskInput!) {
+    updateTask(id: $id, input: $input) {
+      ...TaskFragment
+    }
+  }
+  ${TASK_FRAGMENT}
+`;
+
+export const MARK_TASK_DONE = gql`
+  mutation MarkTaskDone($id: Int!) {
+    markTaskDone(id: $id) {
+      ...TaskFragment
+    }
+  }
+  ${TASK_FRAGMENT}
+`;
+
+export const DELETE_TASK = gql`
+  mutation DeleteTask($id: Int!) {
+    deleteTask(id: $id)
+  }
+`;

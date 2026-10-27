@@ -61,6 +61,9 @@ const ProgramsManagement = lazy(
 const MeetingsManagement = lazy(
   () => import("../views/meetings/MeetingsManagement"),
 );
+const TasksManagement = lazy(
+  () => import("../views/tasks/TasksManagement"),
+);
 const TeenagersPage = lazy(() => import("../views/teenagers/TeenagersPage"));
 const TeenClassesPage = lazy(
   () => import("../views/teen-classes/TeenClassesPage"),
@@ -288,6 +291,14 @@ const Router = [
         element: (
           <ProtectedRoute allowedRoles={["ADMIN", "MAIN"]}>
             <MeetingsManagement />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "/tasks",
+        element: (
+          <ProtectedRoute allowedRoles={["ADMIN", "MAIN"]}>
+            <TasksManagement />
           </ProtectedRoute>
         ),
       },
