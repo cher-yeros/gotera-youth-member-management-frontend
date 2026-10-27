@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery } from "@apollo/client/react";
+import Kenat from "kenat";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,19 +9,7 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
-import {
-  addMonths,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-  isSameDay,
-  isSameMonth,
-  isToday,
-  startOfMonth,
-  startOfWeek,
-  subMonths,
-} from "date-fns";
+import { format, isSameDay, isToday } from "date-fns";
 import { toast } from "react-toastify";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +53,17 @@ import {
   GET_PROGRAMS,
   UPDATE_PROGRAM,
 } from "@/graphql/operations";
+import {
+  ETHIOPIAN_MONTH_NAMES_EN,
+  dateToGregorianString,
+  daysInEthiopianMonth,
+  ethiopianToGregorian,
+  formatEthiopianDisplay,
+  formatGregorianHint,
+  gregorianToEthiopian,
+  todayEthiopian,
+  type EthiopianYmd,
+} from "@/lib/ethiopian-date";
 import { cn } from "@/lib/utils";
 
 const PROGRAM_STATUSES = ["SCHEDULED", "COMPLETED", "CANCELLED"] as const;
@@ -150,11 +150,37 @@ function dayKey(date: Date) {
   return format(date, "yyyy-MM-dd");
 }
 
-function getMonthGridDays(month: Date) {
-  const start = startOfWeek(startOfMonth(month));
-  const end = endOfWeek(endOfMonth(month));
-  return eachDayOfInterval({ start, end });
+function dateToEthiopian(date: Date): EthiopianYmd {
+  return gregorianToEthiopian({
+    year: date.getFullYear(),
+    month: date.getMonth() + 1,
+    day: date.getDate(),
+  });
 }
+
+function ethiopianToLocalDate(eth: EthiopianYmd): Date {
+  const g = ethiopianToGregorian(eth);
+  return new Date(g.year, g.month - 1, g.day, 12, 0, 0, 0);
+}
+
+function sameEthiopianDay(a: EthiopianYmd, b: EthiopianYmd) {
+  return a.year === b.year && a.month === b.month && a.day === b.day;
+}
+
+function formatProgramEthiopianDate(
+  value: string | Date | null | undefined,
+  options?: { showWeekday?: boolean },
+) {
+  const d = parseAppDate(value);
+  if (!d) return "—";
+  return formatEthiopianDisplay(dateToEthiopian(d), options);
+}
+
+type CalendarGridDay = {
+  ethiopian: EthiopianYmd;
+  gregorian: { year: number; month: number; day: number; display?: string };
+  isToday?: boolean;
+} | null;
 
 const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
@@ -167,10 +193,14 @@ const emptyProgramForm = {
 };
 
 const ProgramsManagement: React.FC = () => {
+  const initialEth = todayEthiopian();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
     new Date(),
   );
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [calendarEthMonth, setCalendarEthMonth] = useState({
+    year: initialEth.year,
+    month: initialEth.month,
+  });
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
@@ -188,25 +218,57 @@ const ProgramsManagement: React.FC = () => {
     null,
   );
 
-  const dateFrom = startOfMonth(calendarMonth).toISOString();
-  const dateTo = endOfMonth(calendarMonth).toISOString();
+  const calendarMonthBounds = useMemo(() => {
+    const first = ethiopianToGregorian({
+      year: calendarEthMonth.year,
+      month: calendarEthMonth.month,
+      day: 1,
+    });
+    const lastDayNum = daysInEthiopianMonth(
+      calendarEthMonth.year,
+      calendarEthMonth.month,
+    );
+    const last = ethiopianToGregorian({
+      year: calendarEthMonth.year,
+      month: calendarEthMonth.month,
+      day: lastDayNum,
+    });
+    const dateFrom = new Date(
+      first.year,
+      first.month - 1,
+      first.day,
+      0,
+      0,
+      0,
+      0,
+    ).toISOString();
+    const dateTo = new Date(
+      last.year,
+      last.month - 1,
+      last.day,
+      23,
+      59,
+      59,
+      999,
+    ).toISOString();
+    return { dateFrom, dateTo };
+  }, [calendarEthMonth.year, calendarEthMonth.month]);
 
   const filter = useMemo(() => {
     const f: {
       search?: string;
       status?: string;
-      dateFrom?: string;
-      dateTo?: string;
-    } = {
-      dateFrom,
-      dateTo,
-    };
+    } = {};
     if (search.trim()) f.search = search.trim();
     if (statusFilter !== "all") f.status = statusFilter;
     return f;
-  }, [search, statusFilter, dateFrom, dateTo]);
+  }, [search, statusFilter]);
 
-  const { data, loading, refetch } = useQuery(GET_PROGRAMS, {
+  const {
+    data,
+    loading,
+    refetch: refetchList,
+  } = useQuery(GET_PROGRAMS, {
     variables: {
       filter,
       pagination: { page, limit: pageSize },
@@ -214,13 +276,23 @@ const ProgramsManagement: React.FC = () => {
     fetchPolicy: "cache-and-network",
   });
 
-  const { data: calendarData } = useQuery(GET_PROGRAMS, {
-    variables: {
-      filter: { dateFrom, dateTo },
-      pagination: { page: 1, limit: 100 },
+  const { data: calendarData, refetch: refetchCalendar } = useQuery(
+    GET_PROGRAMS,
+    {
+      variables: {
+        filter: {
+          dateFrom: calendarMonthBounds.dateFrom,
+          dateTo: calendarMonthBounds.dateTo,
+        },
+        pagination: { page: 1, limit: 100 },
+      },
+      fetchPolicy: "cache-and-network",
     },
-    fetchPolicy: "cache-and-network",
-  });
+  );
+
+  const refetch = useCallback(async () => {
+    await Promise.all([refetchList(), refetchCalendar()]);
+  }, [refetchList, refetchCalendar]);
 
   const [createProgram, { loading: creating }] = useMutation(CREATE_PROGRAM);
   const [updateProgram, { loading: updating }] = useMutation(UPDATE_PROGRAM);
@@ -244,9 +316,35 @@ const ProgramsManagement: React.FC = () => {
     return map;
   }, [calendarPrograms]);
 
+  const monthCalendar = useMemo(() => {
+    try {
+      return Kenat.getMonthCalendar(
+        calendarEthMonth.year,
+        calendarEthMonth.month,
+        {
+          useGeez: false,
+          weekdayLang: "english",
+        },
+      );
+    } catch {
+      return null;
+    }
+  }, [calendarEthMonth.year, calendarEthMonth.month]);
+
+  const weekdayLabels = useMemo(() => {
+    const headers = monthCalendar?.headers as string[] | undefined;
+    if (!headers?.length) return WEEKDAY_LABELS;
+    return headers.map((h) => h.slice(0, 2));
+  }, [monthCalendar]);
+
   const monthGridDays = useMemo(
-    () => getMonthGridDays(calendarMonth),
-    [calendarMonth],
+    () => (monthCalendar?.days as CalendarGridDay[] | undefined) ?? [],
+    [monthCalendar],
+  );
+
+  const selectedEth = useMemo(
+    () => (selectedDate ? dateToEthiopian(selectedDate) : null),
+    [selectedDate],
   );
 
   const programsOnSelectedDate = useMemo(() => {
@@ -262,6 +360,31 @@ const ProgramsManagement: React.FC = () => {
         return da - db;
       });
   }, [calendarPrograms, selectedDate]);
+
+  const goPrevEthMonth = () => {
+    setCalendarEthMonth((m) =>
+      m.month <= 1
+        ? { year: m.year - 1, month: 13 }
+        : { year: m.year, month: m.month - 1 },
+    );
+  };
+
+  const goNextEthMonth = () => {
+    setCalendarEthMonth((m) =>
+      m.month >= 13
+        ? { year: m.year + 1, month: 1 }
+        : { year: m.year, month: m.month + 1 },
+    );
+  };
+
+  const focusProgramOnCalendar = (program: ProgramItem) => {
+    setSelectedProgramId(program.id);
+    const d = parseAppDate(program.scheduled_at);
+    if (!d) return;
+    setSelectedDate(d);
+    const eth = dateToEthiopian(d);
+    setCalendarEthMonth({ year: eth.year, month: eth.month });
+  };
 
   const openCreateProgram = () => {
     setEditingProgram(null);
@@ -374,31 +497,36 @@ const ProgramsManagement: React.FC = () => {
                 variant="ghost"
                 size="icon"
                 aria-label="Previous month"
-                onClick={() => setCalendarMonth((m) => subMonths(m, 1))}
+                onClick={goPrevEthMonth}
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <CardTitle className="text-base text-brand-gradient">
-                {format(calendarMonth, "MMMM yyyy")}
+                {ETHIOPIAN_MONTH_NAMES_EN[calendarEthMonth.month - 1] ??
+                  calendarEthMonth.month}{" "}
+                {calendarEthMonth.year}
               </CardTitle>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
                 aria-label="Next month"
-                onClick={() => setCalendarMonth((m) => addMonths(m, 1))}
+                onClick={goNextEthMonth}
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
             </div>
+            <p className="text-center text-[11px] text-muted-foreground">
+              Ethiopian calendar
+            </p>
           </CardHeader>
           <CardContent className="space-y-5">
             {/* Month grid — tiled days with event density bars */}
             <div>
               <div className="mb-2 grid grid-cols-7 gap-1.5 sm:gap-2">
-                {WEEKDAY_LABELS.map((label, i) => (
+                {weekdayLabels.map((label, i) => (
                   <div
-                    key={label}
+                    key={`${label}-${i}`}
                     className={cn(
                       "text-center text-[11px] font-medium sm:text-xs",
                       i === 0 ? "text-rose-500/80" : "text-muted-foreground",
@@ -409,22 +537,36 @@ const ProgramsManagement: React.FC = () => {
                 ))}
               </div>
               <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                {monthGridDays.map((day) => {
-                  const inMonth = isSameMonth(day, calendarMonth);
-                  const selected = selectedDate && isSameDay(day, selectedDate);
-                  const today = isToday(day);
-                  const count = programCountByDay.get(dayKey(day)) || 0;
+                {monthGridDays.map((day, index) => {
+                  if (!day) {
+                    return (
+                      <div key={`empty-${index}`} className="aspect-square" />
+                    );
+                  }
+
+                  const localDate = ethiopianToLocalDate(day.ethiopian);
+                  const inMonth =
+                    day.ethiopian.month === calendarEthMonth.month &&
+                    day.ethiopian.year === calendarEthMonth.year;
+                  const selected =
+                    !!selectedEth &&
+                    sameEthiopianDay(day.ethiopian, selectedEth);
+                  const today = day.isToday || isToday(localDate);
+                  const count = programCountByDay.get(dayKey(localDate)) || 0;
                   const bars = Math.min(count, 3);
-                  const isSunday = day.getDay() === 0;
+                  const isSunday = localDate.getDay() === 0;
 
                   return (
                     <button
-                      key={day.toISOString()}
+                      key={`${day.ethiopian.year}-${day.ethiopian.month}-${day.ethiopian.day}`}
                       type="button"
                       onClick={() => {
-                        setSelectedDate(day);
-                        if (!isSameMonth(day, calendarMonth)) {
-                          setCalendarMonth(startOfMonth(day));
+                        setSelectedDate(localDate);
+                        if (!inMonth) {
+                          setCalendarEthMonth({
+                            year: day.ethiopian.year,
+                            month: day.ethiopian.month,
+                          });
                         }
                       }}
                       className={cn(
@@ -448,7 +590,7 @@ const ProgramsManagement: React.FC = () => {
                           today && !selected ? "text-primary" : "",
                         )}
                       >
-                        {format(day, "d")}
+                        {day.ethiopian.day}
                       </span>
                       <div className="mt-1 flex h-2.5 w-[55%] flex-col justify-end gap-0.5">
                         {Array.from({ length: bars }).map((_, i) => (
@@ -471,18 +613,24 @@ const ProgramsManagement: React.FC = () => {
 
             {/* Selected day programs — large date + timed list + add CTA */}
             <div className="border-t pt-4 space-y-4">
-              {selectedDate ? (
+              {selectedDate && selectedEth ? (
                 <>
                   <div className="flex items-end gap-3">
                     <span className="text-4xl font-bold leading-none tracking-tight text-foreground sm:text-5xl">
-                      {format(selectedDate, "d")}
+                      {selectedEth.day}
                     </span>
                     <div className="min-w-0 pb-0.5">
                       <p className="text-sm font-medium leading-tight">
                         {format(selectedDate, "EEEE")}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {format(selectedDate, "MMMM d, yyyy")}
+                        {formatEthiopianDisplay(selectedEth)}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {formatGregorianHint(
+                          dateToGregorianString(selectedDate),
+                        )}{" "}
+                        (Gregorian)
                       </p>
                     </div>
                   </div>
@@ -539,7 +687,14 @@ const ProgramsManagement: React.FC = () => {
                     className="h-11 w-full justify-between rounded-xl px-4"
                     onClick={openCreateProgram}
                   >
-                    <span>Add on {format(selectedDate, "MMM d")}</span>
+                    <span>
+                      Add on{" "}
+                      {ETHIOPIAN_MONTH_NAMES_EN[selectedEth.month - 1]?.slice(
+                        0,
+                        3,
+                      ) ?? selectedEth.month}{" "}
+                      {selectedEth.day}
+                    </span>
                     <Plus className="h-4 w-4" />
                   </Button>
                 </>
@@ -593,7 +748,7 @@ const ProgramsManagement: React.FC = () => {
               ) : programs.length === 0 ? (
                 <ListEmptyState
                   title="No programs"
-                  description="Create a program or adjust filters for this month."
+                  description="Create a program or adjust search and status filters."
                 />
               ) : (
                 <div className="space-y-3">
@@ -605,7 +760,7 @@ const ProgramsManagement: React.FC = () => {
                         selectedProgramId === program.id &&
                           "border-sky-500 bg-sky-50/60",
                       )}
-                      onClick={() => setSelectedProgramId(program.id)}
+                      onClick={() => focusProgramOnCalendar(program)}
                     >
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div className="min-w-0 space-y-1">
@@ -619,10 +774,9 @@ const ProgramsManagement: React.FC = () => {
                             </Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">
-                            {formatAppDate(
-                              program.scheduled_at,
-                              "MMM d, yyyy · h:mm a",
-                            )}
+                            {formatProgramEthiopianDate(program.scheduled_at)}
+                            {" · "}
+                            {formatAppDate(program.scheduled_at, "h:mm a")}
                             {program.location ? ` · ${program.location}` : ""}
                           </p>
                           {program.description && (
