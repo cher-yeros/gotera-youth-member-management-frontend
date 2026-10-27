@@ -424,7 +424,7 @@ export type CreateStatusInput = {
 };
 
 export type CreateTaskInput = {
-  assigned_to: Scalars['Int']['input'];
+  assigned_to?: InputMaybe<Scalars['Int']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   due_at?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
@@ -2199,7 +2199,7 @@ export type SubscriptionFollowUpContactChangedArgs = {
 
 export type Task = {
   __typename?: 'Task';
-  assigned_to: Scalars['Int']['output'];
+  assigned_to?: Maybe<Scalars['Int']['output']>;
   assignee?: Maybe<Member>;
   completed_at?: Maybe<Scalars['String']['output']>;
   createdAt: Scalars['String']['output'];
@@ -2219,8 +2219,10 @@ export type TaskFilterInput = {
   assigned_to_me?: InputMaybe<Scalars['Boolean']['input']>;
   created_by?: InputMaybe<Scalars['Int']['input']>;
   is_active?: InputMaybe<Scalars['Boolean']['input']>;
+  openOnly?: InputMaybe<Scalars['Boolean']['input']>;
   search?: InputMaybe<Scalars['String']['input']>;
   status?: InputMaybe<Scalars['String']['input']>;
+  unassigned?: InputMaybe<Scalars['Boolean']['input']>;
 };
 
 export type TeenAttendance = {
@@ -3741,7 +3743,7 @@ export type UpdateMeetingMinutesMutationVariables = Exact<{
 
 export type UpdateMeetingMinutesMutation = { __typename?: 'Mutation', updateMeetingMinutes: { __typename?: 'Meeting', id: number, title: string, description?: string | null, meeting_at: string, location?: string | null, notes?: string | null, minutes_screenshot_urls: Array<string>, created_by: number, is_active: boolean, createdAt: string, updatedAt: string, agendas: Array<{ __typename?: 'Agenda', id: number, meeting_id?: number | null, title: string, body?: string | null, sort_order: number, created_by: number, is_active: boolean, createdAt: string, updatedAt: string }> } };
 
-export type TaskFragmentFragment = { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to: number, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null };
+export type TaskFragmentFragment = { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to?: number | null, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null };
 
 export type GetTasksQueryVariables = Exact<{
   filter?: InputMaybe<TaskFilterInput>;
@@ -3749,14 +3751,14 @@ export type GetTasksQueryVariables = Exact<{
 }>;
 
 
-export type GetTasksQuery = { __typename?: 'Query', tasks: { __typename?: 'PaginatedTasks', total: number, page: number, limit: number, totalPages: number, items: Array<{ __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to: number, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null }> } };
+export type GetTasksQuery = { __typename?: 'Query', tasks: { __typename?: 'PaginatedTasks', total: number, page: number, limit: number, totalPages: number, items: Array<{ __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to?: number | null, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null }> } };
 
 export type GetTaskQueryVariables = Exact<{
   id: Scalars['Int']['input'];
 }>;
 
 
-export type GetTaskQuery = { __typename?: 'Query', task?: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to: number, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } | null };
+export type GetTaskQuery = { __typename?: 'Query', task?: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to?: number | null, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } | null };
 
 export type GetTaskAssigneesQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -3768,7 +3770,7 @@ export type CreateTaskMutationVariables = Exact<{
 }>;
 
 
-export type CreateTaskMutation = { __typename?: 'Mutation', createTask: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to: number, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } };
+export type CreateTaskMutation = { __typename?: 'Mutation', createTask: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to?: number | null, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } };
 
 export type UpdateTaskMutationVariables = Exact<{
   id: Scalars['Int']['input'];
@@ -3776,14 +3778,14 @@ export type UpdateTaskMutationVariables = Exact<{
 }>;
 
 
-export type UpdateTaskMutation = { __typename?: 'Mutation', updateTask: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to: number, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } };
+export type UpdateTaskMutation = { __typename?: 'Mutation', updateTask: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to?: number | null, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } };
 
 export type MarkTaskDoneMutationVariables = Exact<{
   id: Scalars['Int']['input'];
 }>;
 
 
-export type MarkTaskDoneMutation = { __typename?: 'Mutation', markTaskDone: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to: number, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } };
+export type MarkTaskDoneMutation = { __typename?: 'Mutation', markTaskDone: { __typename?: 'Task', id: number, title: string, description?: string | null, status: string, due_at?: string | null, assigned_to?: number | null, created_by: number, completed_at?: string | null, is_active: boolean, createdAt: string, updatedAt: string, assignee?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null, creator?: { __typename?: 'Member', id: number, full_name: string, contact_no?: string | null, role?: { __typename?: 'Role', id: number, name: string } | null, roles: Array<{ __typename?: 'Role', id: number, name: string }> } | null } };
 
 export type DeleteTaskMutationVariables = Exact<{
   id: Scalars['Int']['input'];

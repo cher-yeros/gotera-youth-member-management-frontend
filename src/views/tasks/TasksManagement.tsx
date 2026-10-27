@@ -68,12 +68,22 @@ interface TaskItem {
   description?: string | null;
   status: string;
   due_at?: string | null;
-  assigned_to: number;
+  assigned_to?: number | null;
   created_by: number;
   completed_at?: string | null;
   assignee?: TaskMember | null;
   creator?: TaskMember | null;
 }
+
+type TabKey = "mine" | "unassigned" | "all";
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "mine", label: "My tasks" },
+  { key: "unassigned", label: "Unassigned" },
+  { key: "all", label: "All tasks" },
+];
+
+const UNASSIGNED_VALUE = "unassigned";
 
 function statusBadgeClass(status: string) {
   switch (status) {
@@ -168,9 +178,9 @@ const TasksManagement: React.FC = () => {
   const { user } = useAuth();
   const myMemberId = user?.member?.id;
 
+  const [tab, setTab] = useState<TabKey>("mine");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [scopeFilter, setScopeFilter] = useState<"all" | "mine">("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -183,12 +193,20 @@ const TasksManagement: React.FC = () => {
       search?: string;
       status?: string;
       assigned_to_me?: boolean;
+      unassigned?: boolean;
+      openOnly?: boolean;
     } = {};
     if (search.trim()) f.search = search.trim();
     if (statusFilter !== "all") f.status = statusFilter;
-    if (scopeFilter === "mine") f.assigned_to_me = true;
+    if (tab === "mine") {
+      f.assigned_to_me = true;
+      if (statusFilter === "all") f.openOnly = true;
+    } else if (tab === "unassigned") {
+      f.unassigned = true;
+      if (statusFilter === "all") f.openOnly = true;
+    }
     return f;
-  }, [search, statusFilter, scopeFilter]);
+  }, [search, statusFilter, tab]);
 
   const { data, loading, refetch } = useQuery(GET_TASKS, {
     variables: {
@@ -217,7 +235,12 @@ const TasksManagement: React.FC = () => {
     setEditing(null);
     setForm({
       ...emptyForm,
-      assigned_to: myMemberId ? String(myMemberId) : "",
+      assigned_to:
+        tab === "unassigned"
+          ? UNASSIGNED_VALUE
+          : myMemberId
+            ? String(myMemberId)
+            : UNASSIGNED_VALUE,
     });
     setDialogOpen(true);
   };
@@ -228,7 +251,9 @@ const TasksManagement: React.FC = () => {
       title: task.title,
       description: task.description || "",
       due_at: toDateInputValue(task.due_at),
-      assigned_to: String(task.assigned_to),
+      assigned_to: task.assigned_to
+        ? String(task.assigned_to)
+        : UNASSIGNED_VALUE,
       status: (TASK_STATUSES.includes(task.status as TaskStatus)
         ? task.status
         : "OPEN") as TaskStatus,
@@ -241,8 +266,12 @@ const TasksManagement: React.FC = () => {
       toast.error("Title is required");
       return;
     }
-    const assignedTo = Number(form.assigned_to);
-    if (!assignedTo) {
+
+    const assignedTo =
+      !form.assigned_to || form.assigned_to === UNASSIGNED_VALUE
+        ? null
+        : Number(form.assigned_to);
+    if (assignedTo != null && !assignedTo) {
       toast.error("Select an assignee");
       return;
     }
@@ -269,7 +298,7 @@ const TasksManagement: React.FC = () => {
         toast.success("Task updated");
       } else {
         await createTask({ variables: { input } });
-        toast.success("Task assigned");
+        toast.success(assignedTo ? "Task assigned" : "Task created");
       }
       setDialogOpen(false);
       await refetch();
@@ -327,9 +356,31 @@ const TasksManagement: React.FC = () => {
         }
       />
 
+      <div className="flex flex-wrap gap-2">
+        {TABS.map((t) => (
+          <Button
+            key={t.key}
+            variant={tab === t.key ? "default" : "outline"}
+            size="sm"
+            onClick={() => {
+              setTab(t.key);
+              setPage(1);
+            }}
+          >
+            {t.label}
+          </Button>
+        ))}
+      </div>
+
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">Leader tasks</CardTitle>
+          <CardTitle className="text-base">
+            {tab === "mine"
+              ? "My tasks"
+              : tab === "unassigned"
+                ? "Unassigned"
+                : "All tasks"}
+          </CardTitle>
           <div className="flex flex-wrap items-center gap-2 pt-2">
             <div className="min-w-[200px] flex-1">
               <InlineSearchRow
@@ -338,21 +389,6 @@ const TasksManagement: React.FC = () => {
                 placeholder="Search tasks..."
               />
             </div>
-            <Select
-              value={scopeFilter}
-              onValueChange={(v) => {
-                setScopeFilter(v as "all" | "mine");
-                setPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Scope" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All tasks</SelectItem>
-                <SelectItem value="mine">Assigned to me</SelectItem>
-              </SelectContent>
-            </Select>
             <Select
               value={statusFilter}
               onValueChange={(v) => {
@@ -364,7 +400,9 @@ const TasksManagement: React.FC = () => {
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="all">
+                  {tab === "all" ? "All statuses" : "Open only"}
+                </SelectItem>
                 {TASK_STATUSES.map((s) => (
                   <SelectItem key={s} value={s}>
                     {statusLabel(s)}
@@ -379,8 +417,18 @@ const TasksManagement: React.FC = () => {
             <ListLoadingState />
           ) : tasks.length === 0 ? (
             <ListEmptyState
-              title="No tasks"
-              description="Create a task and assign it to a main leader or admin."
+              title={
+                tab === "mine"
+                  ? "No tasks assigned to you"
+                  : tab === "unassigned"
+                    ? "No unassigned tasks"
+                    : "No tasks"
+              }
+              description={
+                tab === "unassigned"
+                  ? "Create a task without an assignee for someone to pick up."
+                  : "Create a task and assign it to a main leader or admin."
+              }
               primaryAction={{ label: "New Task", onClick: openCreate }}
             />
           ) : (
@@ -389,6 +437,7 @@ const TasksManagement: React.FC = () => {
                 const isDone = task.status === "DONE";
                 const isMine =
                   myMemberId != null && task.assigned_to === myMemberId;
+                const isUnassigned = !task.assigned_to;
                 return (
                   <div
                     key={task.id}
@@ -411,6 +460,9 @@ const TasksManagement: React.FC = () => {
                           <Badge className={statusBadgeClass(task.status)}>
                             {statusLabel(task.status)}
                           </Badge>
+                          {isUnassigned && !isDone && (
+                            <Badge variant="outline">Unassigned</Badge>
+                          )}
                           {isMine && !isDone && (
                             <Badge variant="outline">Yours</Badge>
                           )}
@@ -421,7 +473,9 @@ const TasksManagement: React.FC = () => {
                           </p>
                         )}
                         <p className="text-sm text-muted-foreground">
-                          To {task.assignee?.full_name || "—"}
+                          To{" "}
+                          {task.assignee?.full_name ||
+                            (isUnassigned ? "Unassigned" : "—")}
                           {memberRoleLabel(task.assignee)
                             ? ` (${memberRoleLabel(task.assignee)})`
                             : ""}
@@ -515,7 +569,7 @@ const TasksManagement: React.FC = () => {
             <div className="space-y-2">
               <Label>Assign to</Label>
               <Select
-                value={form.assigned_to || undefined}
+                value={form.assigned_to || UNASSIGNED_VALUE}
                 onValueChange={(v) =>
                   setForm((prev) => ({ ...prev, assigned_to: v }))
                 }
@@ -524,6 +578,7 @@ const TasksManagement: React.FC = () => {
                   <SelectValue placeholder="Select main leader or admin" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={UNASSIGNED_VALUE}>Unassigned</SelectItem>
                   {assignees.map((member) => (
                     <SelectItem key={member.id} value={String(member.id)}>
                       {member.full_name}
@@ -576,7 +631,11 @@ const TasksManagement: React.FC = () => {
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {editing ? "Save changes" : "Assign task"}
+              {editing
+                ? "Save changes"
+                : form.assigned_to && form.assigned_to !== UNASSIGNED_VALUE
+                  ? "Assign task"
+                  : "Create task"}
             </Button>
           </DialogFooter>
         </DialogContent>
