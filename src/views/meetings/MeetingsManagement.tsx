@@ -8,6 +8,8 @@ import React, {
 import { useMutation, useQuery } from "@apollo/client/react";
 import {
   CalendarClock,
+  ChevronDown,
+  ChevronUp,
   Edit,
   GripVertical,
   ImagePlus,
@@ -140,6 +142,15 @@ function fromDatetimeLocalValue(value: string) {
   return d.toISOString();
 }
 
+function meetingHasExpandableContent(meeting: MeetingItem) {
+  const description = meeting.description?.trim() ?? "";
+  const notes = meeting.notes?.trim() ?? "";
+  const screenshotCount = meeting.minutes_screenshot_urls?.length ?? 0;
+  const descriptionLong = description.length > 140;
+  const notesLong = notes.length > 120 || notes.includes("\n");
+  return descriptionLong || notesLong || screenshotCount > 0;
+}
+
 const emptyForm = {
   title: "",
   description: "",
@@ -163,6 +174,9 @@ const MeetingsManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [selectedMeetingId, setSelectedMeetingId] = useState<number | null>(
     null,
+  );
+  const [expandedMeetingIds, setExpandedMeetingIds] = useState<Set<number>>(
+    () => new Set(),
   );
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<MeetingItem | null>(null);
@@ -504,6 +518,15 @@ const MeetingsManagement: React.FC = () => {
     setPage(1);
   }, []);
 
+  const toggleMeetingExpanded = useCallback((meetingId: number) => {
+    setExpandedMeetingIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(meetingId)) next.delete(meetingId);
+      else next.add(meetingId);
+      return next;
+    });
+  }, []);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -540,88 +563,134 @@ const MeetingsManagement: React.FC = () => {
               />
             ) : (
               <div className="space-y-3">
-                {meetings.map((meeting) => (
-                  <div
-                    key={meeting.id}
-                    className={cn(
-                      "rounded-lg border p-4 space-y-3 cursor-pointer transition-colors hover:bg-muted/40",
-                      selectedMeetingId === meeting.id &&
-                        "border-sky-500 bg-sky-50/60",
-                    )}
-                    onClick={() => setSelectedMeetingId(meeting.id)}
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-1">
-                        <h3 className="font-semibold">{meeting.title}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {formatAppDate(
-                            meeting.meeting_at,
-                            "MMM d, yyyy · h:mm a",
+                {meetings.map((meeting) => {
+                  const expanded = expandedMeetingIds.has(meeting.id);
+                  const canExpand = meetingHasExpandableContent(meeting);
+                  const screenshotCount =
+                    meeting.minutes_screenshot_urls?.length ?? 0;
+
+                  return (
+                    <div
+                      key={meeting.id}
+                      className={cn(
+                        "rounded-lg border p-4 space-y-3 cursor-pointer transition-colors hover:bg-muted/40",
+                        selectedMeetingId === meeting.id &&
+                          "border-sky-500 bg-sky-50/60",
+                      )}
+                      onClick={() => setSelectedMeetingId(meeting.id)}
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <h3 className="font-semibold">{meeting.title}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {formatAppDate(
+                              meeting.meeting_at,
+                              "MMM d, yyyy · h:mm a",
+                            )}
+                            {meeting.location ? ` · ${meeting.location}` : ""}
+                          </p>
+                          {meeting.description && (
+                            <p
+                              className={cn(
+                                "text-sm",
+                                !expanded && canExpand && "line-clamp-2",
+                              )}
+                            >
+                              {meeting.description}
+                            </p>
                           )}
-                          {meeting.location ? ` · ${meeting.location}` : ""}
-                        </p>
-                        {meeting.description && (
-                          <p className="text-sm line-clamp-2">
-                            {meeting.description}
+                          {meeting.notes && (
+                            <p
+                              className={cn(
+                                "text-sm text-muted-foreground whitespace-pre-wrap",
+                                !expanded && canExpand && "line-clamp-3",
+                              )}
+                            >
+                              {meeting.notes}
+                            </p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {(meeting.agendas?.length ??
+                              (selectedMeetingId === meeting.id
+                                ? agendas.length
+                                : 0)) ||
+                              0}{" "}
+                            agenda item
+                            {(meeting.agendas?.length ?? 0) === 1 ? "" : "s"}
+                            {!expanded && screenshotCount > 0
+                              ? ` · ${screenshotCount} screenshot${
+                                  screenshotCount === 1 ? "" : "s"
+                                }`
+                              : ""}
                           </p>
-                        )}
-                        {meeting.notes && (
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                            {meeting.notes}
-                          </p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          {(meeting.agendas?.length ??
-                            (selectedMeetingId === meeting.id
-                              ? agendas.length
-                              : 0)) ||
-                            0}{" "}
-                          agenda item
-                          {(meeting.agendas?.length ?? 0) === 1 ? "" : "s"}
-                        </p>
-                      </div>
-                      <div
-                        className="flex gap-1"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEdit(meeting)}
+                        </div>
+                        <div
+                          className="flex gap-1"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setToDelete(meeting)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </div>
-                    {(meeting.minutes_screenshot_urls?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {meeting.minutes_screenshot_urls.map((url) => (
-                          <a
-                            key={url}
-                            href={resolveMediaUrl(url)}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block h-20 w-20 overflow-hidden rounded-md border"
-                            onClick={(e) => e.stopPropagation()}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEdit(meeting)}
                           >
-                            <img
-                              src={resolveMediaUrl(url)}
-                              alt="Minutes screenshot"
-                              className="h-full w-full object-cover"
-                            />
-                          </a>
-                        ))}
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setToDelete(meeting)}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {expanded && screenshotCount > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {meeting.minutes_screenshot_urls.map((url) => (
+                            <a
+                              key={url}
+                              href={resolveMediaUrl(url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="block h-20 w-20 overflow-hidden rounded-md border"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <img
+                                src={resolveMediaUrl(url)}
+                                alt="Minutes screenshot"
+                                className="h-full w-full object-cover"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                      {canExpand && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleMeetingExpanded(meeting.id);
+                          }}
+                        >
+                          {expanded ? (
+                            <>
+                              <ChevronUp className="h-4 w-4 mr-1" />
+                              Show less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown className="h-4 w-4 mr-1" />
+                              Show more
+                            </>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
                 <ListPagination
                   currentPage={page}
                   pageSize={pageSize}
